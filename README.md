@@ -4,4 +4,4 @@ Classify muscle fibres with mitochondrial dysfunction, using multiple approaches
 
 Contributors
 * Jordan ([jordanbchilds](https://gitbuh.com/jordanbchilds))
-* conor ([CnrLwlss](https://github.com/CnrCwlss))
+* Conor ([CnrLwlss](https://github.com/CnrCwlss))
