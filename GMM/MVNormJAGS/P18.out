@@ -1,0 +1,11 @@
+[1] "P18"
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 2902
+   Unobserved stochastic nodes: 1699
+   Total graph size: 9758
+
+Initializing model
+
