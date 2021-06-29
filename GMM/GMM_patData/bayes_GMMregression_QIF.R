@@ -181,8 +181,11 @@ model {
 }
 "
 # create files to store raw output and figures
-dir.create(file.path("Output/Output_TGo"), showWarnings = FALSE)
+dir.create(file.path("Output"), showWarnings = FALSE)
+dir.create(file.path("Output/Output_TGo"),  showWarnings = FALSE)
+dir.create(file.path("PDF"), showWarnings = FALSE)
 dir.create(file.path("PDF/PDF_TGo"), showWarnings = FALSE)
+dir.create(file.path("PNG"), showWarnings = FALSE)
 dir.create(file.path("PNG/PNG_TGo"), showWarnings = FALSE)
 
 # all datasets
@@ -320,8 +323,10 @@ for(fulldat in fulldats){
       #                    "probdiff", "Y_syn[1]", "Y_syn[2]")])
       # par(mfrow=c(1,1))
       
+      class_posterior_ctrl = posterior_ctrl[, grepl('z', colnames(posterior_ctrl))]
       summ_ctrl = summary(output_ctrl)
-      classifs_ctrl = summ_ctrl$statistics[grepl("z",rownames(summ_ctrl$statistics)),"Mean"]
+
+      classifs_ctrl = colMeans(class_posterior_ctrl)
       
       # prior and posterior prediction for control data
       predpsumm_ctrl=summary(output_ctrl_priorpred)
@@ -339,7 +344,7 @@ for(fulldat in fulldats){
                                     "probdiff", "Y_syn[1]", "Y_syn[2]")],
                   posterior_ctrl_file,row.names=FALSE,quote=FALSE)
       
-    }else{ # if file exists load previous data
+    } else { # if file exists load previous data
 
       posterior_ctrl = read.delim(posterior_ctrl_file, sep=" ",stringsAsFactors=FALSE)
       
@@ -429,15 +434,7 @@ for(fulldat in fulldats){
         colnames(posterior_pat) = colnames(output_pat[[1]])
         colnames(prior_pat) = colnames(output_pat_priorpred[[1]])
         
-        summ_pat = summary(output_pat)
-        #classifs_pat = summ_pat$statistics[grepl("z",rownames(summ_pat$statistics)),"Mean"]
         classifs_pat = colMeans(class_posterior_pat)
-        
-        #print(summ_pat)
-        #plot(converge_pat)
-        #autocorr.plot(converge_pat)
-        #pairs(as.matrix(converge_pat))
-        #crosscorr.plot(converge_pat)
         
         #predpsumm_pat=summary(output_pat_priorpred)
         pdf(file.path("PDF/PDF_TGo",paste0(outroot,".pdf")),width=14,height=8.5)
