@@ -1,0 +1,20 @@
+[1] "P04"
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 2358
+   Unobserved stochastic nodes: 1188
+   Total graph size: 7170
+
+Initializing model
+
+
+*********************************************************************
+Kruschke, J. K. (2015). Doing Bayesian Data Analysis, Second Edition:
+A Tutorial with R, JAGS, and Stan. Academic Press / Elsevier.
+*********************************************************************
+
+WARNING: Previous graphics windows will be closed because of too many open windows.
+TO CONTINUE, PRESS <ENTER> IN R CONSOLE.
+
