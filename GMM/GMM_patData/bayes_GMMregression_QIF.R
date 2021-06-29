@@ -348,6 +348,11 @@ for(fulldat in fulldats){
 
       posterior_ctrl = read.delim(posterior_ctrl_file, sep=" ",stringsAsFactors=FALSE)
       
+      colnames(posterior_ctrl) = c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+                                   "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                                   "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                                   "probdiff", "Y_syn[1]", "Y_syn[2]")
+      
     }
     
     ###
@@ -451,7 +456,10 @@ for(fulldat in fulldats){
         
         class_pat_file = file.path("Output/Output_TGo", paste0(outroot, "__CLASS.txt"))
         posterior_pat = read.delim(posterior_file, sep=" ",stringsAsFactors=FALSE)
-        
+        colnames(posterior_pat) = c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+                                    "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                                    "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                                    "probdiff", "Y_syn[1]", "Y_syn[2]")
       } 
     } # pats
   } # chans
