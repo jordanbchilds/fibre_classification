@@ -34,12 +34,7 @@ comparedensities=function(priorvec, posteriorvec, xlab="", main="", xlim=-99){
 priorpost = function(ctrl_data=NULL, prior, posterior, data, class_posterior=NULL, classifs, title){
   # output: plots the prior and posterior regression lines and data
   
-  op = par(mfrow=c(1,2)) #,mar = c(5.5,5.5,3,3))
-  #for(param in c("mu","tau","probdiff", "")) {
-  #  xlimp = -99
-  #  if(param=="probdiff") xlimp = c(0.0,1.0)
-  #  comparedensities(prior[[param]],posterior[[param]], xlab=param, xlim=xlimp)
-  #}
+  op = par(mfrow=c(1,2))
   if(is.null(class_posterior)){
     class_posterior = colMeans( posterior[,grepl("z",colnames(posterior))])
   }
