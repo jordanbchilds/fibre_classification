@@ -334,7 +334,7 @@ for(fulldat in fulldats){
       
       pdf(file.path("PDF/PDF_TGo",paste0(ctrlroot,".pdf")),width=14,height=7)
       priorpost(prior=prior_ctrl, posterior=posterior_ctrl, data=data_ctrl, 
-                classifs=classifs_ctrl, titel=paste(froot,"CTRL"))
+                classifs=classifs_ctrl, title=paste(froot,"CTRL"))
       dev.off()
       
       
