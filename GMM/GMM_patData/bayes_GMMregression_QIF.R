@@ -254,7 +254,7 @@ for(fulldat in fulldats){
     # froot: data name 
     outroot_ctrl = paste(froot,"CTRL",chan,sep="__")
     # saves posterior draws in "Output" file
-    posterior_ctrl_file = file.path("Output/Output_TGo/",paste0(outroot_ctrl,"__POSTERIOR.txt"))
+    posterior_ctrl_file = file.path("Output/Output_TGo",paste0(outroot_ctrl,"__POSTERIOR.txt"))
     
     # dataframe for mean intensity of Control data 
     control = dat[(dat$fn%in%crl)&(dat$type=="Mean intensity"),]
@@ -327,7 +327,7 @@ for(fulldat in fulldats){
       predpsumm_ctrl=summary(output_ctrl_priorpred)
       ctrlroot = paste(froot,"CONTROL",chan,sep="__") 
       
-      pdf(file.path("PDF/PDF_TGo/",paste0(ctrlroot,".pdf")),width=14,height=7)
+      pdf(file.path("PDF/PDF_TGo",paste0(ctrlroot,".pdf")),width=14,height=7)
       priorpost(prior=prior_ctrl, posterior=posterior_ctrl, data=data_ctrl, 
                 classifs=classifs_ctrl, titel=paste(froot,"CTRL"))
       dev.off()
@@ -378,7 +378,7 @@ for(fulldat in fulldats){
     for(pat in pts){ # loop through patients
       outroot = paste(froot,pat,chan,sep="__")
       patient = dat[(dat$fn==pat)&(dat$type=="Mean intensity"),] 
-      posterior_file = file.path("Output/Output_TGo/",paste0(outroot,"__POSTERIOR.txt"))
+      posterior_file = file.path("Output/Output_TGo",paste0(outroot,"__POSTERIOR.txt"))
       
       if(!file.exists(posterior_file)){ # regression for mitochondrial disease patients
         # Block off file from analysis
@@ -440,7 +440,7 @@ for(fulldat in fulldats){
         #crosscorr.plot(converge_pat)
         
         #predpsumm_pat=summary(output_pat_priorpred)
-        pdf(file.path("PDF/PDF_TGo/",paste0(outroot,".pdf")),width=14,height=8.5)
+        pdf(file.path("PDF/PDF_TGo",paste0(outroot,".pdf")),width=14,height=8.5)
         priorpost(ctrl_data=XY_ctrl, prior=prior_pat, posterior=posterior_pat, 
                   data=data_pat, classifs=classifs_pat, title=paste(froot,pat) )
         # title(paste(froot,pat), line = -1, outer = TRUE)
@@ -452,7 +452,7 @@ for(fulldat in fulldats){
                                      "probdiff", "Y_syn[1]", "Y_syn[2]")],posterior_file,row.names=FALSE,quote=FALSE)
       }else{ # if file exists load previous data
         
-        class_pat_file = file.path("Output/Output_TGo/", paste0(outroot, "__CLASS.txt"))
+        class_pat_file = file.path("Output/Output_TGo", paste0(outroot, "__CLASS.txt"))
         posterior_pat = read.delim(posterior_file, sep=" ",stringsAsFactors=FALSE)
         
       } 
