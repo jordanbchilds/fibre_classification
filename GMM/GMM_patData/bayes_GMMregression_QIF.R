@@ -6,7 +6,8 @@ library(beanplot)
 library(MASS)
 source("../BootStrapping/parseData.R", local = TRUE)
 
-DarkGrey = rgb(169,169,159, max=255, alpha=50)
+myDarkGrey = rgb(169,169,159, max=255, alpha=50)
+myGreen = rgb(0,255,0,max=255,alpha=50)
 
 cramp = colorRamp(c(rgb(0,0,1,0.25),rgb(1,0,0,0.25)),alpha=TRUE)
 # rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
@@ -34,36 +35,56 @@ comparedensities=function(priorvec, posteriorvec, xlab="", main="", xlim=-99){
   points(density(priorvec),lwd=3,col="black",type="l")
 }
 
-priorpost = function(ctrl_data=NULL, prior, posterior, data, class_posterior=NULL, classifs, title){
+priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior, 
+                     pat_data=NULL, pat_prior=NULL, pat_posterior=NULL, 
+                     class_posterior=NULL, classifs=NULL, title){
   # output: plots the prior and posterior regression lines and data
   
-  op = par(mfrow=c(1,2),mar = c(5.5,5.5,3,3))
-  #for(param in c("mu","tau","probdiff", "")) {
-  #  xlimp = -99
-  #  if(param=="probdiff") xlimp = c(0.0,1.0)
-  #  comparedensities(prior[[param]],posterior[[param]], xlab=param, xlim=xlimp)
-  #}
-  if(is.null(class_posterior)){
-    class_posterior = colMeans( posterior[,grepl("z",colnames(posterior))])
-  }
-  if( is.null(ctrl_data) ){
-    plot( data$Y[,1], data$Y[,2], col='darkgrey', pch=20, cex.lab=2, cex.axis=1.5,
-          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"))
-    contour( kde2d(prior[,'Y_syn[1]'], prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
-  } else {
-    plot( ctrl_data[,1], ctrl_data[,2], col='darkgrey', pch=20, cex.lab=2, cex.axis=1.5,
-          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), 
-          ylim=(range(c(ctrl_data[,2], data$Y[,2]))+c(-1,1)), xlim=(range(c(ctrl_data[,2], data$Y[,2]))+c(-1,1)) )
-    points( data$Y[,1], data$Y[,2], col='green', pch=20 )
-    contour( kde2d(prior[,'Y_syn[1]'], prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
+  op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
+  if( is.null(pat_data) ){ # plot ctrl prior and posterior
     
+    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
+          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Prior')
+    contour( kde2d(ctrl_prior[,'Y_syn[1]'], ctrl_prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    
+    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
+          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Posterior')
+    contour( kde2d(ctrl_posterior[,'Y_syn[1]'], ctrl_posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    
+    title(main=title, line = -1, outer = TRUE)
+    
+    prior = ctrl_prior
+    posterior = ctrl_posterior
+  } else { # plot ctrl prior-posterior and patient prior-posterior
+    class_posterior = colMeans( pat_posterior[,grepl("z",colnames(pat_posterior))])
+    
+    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myGreen, pch=20, cex.lab=2, cex.axis=1.5,
+          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Contorl Prior')
+    contour( kde2d(ctrl_prior[,'Y_syn[1]'], ctrl_prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    
+    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myGreen, pch=20, cex.lab=2, cex.axis=1.5,
+          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Posterior')
+    contour( kde2d(ctrl_posterior[,'Y_syn[1]'], ctrl_posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    
+    title(main=title, line = -1, outer = TRUE)
+    
+    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
+          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Patient Prior',
+          ylim=(range(c(ctrl_data$Y[,2], pat_data$Y[,2]))+c(-1,1)), xlim=(range(c(ctrl_data$Y[,1], pat_data$Y[,1]))+c(-1,1)) )
+    points(  pat_data$Y[,1], pat_data$Y[,2], col=classcols(classifs),  pch=20 )
+    contour( kde2d(pat_prior[,'Y_syn[1]'], pat_prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
+    
+    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
+          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Patient Posterior',
+          ylim=(range(c(ctrl_data$Y[,2], pat_data$Y[,2]))+c(-1,1)), xlim=(range(c(ctrl_data$Y[,1], pat_data$Y[,1]))+c(-1,1)) )
+    points( pat_data$Y[,1], pat_data$Y[,2], col=classcols(class_posterior), pch=20 )
+    contour( kde2d(pat_posterior[,'Y_syn[1]'], pat_posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
+    
+    title(main=title, line = -1, outer = TRUE)
+    
+    prior = pat_prior
+    posterior = pat_posterior
   }
-  
-  ## classification and full posterior distributions
-  plot( data$Y[,1], data$Y[,2], col=classcols(class_posterior), pch=20, cex.lab=2,cex.axis=1.5,
-        xlab=paste0("log(",mitochan,")"),ylab=paste0("log(",chan,")"))
-  contour( kde2d(posterior[,'Y_syn[1]'], posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
-  title(main=title, line = -1, outer = TRUE)
   
   par(mfrow=c(2,2))
   ## mu_1
@@ -85,7 +106,7 @@ priorpost = function(ctrl_data=NULL, prior, posterior, data, class_posterior=NUL
       xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
       main=expression(mu[2]~'Posterior Density') )
   title(main=title, line = -1, outer = TRUE)
-
+  
   
   par(mfrow=c(2,3))
   ## tau_1
@@ -144,11 +165,11 @@ priorpost = function(ctrl_data=NULL, prior, posterior, data, class_posterior=NUL
         main=expression(tau[2]~'Posterior Density') )
   title(main=title, line = -1, outer = TRUE)
   
-  if( !is.null(ctrl_data) ){
+  if( !is.null(pat_data) ){
     par(mfrow=c(1,2))
     plot( density(posterior[,'probdiff']), cex.lab=2, cex.axis=1.5,
           xlab='probdiff', ylab='density', lwd=2, col='red', main='probdiff Density')
-    lines( density(rbeta(5000,data_pat$alpha_p, data_pat$beta_p)), lwd=2, col='green')
+    lines( density(rbeta(5000,pat_data$alpha_p, pat_data$beta_p)), lwd=2, col='green')
     title(main=title, line = -1, outer = TRUE)
   }
   par(op)
@@ -221,7 +242,7 @@ for(fulldat in fulldats){
   # names each element of chans with elements of mchans
   names(chans) = mchans
   
-  dat = read.delim(file.path(paste("../BootStrapping",fulldat, sep="/")), stringsAsFactors=FALSE)
+  dat = read.delim(file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
   # maps {Ch1,Ch2,Ch3,Ch4,Area} to {LAMA1,MTCO1,VDAC1,NDUFB8,Area}
   dat$Channel = chans[dat$Channel] 
   
@@ -234,10 +255,26 @@ for(fulldat in fulldats){
   correctnpc = TRUE
   updatechans = FALSE
   
-  dat = getData(gsub(".RAW", ".RAW_ren", fulldat), cord,
+  # dat = getData(gsub(".RAW", ".RAW_ren", fulldat), cord,
+  #               mitochan = mitochan,updatechans = updatechans, correctnpc = correctnpc)
+  # dat$fn = gsub("_.0", "", dat$filename)
+  # dat$pch = paste(dat$fn,dat$ch,sep="_")
+  
+  correctnpc = FALSE
+  
+  dat = getData(gsub(".RAW", ".RAW_ren", fulldat), c(cord,"Area"),
                 mitochan = mitochan,updatechans = updatechans, correctnpc = correctnpc)
   dat$fn = gsub("_.0", "", dat$filename)
   dat$pch = paste(dat$fn,dat$ch,sep="_")
+  
+  # if not correcting, NPC need to be removed
+  if(!correctnpc) {
+    dat = dat[grepl("OXPHOS",dat$filename),]
+    dat$filename = gsub(" OXPHOS","",dat$filename)
+    dat$fn = gsub(" OXPHOS","",dat$fn)
+    dat$pch = gsub("OXPHOS_","",dat$pch)
+  }
+  
   
   # Get plot axis ranges
   lims = list()
@@ -333,8 +370,8 @@ for(fulldat in fulldats){
       ctrlroot = paste(froot,"CONTROL",chan,sep="__") 
       
       pdf(file.path("PDF/PDF_TGo",paste0(ctrlroot,".pdf")),width=14,height=7)
-      priorpost(prior=prior_ctrl, posterior=posterior_ctrl, data=data_ctrl, 
-                classifs=classifs_ctrl, title=paste(froot,"CTRL"))
+      priorpost(ctrl_prior=prior_ctrl, ctrl_posterior=posterior_ctrl, ctrl_data=data_ctrl, 
+                title=paste(froot,"CTRL"))
       dev.off()
       
       
@@ -443,9 +480,10 @@ for(fulldat in fulldats){
         
         #predpsumm_pat=summary(output_pat_priorpred)
         pdf(file.path("PDF/PDF_TGo",paste0(outroot,".pdf")),width=14,height=8.5)
-        priorpost(ctrl_data=XY_ctrl, prior=prior_pat, posterior=posterior_pat, 
-                  data=data_pat, classifs=classifs_pat, title=paste(froot,pat) )
-        # title(paste(froot,pat), line = -1, outer = TRUE)
+        priorpost(ctrl_data=data_ctrl, ctrl_prior=prior_ctrl, ctrl_posterior=posterior_ctrl, 
+                  pat_prior=prior_pat, pat_posterior=posterior_pat, 
+                  pat_data=data_pat, classifs=classifs_pat, title=paste(froot,pat) )
+        
         dev.off()
         write.table(as.numeric(classifs_pat),file.path("Output/Output_TGo",paste0(outroot,"__CLASS.txt")),row.names=FALSE,quote=FALSE,col.names=FALSE)
         write.table(posterior_pat[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
