@@ -167,7 +167,7 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
   
   if( !is.null(pat_data) ){
     par(mfrow=c(1,2))
-    plot( density(posterior[,'probdiff']), cex.lab=2, cex.axis=1.5,
+    plot( density(posterior[,'probdiff']), cex.lab=2, cex.axis=1.5, xlim=c(0,1),
           xlab='probdiff', ylab='density', lwd=2, col='red', main='probdiff Density')
     lines( density(rbeta(5000,pat_data$alpha_p, pat_data$beta_p)), lwd=2, col='green')
     title(main=title, line = -1, outer = TRUE)
@@ -226,9 +226,9 @@ MCMCUpdates_Thin = 1
 
 
 # choose which datasets to estimate parameters for
-for(fulldat in fulldats){
+# for(fulldat in fulldats){
 # for(fulldat in c("IMV.E01.P02.PMT.M3243AG.QIF.TGo.RAW.txt")){
-# for(fulldat in c("IMV.E02.P01.PMT.M3243AG.QIF.TGo.RAW.txt")){
+for(fulldat in c("IMV.E02.P01.PMT.M3243AG.QIF.TGo.RAW.txt")){
   # removes '.RAW.txt' from fulldat, stores as froot
   froot = gsub(".RAW.txt","",fulldat)
   

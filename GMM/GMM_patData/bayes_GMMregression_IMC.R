@@ -1,9 +1,12 @@
+
+
 library(rjags)
 library(beanplot)
 library(MASS)
 source("../BootStrapping/parseData.R", local = TRUE)
 
-DarkGrey = rgb(169,169,159, max=255, alpha=50)
+myDarkGrey = rgb(169,169,159, max=255, alpha=50)
+myGreen = rgb(0,255,0,max=255,alpha=50)
 
 cramp = colorRamp(c(rgb(0,0,1,0.25),rgb(1,0,0,0.25)),alpha=TRUE)
 # rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
@@ -31,42 +34,56 @@ comparedensities=function(priorvec, posteriorvec, xlab="", main="", xlim=-99){
   points(density(priorvec),lwd=3,col="black",type="l")
 }
 
-priorpost = function(ctrl_data=NULL, prior, posterior, data, class_posterior=NULL, classifs, title){
+priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior, 
+                     pat_data=NULL, pat_prior=NULL, pat_posterior=NULL, 
+                     class_posterior=NULL, classifs=NULL, title){
   # output: plots the prior and posterior regression lines and data
   
-  op = par(mfrow=c(1,2))
-  if(is.null(class_posterior)){
-    class_posterior = colMeans( posterior[,grepl("z",colnames(posterior))])
-  }
-  if( is.null(ctrl_data) ){
-    plot( data$Y[,1], data$Y[,2], col='darkgrey', pch=19, cex.lab=2, cex.axis=1.5,
-          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"))
-    contour( kde2d(prior[,'Y_syn[1]'], prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+  op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
+  if( is.null(pat_data) ){ # plot ctrl prior and posterior
     
-    plot( data$Y[,1], data$Y[,2], col=classcols(class_posterior), pch=19, cex.lab=2,cex.axis=1.5,
-          xlab=paste0("log(",mitochan,")"),ylab=paste0("log(",chan,")"))
-    contour( kde2d(posterior[,'Y_syn[1]'], posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
+    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
+          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Prior')
+    contour( kde2d(ctrl_prior[,'Y_syn[1]'], ctrl_prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    
+    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
+          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Posterior')
+    contour( kde2d(ctrl_posterior[,'Y_syn[1]'], ctrl_posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    
     title(main=title, line = -1, outer = TRUE)
     
-  } else {
-    plot( ctrl_data[,1], ctrl_data[,2], col='darkgrey', pch=20, cex.lab=2, cex.axis=1.5,
-          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), 
-          ylim=(range(c(ctrl_data[,2], data$Y[,2]))+c(-1,1)), xlim=(range(c(ctrl_data[,2], data$Y[,2]))+c(-1,1)) )
-    points( data$Y[,1], data$Y[,2], col='green', pch=19 )
-    contour( kde2d(prior[,'Y_syn[1]'], prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
+    prior = ctrl_prior
+    posterior = ctrl_posterior
+  } else { # plot ctrl prior-posterior and patient prior-posterior
+    class_posterior = colMeans( pat_posterior[,grepl("z",colnames(pat_posterior))])
     
-    plot( ctrl_data[,1], ctrl_data[,2], col=DarkGrey, pch=19, cex.lab=2,cex.axis=1.5,
-          xlab=paste0("log(",mitochan,")"),ylab=paste0("log(",chan,")"))
-    points( data$Y[,1], data$Y[,2], col=classcols(class_posterior), pch=20 )
-    contour( kde2d(posterior[,'Y_syn[1]'], posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
+    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myGreen, pch=20, cex.lab=2, cex.axis=1.5,
+          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Contorl Prior')
+    contour( kde2d(ctrl_prior[,'Y_syn[1]'], ctrl_prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    
+    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myGreen, pch=20, cex.lab=2, cex.axis=1.5,
+          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Posterior')
+    contour( kde2d(ctrl_posterior[,'Y_syn[1]'], ctrl_posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    
     title(main=title, line = -1, outer = TRUE)
+    
+    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
+          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Patient Prior',
+          ylim=(range(c(ctrl_data$Y[,2], pat_data$Y[,2]))+c(-1,1)), xlim=(range(c(ctrl_data$Y[,1], pat_data$Y[,1]))+c(-1,1)) )
+    points(  pat_data$Y[,1], pat_data$Y[,2], col=classcols(classifs),  pch=20 )
+    contour( kde2d(pat_prior[,'Y_syn[1]'], pat_prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
+    
+    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
+          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Patient Posterior',
+          ylim=(range(c(ctrl_data$Y[,2], pat_data$Y[,2]))+c(-1,1)), xlim=(range(c(ctrl_data$Y[,1], pat_data$Y[,1]))+c(-1,1)) )
+    points( pat_data$Y[,1], pat_data$Y[,2], col=classcols(class_posterior), pch=20 )
+    contour( kde2d(pat_posterior[,'Y_syn[1]'], pat_posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
+    
+    title(main=title, line = -1, outer = TRUE)
+    
+    prior = pat_prior
+    posterior = pat_posterior
   }
-  
-  ## classification and full posterior distributions
-  plot( data$Y[,1], data$Y[,2], col=classcols(class_posterior), pch=20, cex.lab=2,cex.axis=1.5,
-        xlab=paste0("log(",mitochan,")"),ylab=paste0("log(",chan,")"))
-  contour( kde2d(posterior[,'Y_syn[1]'], posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
-  title(main=title, line = -1, outer = TRUE)
   
   par(mfrow=c(2,2))
   ## mu_1
@@ -147,11 +164,11 @@ priorpost = function(ctrl_data=NULL, prior, posterior, data, class_posterior=NUL
            main=expression(tau[2]~'Posterior Density') )
   title(main=title, line = -1, outer = TRUE)
   
-  if( !is.null(ctrl_data) ){
+  if( !is.null(pat_data) ){
     par(mfrow=c(1,2))
-    plot( density(posterior[,'probdiff']), cex.lab=2, cex.axis=1.5,
+    plot( density(posterior[,'probdiff']), cex.lab=2, cex.axis=1.5, xlim=c(0,1),
           xlab='probdiff', ylab='density', lwd=2, col='red', main='probdiff Density')
-    lines( density(rbeta(5000,data_pat$alpha_p, data_pat$beta_p)), lwd=2, col='green')
+    lines( density(rbeta(5000,pat_data$alpha_p, pat_data$beta_p)), lwd=2, col='green')
     title(main=title, line = -1, outer = TRUE)
   }
   par(op)
@@ -182,10 +199,13 @@ model {
   Y_syn ~ dmnorm(mu[,class_syn], tau[,,class_syn])
 }
 "
+dir.create(file.path("Output"), showWarnings = FALSE)
+dir.create(file.path("PDF"), showWarnings = FALSE)
+dir.create(file.path("PNG"), showWarnings = FALSE)
 
-dir.create(file.path("Output_IMC"), showWarnings = FALSE)
-dir.create(file.path("PDF_IMC"), showWarnings = FALSE)
-dir.create(file.path("PNG_IMC"), showWarnings = FALSE)
+dir.create(file.path("Output/Output_IMC"), showWarnings = FALSE)
+dir.create(file.path("PDF/PDF_IMC"), showWarnings = FALSE)
+dir.create(file.path("PNG/PNG_IMC"), showWarnings = FALSE)
 
 # 12,000 burn-in
 MCMCUpdates = 2000
@@ -203,7 +223,7 @@ colnames(imc_data)
 unique(imc_data$channel)
 
 # removing unwanted info 
-imc_chan = c('SDHA','OSCP', 'VDAC1', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
+imc_chan = c('SDHA','OSCP', 'VDAC1', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
 imc_data_1.0 = imc_data[imc_data$channel %in% imc_chan, ]
 
 imcDat=imc_data_1.0
@@ -229,7 +249,7 @@ pts = grep("P", sbj, value = TRUE)
 for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
   
   outroot_ctrl = paste( froot, 'CTRL', chan, sep='__')
-  posterior_ctrl_file = file.path("Output_IMC",paste0(outroot_ctrl,"__POSTERIOR.txt"))
+  posterior_ctrl_file = file.path("Output/Output_IMC",paste0(outroot_ctrl,"__POSTERIOR.txt"))
   
   # data frame for mean intensity 
   control = imcDat[(imcDat$patient_type=='control')&(imcDat$type=='mean intensity'), ]
@@ -242,7 +262,7 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
   if(!file.exists(posterior_ctrl_file)){
     
     # define prior parameters
-    mu1_mean = c(0,0)
+    mu1_mean = c(5,5)
     mu2_mean = c(0,0)
     mu1_prec = 0.25*diag(2)
     mu2_prec = 0.25*diag(2)
@@ -307,10 +327,10 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
     predpsumm_ctrl=summary(output_ctrl_priorpred)
     ctrlroot = paste(froot,"CONTROL",chan,sep="__") 
     
-    pdf(file.path("PDF_IMC",paste0(ctrlroot,".pdf")),width=14,height=7)
+    pdf(file.path("PDF/PDF_IMC",paste0(ctrlroot,".pdf")),width=14,height=7)
     
-    priorpost(prior=prior_ctrl, posterior=posterior_ctrl, data=data_ctrl, 
-              classifs=classifs_ctrl, title=paste(froot,"CTRL", chan, sep='__'))
+    priorpost(ctrl_prior=prior_ctrl, ctrl_posterior=posterior_ctrl, ctrl_data=data_ctrl, 
+              title=paste(froot,"CTRL"))
     #title(paste(froot,"CTRL"), line = -1, outer = TRUE)
     dev.off()
     
@@ -337,13 +357,14 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
   # define the expected value of the patient prior (prec_pred) be the mean of the control
   # posterior
   prec_pred = matrix( colMeans(posterior_ctrl[,c('tau[1,1,1]', 'tau[1,2,1]', 'tau[1,2,1]','tau[2,2,1]')]),
-                      nrow=2, ncol=2, byrow=TRUE)
+                      nrow=2, ncol=2, byrow=TRUE )
   
   # increase the covariance between 'x' and 'y', keep variances the same
   Sigma = solve(prec_pred)
   delta = matrix(c(1,-0.9,-0.9,1), ncol=2, nrow=2, byrow=TRUE)
   # re-define the expectation of the prior
   prec_pred = solve( Sigma + delta )
+  
   # define prior parameter
   U_1 = prec_pred/n_1
   n_2 = 3
@@ -365,13 +386,13 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
     
     patient = imcDat[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"), ] 
     
-    posterior_file = file.path("Output_IMC",paste0(outroot,"__POSTERIOR.txt"))
+    posterior_file = file.path("Output/Output_IMC",paste0(outroot,"__POSTERIOR.txt"))
     
     if(!file.exists(posterior_file)){ # regression for mitochondrial disease patients
       # Block off file from analysis
       file.create(posterior_file)
       
-      op = par(mfrow=c(2,3) ) #, mar = c(5.5,5.5,3,3))
+      op = par(mfrow=c(2,3) ) 
       
       Xpat = log(patient$value[patient$channel==mitochan])
       Ypat = log(patient$value[patient$channel==chan]) 
@@ -427,19 +448,20 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
       #crosscorr.plot(converge_pat)
       
       #predpsumm_pat=summary(output_pat_priorpred)
-      pdf(file.path("PDF",paste0(outroot,".pdf")),width=14,height=8.5)
-      priorpost(ctrl_data=XY_ctrl, prior=prior_pat, posterior=posterior_pat, 
-                data=data_pat, classifs=classifs_pat, title=paste(froot,pat) )
+      pdf(file.path("PDF/PDF_IMC",paste0(outroot,".pdf")),width=14,height=8.5)
+      priorpost(ctrl_data=data_ctrl, ctrl_prior=prior_ctrl, ctrl_posterior=posterior_ctrl, 
+                pat_prior=prior_pat, pat_posterior=posterior_pat, 
+                pat_data=data_pat, classifs=classifs_pat, title=paste(froot,pat)  )
       # title(paste(froot,pat), line = -1, outer = TRUE)
       dev.off()
-      write.table(as.numeric(classifs_pat),file.path("Output",paste0(outroot,"__CLASS.txt")),row.names=FALSE,quote=FALSE,col.names=FALSE)
+      write.table(as.numeric(classifs_pat),file.path("Output/Output_IMC",paste0(outroot,"__CLASS.txt")),row.names=FALSE,quote=FALSE,col.names=FALSE)
       write.table(posterior_pat[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                    "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                                    "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
                                    "probdiff", "Y_syn[1]", "Y_syn[2]")],posterior_file,row.names=FALSE,quote=FALSE)
     }else{ # if file exists load previous data
       
-      class_pat_file = file.path("Output_IMC", paste0(outroot, "__CLASS.txt"))
+      class_pat_file = file.path("Output/Output_IMC", paste0(outroot, "__CLASS.txt"))
     }
   }
 }
