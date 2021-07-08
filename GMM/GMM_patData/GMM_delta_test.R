@@ -498,7 +498,7 @@ for( chan in c('NDUFB8', 'GRIM19')){ # delta test
   ### prior specification for patient data
   ###
   
-  n_1 = 6 # degrees of freedom
+
   # define the expected value of the patient prior (prec_pred) be the mean of the control
   # posterior
   prec_prior_pred = matrix( colMeans(posterior_ctrl[,c('tau[1,1,1]', 'tau[1,2,1]', 'tau[1,2,1]','tau[2,2,1]')]),
@@ -506,13 +506,15 @@ for( chan in c('NDUFB8', 'GRIM19')){ # delta test
   
   # increase the covariance between 'x' and 'y', keep variances the same
   Sigma = solve(prec_prior_pred)
-  delta_vec = c( 0,0,0,0)
+  delta_vec = c(0,0,0,0)
   delta = matrix(delta_vec, ncol=2, nrow=2, byrow=TRUE)
   # re-define the expectation of the prior
-  prec_pred = solve( Sigma + delta )
+  prec_prior_pred = solve( Sigma + delta )
   
   # define prior parameter
+  n_1 = 6 # degrees of freedom
   U_1 = prec_prior_pred/n_1
+  
   n_2 = 3
   U_2 = solve( matrix( c(2,0,0,2), nrow=2, ncol=2, byrow=TRUE) )/n_2
   

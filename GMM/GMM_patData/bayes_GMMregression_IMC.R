@@ -6,9 +6,10 @@ library(MASS)
 source("../BootStrapping/parseData.R", local = TRUE)
 
 myDarkGrey = rgb(169,169,159, max=255, alpha=50)
-myGreen = rgb(0,255,0,max=255,alpha=50)
+myGreen = rgb(25,90,0,max=255,alpha=50)
+myYellow = rgb(225,200,50,max=255, alpha=50)
 
-cramp = colorRamp(c(rgb(0,0,1,0.25),rgb(1,0,0,0.25)),alpha=TRUE)
+cramp = colorRamp(c(rgb(1,0,0,0.25),rgb(0,0,1,0.25)),alpha=TRUE)
 # rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
 # 0.25 determines how transparent the colour is, 1 being opaque 
 # cramp is a function which generates colours on a scale between two specifies colours
@@ -36,7 +37,7 @@ comparedensities=function(priorvec, posteriorvec, xlab="", main="", xlim=-99){
 
 priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior, 
                      pat_data=NULL, pat_prior=NULL, pat_posterior=NULL, 
-                     class_posterior=NULL, classifs=NULL, title){
+                     class_posterior=NULL, classifs=NULL, output_mcmc=NULL, title){
   # output: plots the prior and posterior regression lines and data
   
   op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
@@ -70,7 +71,7 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Patient Prior',
           ylim=(range(c(ctrl_data$Y[,2], pat_data$Y[,2]))+c(-1,1)), xlim=(range(c(ctrl_data$Y[,1], pat_data$Y[,1]))+c(-1,1)) )
-    points(  pat_data$Y[,1], pat_data$Y[,2], col=classcols(classifs),  pch=20 )
+    points(  pat_data$Y[,1], pat_data$Y[,2], col=myGreen,  pch=20 )
     contour( kde2d(pat_prior[,'Y_syn[1]'], pat_prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
     
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
@@ -171,6 +172,15 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
     lines( density(rbeta(5000,pat_data$alpha_p, pat_data$beta_p)), lwd=2, col='green')
     title(main=title, line = -1, outer = TRUE)
   }
+  if( !is.null(output_mcmc) ){
+    par(mfrow=c(2,3))
+    plot(output_mcmc[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+                        "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                        "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                        "probdiff", "Y_syn[1]", "Y_syn[2]")])
+    par(mfrow=c(1,1))
+  }
+
   par(op)
 } 
 
@@ -191,7 +201,7 @@ model {
   
   # classification
   p ~ dbeta(alpha_p, beta_p)
-  probdiff = ifelse( pi==1, p, 1)
+  probdiff = ifelse( pi==1, p, 0) # probability of being 'like-control'
   
   # posterior distribution
   z_syn ~ dbern(probdiff)
@@ -207,16 +217,14 @@ dir.create(file.path("Output/Output_IMC"), showWarnings = FALSE)
 dir.create(file.path("PDF/PDF_IMC"), showWarnings = FALSE)
 dir.create(file.path("PNG/PNG_IMC"), showWarnings = FALSE)
 
-# 12,000 burn-in
+# burn-in, chain length, thinning lag
 MCMCUpdates = 2000
-# 5,000 posterior draws after burn-in
-MCMCUpdates_Report = 5000
-# thin with lag-10- > 5,000 draws from posterior
+MCMCUpdates_Report = 2500
 MCMCUpdates_Thin = 1
 
 fulldat = 'IMC.RAW.txt'
 
-imc_data = read.delim( file.path("../BootStrapping/IMC.RAW.txt"), stringsAsFactors=FALSE)
+imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
 colnames(imc_data)
 
@@ -241,13 +249,12 @@ for(ch in imc_chan){
 
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
-pts = NULL # what's the point in this?
-pts = grep("P", sbj, value = TRUE) 
+pts = grep("P", sbj, value = TRUE)
+
 
 
 # seperating the control patients 
 for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
-  
   outroot_ctrl = paste( froot, 'CTRL', chan, sep='__')
   posterior_ctrl_file = file.path("Output/Output_IMC",paste0(outroot_ctrl,"__POSTERIOR.txt"))
   
@@ -262,16 +269,16 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
   if(!file.exists(posterior_ctrl_file)){
     
     # define prior parameters
-    mu1_mean = c(5,5)
-    mu2_mean = c(0,0)
+    mu1_mean = c(4,4)
+    mu2_mean = c(5,5)
     mu1_prec = 0.25*diag(2)
     mu2_prec = 0.25*diag(2)
     U_1 = solve(matrix(c(2,0,0,2), ncol=2, nrow=2, byrow=TRUE))
     n_1 = 2
     U_2 = solve(matrix(c(2,0,0,2), ncol=2, nrow=2, byrow=TRUE))
     n_2 = 2
-    alpha_p = 2
-    beta_p = 2
+    alpha_p = 1
+    beta_p = 1
     pi = 0
     
     # Bayesian inference using JAGS
@@ -313,15 +320,7 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
                         "probdiff", "Y_syn[1]", "Y_syn[2]")])
     par(mfrow=c(1,1))
     
-    summ_ctrl = summary(output_ctrl)
-    classifs_ctrl = summ_ctrl$statistics[grepl("z",rownames(summ_ctrl$statistics)),"Mean"]
-    
-    # print MCMC output
-    #print(summ_ctrl)
-    #plot(output_ctrl)
-    #autocorr.plot(output_ctrl)
-    #pairs(as.matrix(output_ctrl))
-    #crosscorr.plot(output_ctrl)
+    classifs_ctrl = colMeans(posterior_ctrl[, grepl('z', colnames(posterior_ctrl))])
     
     # prior and posterior prediction for control data
     predpsumm_ctrl=summary(output_ctrl_priorpred)
@@ -361,7 +360,8 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
   
   # increase the covariance between 'x' and 'y', keep variances the same
   Sigma = solve(prec_pred)
-  delta = matrix(c(1,-0.9,-0.9,1), ncol=2, nrow=2, byrow=TRUE)
+  delta_vec = c(0,0,0,0)
+  delta = matrix(delta_vec, ncol=2, nrow=2, byrow=TRUE)
   # re-define the expectation of the prior
   prec_pred = solve( Sigma + delta )
   
@@ -376,8 +376,8 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
   mu2_mean = mu1_mean/2
   mu2_prec = solve( matrix( c(5,0,0,5), ncol=2, nrow=2, byrow=TRUE) )
   
-  alpha_p = 2
-  beta_p = 2
+  alpha_p = 1
+  beta_p = 1
   pi = 1
   
   for(pat in pts){ # loop through patients
@@ -410,7 +410,7 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
       data_pat_priorpred$Y = NULL
       data_pat_priorpred$N = 0
       
-      model_pat=jags.model(textConnection(modelstring), data=data_pat, n.chains=1) 
+      model_pat=jags.model(textConnection(modelstring), data=data_pat, n.chains=3) 
       
       model_pat_priorpred=jags.model(textConnection(modelstring), data=data_pat_priorpred) 
       update(model_pat,n.iter=MCMCUpdates)
@@ -433,25 +433,15 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
       posterior_pat = as.data.frame(output_pat[[1]])
       prior_pat = as.data.frame(output_pat_priorpred[[1]])
       
-      class_posterior_pat = posterior_pat[, grepl('z', colnames(posterior_pat))]
+      classifs_pat = colMeans( posterior_pat[, grepl('z', colnames(posterior_pat))] )
       colnames(posterior_pat) = colnames(output_pat[[1]])
       colnames(prior_pat) = colnames(output_pat_priorpred[[1]])
-      
-      summ_pat = summary(output_pat)
-      #classifs_pat = summ_pat$statistics[grepl("z",rownames(summ_pat$statistics)),"Mean"]
-      classifs_pat = colMeans(class_posterior_pat)
-      
-      #print(summ_pat)
-      #plot(converge_pat)
-      #autocorr.plot(converge_pat)
-      #pairs(as.matrix(converge_pat))
-      #crosscorr.plot(converge_pat)
-      
+
       #predpsumm_pat=summary(output_pat_priorpred)
       pdf(file.path("PDF/PDF_IMC",paste0(outroot,".pdf")),width=14,height=8.5)
       priorpost(ctrl_data=data_ctrl, ctrl_prior=prior_ctrl, ctrl_posterior=posterior_ctrl, 
                 pat_prior=prior_pat, pat_posterior=posterior_pat, 
-                pat_data=data_pat, classifs=classifs_pat, title=paste(froot,pat)  )
+                pat_data=data_pat, classifs=classifs_pat, output_mcmc=output_pat, title=paste(froot,pat)  )
       # title(paste(froot,pat), line = -1, outer = TRUE)
       dev.off()
       write.table(as.numeric(classifs_pat),file.path("Output/Output_IMC",paste0(outroot,"__CLASS.txt")),row.names=FALSE,quote=FALSE,col.names=FALSE)
