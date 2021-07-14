@@ -232,7 +232,7 @@ fulldats = c(
 # 10,000 burn-in
 MCMCUpdates = 2000
 # 10,000 posterior draws after burn-in
-MCMCUpdates_Report = 5000
+MCMCUpdates_Report = 3000
 # thin with lag-10 - > 1,000 draws from posterior
 MCMCUpdates_Thin = 1
 

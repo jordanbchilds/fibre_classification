@@ -67,124 +67,74 @@
 \section*{Intro}
 
 We wish to identify cells with mitochondrial dysfunction by the expression of proteins present. \\
-We have frozen tissues from patients with mitochondrial disease and tissues from `healthy' subjects. The classification task utilises Bayesian linear regression to identify the relationship between the levels of protein expression within healthy subjects, then we again use Bayesian linear regression to find the relationship in patient samples, basing prior beliefs for the parameters on the posterior distributions from the control data. This allows us to calculate the proportion of deficient fibres. A fibre is considered deficient if it lies outside the error bounds of the regression line, the prior belief is that deficient fibres would not have a higher level of protein expression than a `healthy' subject. 
+We have frozen tissues from patients with mitochondrial disease and tissues from `healthy' subjects. Our goal is to use a two component Gaussian mixture model (GMM) to classify patient fibres as `like control' and `not like control' and using a Bayesian approach for parameter inference. This allows us to calculate the proportion of deficient fibres. \\
 
-\section*{Previous Approach}
-Before using a Bayesian methodology fibres were categorised as deficient if the protein expression level fell below the 95\% predictive interval of a linear model fitted using least squares. This can be seen in Figure \ref{fig:PlotsWithDots}. This did not allow for there to be differences between the control and patient data. 
+We use information about from the control data to inform priors for the patient data. The posterior distributions for this is then used as a basis for the `like control' component of the GMM. 
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{freq_reg.png}
-    \caption{Old model for categorising deficient fibres.}
-    \label{fig:PlotsWithDots}
-\end{figure}
-Figure \ref{fig:StripByProt} shows the proportion of deficient fibres, in multiple samples from the same patient. A bootstrapping method was used to draw samples from this. 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.5\textwidth]{freq_prop.png}
-    \caption{Proportion of deficient fibres in a single patient, from different samples.}
-    \label{fig:StripByProt}
-\end{figure}
+\section*{The Model}
+Let $\boldsymbol{Y}=\left( \log\text{VDAC1},\text{  } \log\text{[protein expression]}  \right)^T$ and 
+\begin{equation}
+    \boldsymbol{Y}_i = \pi \text{N}\left( \boldsymbol{\mu}_1, T_1 \right) + (1-\pi)\text{N}(\boldsymbol{\mu}_2, T_2).
+\end{equation}
+Let $Z_i$ be an auxiliary variable to note the component membership for observation $i$. We model this using a Bernoulli distribution with parameter $p$, such that
+\begin{equation}
+    Z_i \sim \text{Bern}(p).
+\end{equation}
 
+When modelling the control data, we fit the same two-component GMM but set $p=0$. This allows all fibres in the control to classified as `like control'. When modelling patient data we give $p$ a prior distribution, such that
+\begin{equation}
+    p = \begin{cases}
+        \tilde{p}, & \text{if patient} \\
+        0, & \text{if control}
+    \end{cases}
+\end{equation}
+where $\tilde{p}\sim \text{Beta}(\alpha, \beta)$. The model parameters $\boldsymbol{\mu}_i$ and $T_i$ are given suitable bivariate normal distribution and Wishart distributions respectively.
 
-\section*{New Approach}
-
-Let the response and explanatory variables be denoted as follows. 
+\section*{Control Data}
+\subsection*{Prior Beliefs}
+The prior beliefs for the second component are arbitrary as setting $p=0$ means that inference can only be performed on the `like control' component, component one. Similarly prior beliefs for $\tilde{p}$ are also ignored here. 
 \begin{center}
-\begin{tabular}{ c | l }
-    $Y_{obs}$ & the logged mass of NDUFB8, a protein coding gene linked to mitochondrial disease  \\
-    \hline
-    $X_{obs}$ & the logged mass of VDAC1, the most common antibody found on a mitochondrial membrane \\
+\begin{tabular}{c  c}
+    $\boldsymbol{\mu}_1 \sim \text{N}\left(\begin{pmatrix}4\\4\end{pmatrix}, 4*I_2 \right)$ &  $T_1 \sim \text{Wishart}(2, 2*I_2)$ \\
 \end{tabular}
 \end{center}
-We model the response variable, $Y_{obs}$, as
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{IMC__P01__NDUFB8.pdf}
+    \caption{10,000 draws from the prior and posterior densities about the distribution of NDUFB8 protein in healthy patients.}
+    \label{fig:imc_control_ndufb8}
+\end{figure}
+
+\section*{Patient Data}
+\subsection*{Prior Beliefs}
+We choose priors for the patient data based on information from the posterior distributions for the control data. This is only for component one (`like control'). 
 \begin{equation}
-    Y_{obs} \sim \text{N}\left( m*X_{obs}+c, \hat\tau^{-1} \right).
+    \boldsymbol{\mu}_1 \sim \text{N}\left( \text{mean}(\tilde{\boldsymbol{\mu}}),  100*\text{var}(\tilde{\boldsymbol{\mu}})\right),
 \end{equation}
-For the control data, from `healthy' cells, the parameters are given the following prior distributions:
+where $\tilde{\boldsymbol{\mu}}$ denotes the set of draws from the posterior distribution of $\boldsymbol{\mu}_1$ from the control inference. The variance matrix is increased by a factor of 100 to allow for differences between the patient and control data. The variance parameter $T_1$, is again given a Wishart distribution, designed to have an expected value ten times greater than the control.
+\begin{equation}
+    T_1 \sim \text{Wishart}\left(10, \text{mean}(\tilde{T}) \right).
+\end{equation}
+For a Wishart distribution with parameters $V$, a positive definite matrix, and degrees of freedom $n$, the expectation is $nV$. \\
 
-\begin{minipage}{0.5\textwidth}
-    \begin{itemize}
-        \item[] $m\sim\text{N}\left(0, \hat{\tau}^{-1} \right)$ 
-        \item[] $c\sim\text{N}\left(0, \hat{\tau}^{-1} \right)$
-        \item[] $\tau \sim \text{Gamma}\left(2,2\right)$
-    \end{itemize}
-\end{minipage}
-\begin{minipage}{0.5\textwidth}
-    \begin{itemize}
-        \item[] $\hat{\tau} = \begin{cases} \tau_{par},&\text{ if deficient }\\0.00001,&\text{ if control } \end{cases}$ 
-        \item[] $\tau_{par} = \tau + \delta $
-        \item[] $\delta =0 $
-    \end{itemize}
-\end{minipage}
-The prior density for $\tau$ can be seen in Figure \ref{fig:tau_prior_ctrl}.
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.5\textwidth]{tau_prior_ctrl.png}
-    \caption{Prior density for $\tau$, control data.}
-    \label{fig:tau_prior_ctrl}
-\end{figure}
-Here $\delta=0$ but the same form for the prior will be in given to the non-control data, where $\delta$ will be non-zero. The small precision for control data means that all fibres will be considered `healthy' as they will lie inside the 95\% error bounds. The model is written into RJAGS as the following:
-\begin{lstlisting}
-modelstring = "
- model {
-  # Likelihood of data given model parameters
-  for (i in 1:N){
-   class[i] ~ dbin( probdiff, 1 )
-   Yobs[i] ~ dnorm( Y[i], tau_hat[i] )
-   Y[i] = m*Xobs[i] + c
-   tau_hat[i] = ifelse( class[i]==0, tau_par, 0.00001 ) 
-  }
-  for (j in 1:Nsyn){
-   Ysyn[j] ~ dnorm( Ys[j], tau_par )
-   Ys[j] = m*Xsyn[j] + c
-  }
-  # Specify prior beliefs about parameters
-  m ~ dnorm(mu_m,tau_m)
-  c ~ dnorm(mu_c,tau_c)
-  tau ~ dgamma(shape_tau,rate_tau)
-  tau_par = tau + delta
-  probdiff ~ dbeta(alpha,beta)  
- }
-"
-\end{lstlisting}
-
-For non-control subjects, information gained during from the control dataset is used to determine prior beliefs. The prior means are set to the be the posterior means of the control data. The prior precision is the posterior precision multiplied by a scale factor. This results in a larger prior variance, so that to allow for difference between control data and patient data.\\ 
-
-\begin{minipage}{0.5\textwidth}
-    \begin{itemize}
-        \item[] $m\sim \text{N}\left( \bar{m_c},\left[\frac{f}{sd(\boldsymbol{m}_c)^2}\right]^{-1}\right) $
-        \item[] $c\sim\text{N}\left(\bar{c_c}, \left[\frac{f}{sd(\boldsymbol{c}_c)^2}\right]^{-1}\right) $
-        \item[] $\tau\sim\text{Gamma}\left(2,5\right)$
-    \end{itemize}
-\end{minipage}
-\begin{minipage}{0.5\textwidth}
-    \begin{itemize}
-        \item[] $\tau_{par} = \tau + \delta $
-        \item[] $\delta = 1.5*\text{median}(\boldsymbol{\tau}_c)$
-        \item[] $f=0.01$
-    \end{itemize}
-\end{minipage}
-
-Where a subscript $c$ represents the draws from the posterior of the respective control variables posterior distribution and $ \bar{\cdot} $ represents the mean of the draws from the respective posterior distribution.\\
-
-The prior density for $\tau$ can be seen in Figure \ref{fig:tau_prior_pat}.
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.5\textwidth]{tau_prior_pat.png}
-    \caption{Prior density for $\tau$, for patient data.}
-    \label{fig:tau_prior_pat}
-\end{figure}
-
-Figure \ref{fig:IMV} shows the proportion of deficient fibres in a single patient across multiple tissue samples, when using the Bayesian method. 
+The parameters for the second component are given the following priors. 
+\begin{center}
+   \begin{tabular}{c  c}
+    $\boldsymbol{\mu}_2 \sim \text{N}\left( 2*\text{mean}(\tilde{\boldsymbol{\mu}_1}), \begin{pmatrix}6&0\\0&6 \end{pmatrix}\right),$ & $T_2 \sim \text{Wishart}\left(3, \begin{pmatrix}2&0\\0&2\end{pmatrix} \right) $  \\
+\end{tabular} 
+\end{center}
+As an example Figure \ref{fig:imc_p01_ndufb8_pri} shows the prior beliefs for Patient 01 (P01).
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\textwidth]{bayes_prop.png}
-    \caption{Proportion of deficient fibres from multiple samples of the same patient. }
-    \label{fig:IMV}
+    \includegraphics[width=0.8\textwidth]{IMC_P01_NDUFB8_prior.png}
+    \caption{(Left) Prior beliefs for the expression of the NDUFB8 protein in a patient. (Right) Prior density and patient data for P01.}
+    \label{fig:imc_p01_ndufb8_prior}
 \end{figure}
 
+\subsection*{Posterior Beliefs}
 
+The example of 
 
 \end{document}
