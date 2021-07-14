@@ -342,7 +342,7 @@ model {
   
   # classification
   p ~ dbeta(alpha_p, beta_p)
-  probdiff = ifelse( pi==1, p, 1)
+  probdiff = ifelse( pi==1, p, 0)
   
   # posterior distribution
   z_syn ~ dbern(probdiff)

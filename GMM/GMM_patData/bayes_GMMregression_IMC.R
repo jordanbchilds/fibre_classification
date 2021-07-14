@@ -9,7 +9,7 @@ myDarkGrey = rgb(169,169,159, max=255, alpha=50)
 myGreen = rgb(25,90,0,max=255,alpha=50)
 myYellow = rgb(225,200,50,max=255, alpha=50)
 
-cramp = colorRamp(c(rgb(1,0,0,0.25),rgb(0,0,1,0.25)),alpha=TRUE)
+cramp = colorRamp(c(rgb(0,0,1,0.25)),rgb(1,0,0,0.25),alpha=TRUE)
 # rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
 # 0.25 determines how transparent the colour is, 1 being opaque 
 # cramp is a function which generates colours on a scale between two specifies colours
@@ -219,7 +219,7 @@ dir.create(file.path("PNG/PNG_IMC"), showWarnings = FALSE)
 
 # burn-in, chain length, thinning lag
 MCMCUpdates = 2000
-MCMCUpdates_Report = 2500
+MCMCUpdates_Report = 3000
 MCMCUpdates_Thin = 1
 
 fulldat = 'IMC.RAW.txt'
@@ -252,7 +252,6 @@ crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
 
-
 # seperating the control patients 
 for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
   outroot_ctrl = paste( froot, 'CTRL', chan, sep='__')
@@ -273,6 +272,7 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
     mu2_mean = c(5,5)
     mu1_prec = 0.25*diag(2)
     mu2_prec = 0.25*diag(2)
+    
     U_1 = solve(matrix(c(2,0,0,2), ncol=2, nrow=2, byrow=TRUE))
     n_1 = 2
     U_2 = solve(matrix(c(2,0,0,2), ncol=2, nrow=2, byrow=TRUE))
@@ -327,10 +327,8 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
     ctrlroot = paste(froot,"CONTROL",chan,sep="__") 
     
     pdf(file.path("PDF/PDF_IMC",paste0(ctrlroot,".pdf")),width=14,height=7)
-    
     priorpost(ctrl_prior=prior_ctrl, ctrl_posterior=posterior_ctrl, ctrl_data=data_ctrl, 
               title=paste(froot,"CTRL"))
-    #title(paste(froot,"CTRL"), line = -1, outer = TRUE)
     dev.off()
     
     
@@ -352,29 +350,25 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
   ### prior specification for patient data
   ###
   
-  n_1 = 6 # degrees of freedom
+ 
   # define the expected value of the patient prior (prec_pred) be the mean of the control
   # posterior
-  prec_pred = matrix( colMeans(posterior_ctrl[,c('tau[1,1,1]', 'tau[1,2,1]', 'tau[1,2,1]','tau[2,2,1]')]),
+  prec_pred = matrix( colMeans(posterior_ctrl[,c('tau[1,1,1]', 'tau[1,2,1]', 'tau[2,1,1]','tau[2,2,1]')]),
                       nrow=2, ncol=2, byrow=TRUE )
   
-  # increase the covariance between 'x' and 'y', keep variances the same
-  Sigma = solve(prec_pred)
-  delta_vec = c(0,0,0,0)
-  delta = matrix(delta_vec, ncol=2, nrow=2, byrow=TRUE)
-  # re-define the expectation of the prior
-  prec_pred = solve( Sigma + delta )
+  prec_pred_inv = solve( prec_pred )
+  n_1 = 10 # degrees of freedom
   
   # define prior parameter
-  U_1 = prec_pred/n_1
+  U_1 = prec_pred_inv*n_1
   n_2 = 3
-  U_2 = solve( matrix( c(2,0,0,2), nrow=2, ncol=2, byrow=TRUE) )/n_2
+  U_2 = solve( matrix( c(2,0,0,2), nrow=2, ncol=2, byrow=TRUE) )*n_2
   
   mu1_mean = colMeans( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])
-  mu1_prec = solve( matrix( c(1,0,0,1), ncol=2, nrow=2, byrow=TRUE) )
+  mu1_prec = solve( var( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])*100 )
   
-  mu2_mean = mu1_mean/2
-  mu2_prec = solve( matrix( c(5,0,0,5), ncol=2, nrow=2, byrow=TRUE) )
+  mu2_mean = mu1_mean*2
+  mu2_prec = matrix( c(6,0,0,6), ncol=2, nrow=2, byrow=TRUE) 
   
   alpha_p = 1
   beta_p = 1
@@ -410,7 +404,7 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
       data_pat_priorpred$Y = NULL
       data_pat_priorpred$N = 0
       
-      model_pat=jags.model(textConnection(modelstring), data=data_pat, n.chains=3) 
+      model_pat=jags.model(textConnection(modelstring), data=data_pat, n.chains=1) 
       
       model_pat_priorpred=jags.model(textConnection(modelstring), data=data_pat_priorpred) 
       update(model_pat,n.iter=MCMCUpdates)
@@ -455,4 +449,5 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
     }
   }
 }
+
 

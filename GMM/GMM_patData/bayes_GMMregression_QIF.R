@@ -8,8 +8,10 @@ source("../BootStrapping/parseData.R", local = TRUE)
 
 myDarkGrey = rgb(169,169,159, max=255, alpha=50)
 myGreen = rgb(0,255,0,max=255,alpha=50)
+myYellow = rgb(225,200,50,max=255, alpha=50)
 
-cramp = colorRamp(c(rgb(0,0,1,0.25),rgb(1,0,0,0.25)),alpha=TRUE)
+
+cramp = colorRamp(c(rgb(1,0,0,0.25)),rgb(0,0,1,0.25),alpha=TRUE)
 # rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
 # 0.25 determines how transparent the colour is, 1 being opaque 
 # cramp is a function which generates colours on a scale between two specifies colours
@@ -37,7 +39,7 @@ comparedensities=function(priorvec, posteriorvec, xlab="", main="", xlim=-99){
 
 priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior, 
                      pat_data=NULL, pat_prior=NULL, pat_posterior=NULL, 
-                     class_posterior=NULL, classifs=NULL, title){
+                     class_posterior=NULL, classifs=NULL, output_mcmc=NULL, title){
   # output: plots the prior and posterior regression lines and data
   
   op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
@@ -71,7 +73,7 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Patient Prior',
           ylim=(range(c(ctrl_data$Y[,2], pat_data$Y[,2]))+c(-1,1)), xlim=(range(c(ctrl_data$Y[,1], pat_data$Y[,1]))+c(-1,1)) )
-    points(  pat_data$Y[,1], pat_data$Y[,2], col=classcols(classifs),  pch=20 )
+    points(  pat_data$Y[,1], pat_data$Y[,2], col=myGreen,  pch=20 )
     contour( kde2d(pat_prior[,'Y_syn[1]'], pat_prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
     
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
@@ -90,21 +92,21 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
   ## mu_1
   # prior
   contour( kde2d(prior[,'mu[1,1]'], prior[,'mu[1,2]'], n=100), cex.lab=2, cex.axis=1.5,
-        xlab=expression(mu[11]), ylab=expression(mu[12]), nlevels=5,
-        main=expression(mu[1]~'Prior Density') )
+           xlab=expression(mu[11]), ylab=expression(mu[12]), nlevels=5,
+           main=expression(mu[1]~'Prior Density') )
   # posterior 
   contour( kde2d(posterior[,'mu[1,1]'], posterior[,'mu[1,2]'], n=100), cex.lab=2, cex.axis=1.5,
-        xlab=expression(mu[11]), ylab=expression(mu[12]), nlevels=5,
-        main=expression(mu[1]~'Posterior Density') )
+           xlab=expression(mu[11]), ylab=expression(mu[12]), nlevels=5,
+           main=expression(mu[1]~'Posterior Density') )
   ## mu_2
   # prior
   contour( kde2d(prior[,'mu[2,1]'], prior[,'mu[2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-        xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
-        main=expression(mu[2]~'Prior Density') ) 
+           xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
+           main=expression(mu[2]~'Prior Density') ) 
   # posterior
   contour( kde2d(posterior[,'mu[2,1]'], posterior[,'mu[2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-      xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
-      main=expression(mu[2]~'Posterior Density') )
+           xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
+           main=expression(mu[2]~'Posterior Density') )
   title(main=title, line = -1, outer = TRUE)
   
   
@@ -112,57 +114,57 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
   ## tau_1
   # prior
   contour( kde2d( prior[,'tau[1,1,1]'], prior[,'tau[2,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-        xlab=expression(tau[111]), ylab=expression(tau[221]), nlevels=5,
-        main=expression(tau[1]~'Prior Density') )
+           xlab=expression(tau[111]), ylab=expression(tau[221]), nlevels=5,
+           main=expression(tau[1]~'Prior Density') )
   
   contour( kde2d( prior[,'tau[1,1,1]'], prior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-        xlab=expression(tau[111]), ylab=expression(tau[121]), nlevels=5,
-        main=expression(tau[1]~'Prior Density') )
+           xlab=expression(tau[111]), ylab=expression(tau[121]), nlevels=5,
+           main=expression(tau[1]~'Prior Density') )
   
   contour( kde2d( prior[,'tau[2,2,1]'], prior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-        xlab=expression(tau[221]), ylab=expression(tau[121]), nlevels=5,
-        main=expression(tau[1]~'Prior Density') )
+           xlab=expression(tau[221]), ylab=expression(tau[121]), nlevels=5,
+           main=expression(tau[1]~'Prior Density') )
   ## tau_1
   # posterior
   contour( kde2d( posterior[,'tau[1,1,1]'], posterior[,'tau[2,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-        xlab=expression(tau[111]), ylab=expression(tau[221]), nlevels=5,
-        main=expression(tau[1]~'Posterior Density') )
+           xlab=expression(tau[111]), ylab=expression(tau[221]), nlevels=5,
+           main=expression(tau[1]~'Posterior Density') )
   
   contour( kde2d( posterior[,'tau[1,1,1]'], posterior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-        xlab=expression(tau[111]), ylab=expression(tau[121]), nlevels=5,
-        main=expression(tau[1]~'Posterior Density') )
+           xlab=expression(tau[111]), ylab=expression(tau[121]), nlevels=5,
+           main=expression(tau[1]~'Posterior Density') )
   
   contour( kde2d( posterior[,'tau[2,2,1]'], posterior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-        xlab=expression(tau[221]), ylab=expression(tau[121]), nlevels=5,
-        main=expression(tau[1]~'Posterior Density') )
+           xlab=expression(tau[221]), ylab=expression(tau[121]), nlevels=5,
+           main=expression(tau[1]~'Posterior Density') )
   title(main=title, line = -1, outer = TRUE)
   
   ## tau_2
   # prior
   contour( kde2d( prior[,'tau[1,1,2]'], prior[,'tau[2,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-        xlab=expression(tau[112]), ylab=expression(tau[222]), nlevels=5,
-        main=expression(tau[2]~'Prior Density') )
+           xlab=expression(tau[112]), ylab=expression(tau[222]), nlevels=5,
+           main=expression(tau[2]~'Prior Density') )
   
   contour( kde2d( prior[,'tau[1,1,2]'], prior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-        xlab=expression(tau[112]), ylab=expression(tau[122]), nlevels=5,
-        main=expression(tau[2]~'Prior Density') )
+           xlab=expression(tau[112]), ylab=expression(tau[122]), nlevels=5,
+           main=expression(tau[2]~'Prior Density') )
   
   contour( kde2d( prior[,'tau[2,2,2]'], prior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-        xlab=expression(tau[222]), ylab=expression(tau[122]), nlevels=5,
-        main=expression(tau[2]~'Prior Density') )
+           xlab=expression(tau[222]), ylab=expression(tau[122]), nlevels=5,
+           main=expression(tau[2]~'Prior Density') )
   ## tau_2
   # posterior
   contour( kde2d( posterior[,'tau[1,1,2]'], posterior[,'tau[2,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-        xlab=expression(tau[112]), ylab=expression(tau[222]), nlevels=5,
-        main=expression(tau[2]~'Posterior Density') )
+           xlab=expression(tau[112]), ylab=expression(tau[222]), nlevels=5,
+           main=expression(tau[2]~'Posterior Density') )
   
   contour( kde2d( posterior[,'tau[1,1,2]'], posterior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-        xlab=expression(tau[112]), ylab=expression(tau[122]), nlevels=5,
-        main=expression(tau[2]~'Posterior Density') )
+           xlab=expression(tau[112]), ylab=expression(tau[122]), nlevels=5,
+           main=expression(tau[2]~'Posterior Density') )
   
   contour( kde2d( posterior[,'tau[2,2,2]'], posterior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-        xlab=expression(tau[222]), ylab=expression(tau[122]), nlevels=5,
-        main=expression(tau[2]~'Posterior Density') )
+           xlab=expression(tau[222]), ylab=expression(tau[122]), nlevels=5,
+           main=expression(tau[2]~'Posterior Density') )
   title(main=title, line = -1, outer = TRUE)
   
   if( !is.null(pat_data) ){
@@ -172,6 +174,15 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
     lines( density(rbeta(5000,pat_data$alpha_p, pat_data$beta_p)), lwd=2, col='green')
     title(main=title, line = -1, outer = TRUE)
   }
+  if( !is.null(output_mcmc) ){
+    par(mfrow=c(2,3))
+    plot(output_mcmc[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+                        "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                        "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                        "probdiff", "Y_syn[1]", "Y_syn[2]")])
+    par(mfrow=c(1,1))
+  }
+  
   par(op)
 } 
 
@@ -192,7 +203,7 @@ model {
   
   # classification
   p ~ dbeta(alpha_p, beta_p)
-  probdiff = ifelse( pi==1, p, 1)
+  probdiff = ifelse( pi==1, p, 0)
   
   # posterior distribution
   z_syn ~ dbern(probdiff)
@@ -205,6 +216,7 @@ model {
 dir.create(file.path("Output"), showWarnings = FALSE)
 dir.create(file.path("Output/Output_TGo"),  showWarnings = FALSE)
 dir.create(file.path("PDF"), showWarnings = FALSE)
+
 dir.create(file.path("PDF/PDF_TGo"), showWarnings = FALSE)
 dir.create(file.path("PNG"), showWarnings = FALSE)
 dir.create(file.path("PNG/PNG_TGo"), showWarnings = FALSE)
@@ -306,16 +318,16 @@ for(fulldat in c("IMV.E02.P01.PMT.M3243AG.QIF.TGo.RAW.txt")){
     XY_ctrl = cbind( Xctrl, Yctrl )
     
     # define prior parameters
-    mu1_mean = c(0,0)
-    mu2_mean = c(0,0)
+    mu1_mean = c(4,4)
+    mu2_mean = c(5,5)
     mu1_prec = 0.25*diag(2)
     mu2_prec = 0.25*diag(2)
     U_1 = solve(matrix(c(2,0,0,2), ncol=2, nrow=2, byrow=TRUE))
     n_1 = 2
     U_2 = solve(matrix(c(2,0,0,2), ncol=2, nrow=2, byrow=TRUE))
     n_2 = 2
-    alpha_p = 2
-    beta_p = 2
+    alpha_p = 1
+    beta_p = 1
     pi = 0
     
     # Bayesian inference using JAGS
@@ -396,30 +408,28 @@ for(fulldat in c("IMV.E02.P01.PMT.M3243AG.QIF.TGo.RAW.txt")){
     ### prior specification for patient data
     ###
     
-    n_1 = 6 # degrees of freedom
     # define the expected value of the patient prior (prec_pred) be the mean of the control
     # posterior
     prec_pred = matrix( colMeans(posterior_ctrl[,c('tau[1,1,1]', 'tau[1,2,1]', 'tau[1,2,1]','tau[2,2,1]')]),
                         nrow=2, ncol=2, byrow=TRUE)
     
-    # increase the covariance between 'x' and 'y', keep variances the same
-    Sigma = solve(prec_pred)
-    delta = matrix(c(1,-0.9,-0.9,1), ncol=2, nrow=2, byrow=TRUE)
     # re-define the expectation of the prior
-    prec_pred = solve( Sigma + delta )
+    prec_pred = solve( prec_pred )*50
+    
+    n_1 = 10 # degrees of freedom
     # define prior parameter
     U_1 = prec_pred/n_1
     n_2 = 3
     U_2 = solve( matrix( c(2,0,0,2), nrow=2, ncol=2, byrow=TRUE) )/n_2
 
     mu1_mean = colMeans( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])
-    mu1_prec = solve( matrix( c(1,0,0,1), ncol=2, nrow=2, byrow=TRUE) )
+    mu1_prec = solve( var( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])*100 )
     
-    mu2_mean = mu1_mean/2
-    mu2_prec = solve( matrix( c(5,0,0,5), ncol=2, nrow=2, byrow=TRUE) )
+    mu2_mean = mu1_mean*2
+    mu2_prec = solve( matrix( c(6,0,0,6), ncol=2, nrow=2, byrow=TRUE) )
     
-    alpha_p = 2
-    beta_p = 2
+    alpha_p = 1
+    beta_p = 1
     pi = 1
     
     for(pat in pts){ # loop through patients
@@ -482,7 +492,7 @@ for(fulldat in c("IMV.E02.P01.PMT.M3243AG.QIF.TGo.RAW.txt")){
         pdf(file.path("PDF/PDF_TGo",paste0(outroot,".pdf")),width=14,height=8.5)
         priorpost(ctrl_data=data_ctrl, ctrl_prior=prior_ctrl, ctrl_posterior=posterior_ctrl, 
                   pat_prior=prior_pat, pat_posterior=posterior_pat, 
-                  pat_data=data_pat, classifs=classifs_pat, title=paste(froot,pat) )
+                  pat_data=data_pat, classifs=classifs_pat, output_mcmc=output_pat, title=paste(froot,pat)  )
         
         dev.off()
         write.table(as.numeric(classifs_pat),file.path("Output/Output_TGo",paste0(outroot,"__CLASS.txt")),row.names=FALSE,quote=FALSE,col.names=FALSE)
