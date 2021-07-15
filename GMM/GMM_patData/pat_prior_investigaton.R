@@ -1,5 +1,3 @@
-
-
 library(rjags)
 library(ggplot2)
 library(MASS)
@@ -119,6 +117,10 @@ dir.create(file.path("PNG"), showWarnings = FALSE)
 dir.create(file.path("Output/Output_patPrior"), showWarnings = FALSE)
 dir.create(file.path("PDF/PDF_patPrior"), showWarnings = FALSE)
 dir.create(file.path("PNG/PNG_patPrior"), showWarnings = FALSE)
+
+dir.create(file.path("Output/Output_jointPrior"), showWarnings = FALSE)
+dir.create(file.path("PDF/PDF_jointPrior"), showWarnings = FALSE)
+dir.create(file.path("PNG/PNG_jointPrior"), showWarnings = FALSE)
 
 # 12,000 burn-in
 MCMCUpdates = 2000
@@ -359,6 +361,84 @@ for( chan in c('SDHA')){ # delta test
     }else{ # if file exists load previous data
       
       # class_pat_file = file.path("Output/Output_patPrior", paste0(outroot, "__CLASS.txt"))
+    }
+  }
+}
+
+
+
+
+for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
+  for( pat in pts){
+    outroot = paste( froot, pat, chan, sep='__')
+    posterior_file = file.path("Output/Output_joint", paste0(outroot, "__POSTERIOR.txt") )
+    
+    if( !file.exists(posterior_file)){
+      ## PRIORS
+      mu1_mean = c(1,1.5)
+      mu2_mean = 1.5*mu1_mean
+      mu1_prec = solve( matrix(c(1,0.7,0.7,1), ncol=2, nrow=2, byrow=TRUE) )
+      mu2_prec = solve( 5*diag(2) )
+      
+      U_1 = matrix( c(1,0.5,0.5,1), ncol=2, nrow=2, byrow=TRUE)
+      n_1 = 10
+      U_2 = 3*diag(2)
+      n_2 = 3
+      
+      alpha = 1
+      beta = 1
+      
+      data_priorpred = data
+      data_priorpred$Yctrl = NULL
+      data_priorpred$Ypat = NULL
+      data_priorpred$Nctrl = 0
+      data_priorpred$Npat = 0 
+      
+      model = jags.model(textConnection(modelstring), data=data, n.chains=n.chains) 
+      
+      model_priorpred = jags.model(textConnection(modelstring), data=data_priorpred) 
+      
+      update(model, n.iter=MCMCUpdates)
+      
+      converge = coda.samples(model=model, variable.names=c("mu","tau","Y_syn","z","probdiff"),
+                              n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
+      
+      output = coda.samples(model=model, variable.names=c("mu", "tau","Y_syn","z","probdiff"),
+                            n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
+      
+      output_priorpred = coda.samples(model=model_priorpred,
+                                      variable.names=c("mu", "tau","Y_syn","z","probdiff"),
+                                      n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
+      
+      plot(output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+                     "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                     "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                     "probdiff", "Y_syn[1]", "Y_syn[2]")] )
+      
+      posterior = as.data.frame(output[[1]])
+      prior = as.data.frame(output_priorpred[[1]])
+      
+      classifs = colMeans( posterior[, grepl('z', colnames(posterior))] )
+      colnames(posterior) = colnames(output[[1]])
+      colnames(prior) = colnames(output_priorpred[[1]])
+      
+      #predpsumm_pat=summary(output_pat_priorpred)
+      pdf(file.path("PDF/PDF_joint",paste0(outroot,".pdf")),width=14,height=8.5)
+      
+      priorpost_pred(Yctrl=XY_ctrl, Ypat=XY_pat, posterior=posterior, prior=prior, 
+                     classifs=classifs, title=paste(froot, pat)  )
+      dev.off()
+      
+      write.table(as.numeric(classifs),file.path("Output/Output_joint",paste0(outroot,"__CLASS.txt")),
+                  row.names=FALSE,quote=FALSE,col.names=FALSE)
+      
+      write.table(posterior[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+                               "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                               "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                               "probdiff", "Y_syn[1]", "Y_syn[2]")],
+                  posterior_file, row.names=FALSE, quote=FALSE)
+    }else{ # if file exists load previous data
+      class_pat_file = file.path("Output/Output_joint", paste0(outroot, "__CLASS.txt"))
     }
   }
 }

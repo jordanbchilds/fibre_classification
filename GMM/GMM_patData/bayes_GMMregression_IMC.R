@@ -1,5 +1,3 @@
-
-
 library(rjags)
 library(beanplot)
 library(MASS)
@@ -9,7 +7,7 @@ myDarkGrey = rgb(169,169,159, max=255, alpha=50)
 myGreen = rgb(25,90,0,max=255,alpha=50)
 myYellow = rgb(225,200,50,max=255, alpha=50)
 
-cramp = colorRamp(c(rgb(0,0,1,0.25)),rgb(1,0,0,0.25),alpha=TRUE)
+cramp = colorRamp(c(rgb(0,0,1,0.25),rgb(1,0,0,0.25)),alpha=TRUE)
 # rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
 # 0.25 determines how transparent the colour is, 1 being opaque 
 # cramp is a function which generates colours on a scale between two specifies colours
@@ -365,7 +363,7 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
   U_2 = solve( matrix( c(2,0,0,2), nrow=2, ncol=2, byrow=TRUE) )*n_2
   
   mu1_mean = colMeans( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])
-  mu1_prec = solve( var( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])*100 )
+  mu1_prec = solve( var( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])*10 )
   
   mu2_mean = mu1_mean*2
   mu2_prec = matrix( c(6,0,0,6), ncol=2, nrow=2, byrow=TRUE) 
@@ -374,8 +372,8 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
   beta_p = 1
   pi = 1
   
-  for(pat in pts){ # loop through patients
-    
+  # for(pat in pts){ # loop through patients
+  for( pat in c('P01', 'P02')){  
     outroot = paste(froot,pat,chan,sep="__")
     
     patient = imcDat[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"), ] 
