@@ -296,7 +296,7 @@ for(ch in imc_chan){
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
-pts = c('P01',  'P07')
+pts = c('P01', 'P07')
 
 for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
   for( pat in pts){
@@ -322,13 +322,13 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
       ## PRIORS
       mu1_mean = c(1,1.5)
       mu2_mean = 1.5*mu1_mean
-      mu1_prec = solve( matrix(c(1,0.7,0.7,1), ncol=2, nrow=2, byrow=TRUE) )
+      mu1_prec = solve( matrix(c(0.2,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
       mu2_prec = solve( 5*diag(2) )
       
-      U_1 = matrix( c(1,0.5,0.5,1), ncol=2, nrow=2, byrow=TRUE)
-      n_1 = 10
+      U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
+      n_1 = 50
       U_2 = 3*diag(2)
-      n_2 = 3
+      n_2 = 20
       
       alpha = 1
       beta = 1
@@ -337,10 +337,7 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
                   mu1_mean=mu1_mean, mu1_prec=mu1_prec,
                   mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
                   U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
-      
-      data$Yctrl = NULL
-      data$Nctrl = 0
-      
+
       data_priorpred = data
       data_priorpred$Yctrl = NULL
       data_priorpred$Ypat = NULL

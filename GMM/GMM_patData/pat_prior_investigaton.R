@@ -86,12 +86,6 @@ priorpost_den = function(ctrl_data, ctrl_prior, ctrl_posterior,
 
 modelstring = "
 model {
-  for(i in 1:N){
-    z[i] ~ dbern(probdiff)
-    class[i] =  z[i] + 1
-    Y[i,] ~ dmnorm(mu[,class[i]], tau[,,class[i]] )
-  }
-  
   # construsting covariance matrix for group 1
   tau[1:2,1:2,1] ~ dwish(U_1, n_1)
   mu[1:2,1] ~ dmnorm(mu1_mean, mu1_prec)
@@ -366,10 +360,8 @@ for( chan in c('SDHA')){ # delta test
 }
 
 for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
-  for( pat in pts){
-    outroot = paste( froot, pat, chan, sep='__')
+    outroot = paste( froot, chan, sep='__')
     posterior_file = file.path("Output/Output_joint", paste0(outroot, "__POSTERIOR.txt") )
-    
     if( !file.exists(posterior_file)){
       ## PRIORS
       mu1_mean = c(1,1.5)
@@ -437,7 +429,6 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
     }else{ # if file exists load previous data
       class_pat_file = file.path("Output/Output_joint", paste0(outroot, "__CLASS.txt"))
     }
-  }
 }
 
 
