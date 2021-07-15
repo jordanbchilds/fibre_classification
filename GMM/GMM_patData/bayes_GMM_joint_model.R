@@ -296,7 +296,6 @@ for(ch in imc_chan){
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
-pts = c('P01', 'P07')
 
 for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
   for( pat in pts){
