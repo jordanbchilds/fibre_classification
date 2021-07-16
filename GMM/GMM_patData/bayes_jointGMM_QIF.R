@@ -208,7 +208,7 @@ MCMCUpdates_Report = 10000
 # thin with lag-10 - > 1,000 draws from posterior
 MCMCUpdates_Thin = 1
 # number of inferences
-n.chains = 3
+n.chains = 1
 
 # choose which datasets to estimate parameters for
 # for(fulldat in fulldats){
