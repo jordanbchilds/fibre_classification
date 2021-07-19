@@ -186,7 +186,7 @@ modelstring = "
 model {
   for(i in 1:N){
     z[i] ~ dbern(probdiff)
-    class[i] =  z[i] + 1
+    class[i] =  2 - z[i]
     Y[i,] ~ dmnorm(mu[,class[i]], tau[,,class[i]] )
   }
   
@@ -203,7 +203,7 @@ model {
   
   # posterior distribution
   z_syn ~ dbern(probdiff)
-  class_syn = z_syn + 1
+  class_syn = 2 - z_syn 
   Y_syn ~ dmnorm(mu[,class_syn], tau[,,class_syn])
 }
 "
@@ -355,18 +355,18 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
                       nrow=2, ncol=2, byrow=TRUE )
   
   prec_pred_inv = solve( prec_pred )
-  n_1 = 10 # degrees of freedom
+  n_1 = 2 # degrees of freedom
   
   # define prior parameter
   U_1 = prec_pred_inv*n_1
-  n_2 = 3
+  n_2 = 2
   U_2 = solve( matrix( c(2,0,0,2), nrow=2, ncol=2, byrow=TRUE) )*n_2
   
   mu1_mean = colMeans( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])
-  mu1_prec = solve( var( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])*10 )
+  mu1_prec = solve( var( posterior_ctrl[,c('mu[1,1]','mu[2,1]')]) )
   
   mu2_mean = mu1_mean*2
-  mu2_prec = matrix( c(6,0,0,6), ncol=2, nrow=2, byrow=TRUE) 
+  mu2_prec = mu1_prec/100
   
   alpha_p = 1
   beta_p = 1

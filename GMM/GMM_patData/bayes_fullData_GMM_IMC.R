@@ -155,18 +155,14 @@ priorpost = function(data, prior, posterior, classifs, output_mcmc=NULL, title, 
 
 modelstring = "
 model {
-# inputs: Y (observations), pat_index (row index of patient changes), 
-#         N (no. of observations per patient), pat_id ('control', 'P01', etc.)
-  
   for(i in 1:length(N)){
-    # probdiff = 0, if control group
-    probdiff[i] = ifelse(i==1, 0, p[i])
+    probdiff[i] = ifelse(i==1, 0, p)
     
     for(j in 1:N[i]){
     
       z[ pat_index[i]+j-1 ] ~ dbern( probdiff[i] )
       comp[pat_index[i]+j-1] = 2 - z[pat_index[i]+j-1] 
-      Y[pat_index[i]+j-1,1:2] ~ dmnorm(mu[,comp[pat_index[i]+j-1]], tau[,,comp[pat_index[i]+j-1]])
+      Y[pat_index[i]+j-1, 1:2] ~ dmnorm(mu[,comp[pat_index[i]+j-1]], tau[,,comp[pat_index[i]+j-1]])
     }
   }
 
@@ -178,11 +174,11 @@ model {
   mu[1:2,2] ~ dmnorm(mu2_mean, mu2_prec)
   
   # classification
-  for(k in 1:length(pat_index) ){ p[k] ~ dbeta(alpha, beta) }
+  p ~ dbeta(alpha, beta)
 
   # posterior distribution
   z_syn ~ dbern(p)
-  class_syn = z_syn + 1
+  class_syn = 2 - z_syn 
   Y_syn ~ dmnorm(mu[,class_syn], tau[,,class_syn])
 
 }
@@ -314,7 +310,9 @@ for( chan in c('NDUFB8')){
   MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                          "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                          "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                         "probdiff", "Y_syn[1]", "Y_syn[2]")]
+                         "probdiff[1]", "probdiff[2]","probdiff[3]","probdiff[4]",
+                         "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
+                         "probdiff[9]","probdiff[10]","Y_syn[1]", "Y_syn[2]")]
   
   posterior = as.data.frame(output[[1]])
   prior = as.data.frame(output_priorpred[[1]])
@@ -345,7 +343,9 @@ for( chan in c('NDUFB8')){
   write.table(posterior[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                            "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                            "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                           "probdiff", "Y_syn[1]", "Y_syn[2]")],
+                           "probdiff[1]","probdiff[2]","probdiff[3]","probdiff[4]",
+                           "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
+                           "probdiff[9]","probdiff[10]","Y_syn[1]", "Y_syn[2]")],
               posterior_file, row.names=FALSE, quote=FALSE)
 
 }
