@@ -290,6 +290,7 @@ mitochan = "VDAC1"
 froot = gsub('.RAW.txt', '', fulldat)
 
 # getting the ranges of the axis
+
 imc_lims = list()
 for(ch in imc_chan){ 
   imc_lims[[ch]] = quantile(log(imcDat$value[imcDat$channel==ch]),

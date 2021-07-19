@@ -372,8 +372,7 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
   beta_p = 1
   pi = 1
   
-  # for(pat in pts){ # loop through patients
-  for( pat in c('P01', 'P02')){  
+  for(pat in pts){ # loop through patients
     outroot = paste(froot,pat,chan,sep="__")
     
     patient = imcDat[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"), ] 

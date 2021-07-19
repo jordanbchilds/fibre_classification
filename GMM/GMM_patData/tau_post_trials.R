@@ -203,10 +203,6 @@ for( chan in imc_chan[!(imc_chan=='VDAC1')]){
   
 }
 
-#####
-##### fit Wishart dist to tau_1 posterior
-#####
-
 
 
 
