@@ -225,6 +225,7 @@ n.chains = 1
 
 # for( chan in imc_chan[-which(imc_chan == mitochan)]){
 for( chan in c('NDUFB8')){
+  outroot = paste( froot, chan, sep='__')
   posterior_file = file.path("Output/Output_allData", paste0(outroot, "__POSTERIOR.txt") )
   
   # dataset with only the current protein and VDAC1
@@ -328,10 +329,9 @@ for( chan in c('NDUFB8')){
   for(i in 1:length(N)){
     
     pat = c('CTRL', pts)[i]
-    outroot = paste( froot, pat, chan, sep='__')
     class_pat = classifs[(pat_ind[i]+1):pat_ind[i+1]]
     
-    write.table(as.numeric(classifs),file.path("Output/Output_allData",paste0(outroot,"__CLASS.txt")),
+    write.table(as.numeric(classifs),file.path("Output/Output_allData",paste0(outroot, pts[i], "CLASS.txt", sep='__')),
                 row.names=FALSE,quote=FALSE,col.names=FALSE)    
     
     data_pat = data_chan[(pat_ind[i]+1):pat_ind[i+1], ]
@@ -347,13 +347,7 @@ for( chan in c('NDUFB8')){
                            "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
                            "probdiff", "Y_syn[1]", "Y_syn[2]")],
               posterior_file, row.names=FALSE, quote=FALSE)
-  
 
-  
-  
-
-  
-  
 }
 
 
