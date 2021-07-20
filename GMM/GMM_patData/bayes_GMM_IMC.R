@@ -365,7 +365,7 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
   mu1_mean = colMeans( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])
   mu1_prec = solve( var( posterior_ctrl[,c('mu[1,1]','mu[2,1]')]) )
   
-  mu2_mean = mu1_mean*2
+  mu2_mean = mu1_mean
   mu2_prec = mu1_prec/100
   
   alpha_p = 1
