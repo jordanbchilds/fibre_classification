@@ -433,8 +433,8 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
       priorpost(ctrl_data=data_ctrl, ctrl_prior=prior_ctrl, ctrl_posterior=posterior_ctrl, 
                 pat_prior=prior_pat, pat_posterior=posterior_pat, 
                 pat_data=data_pat, classifs=classifs_pat, output_mcmc=output_pat, title=paste(froot,pat)  )
-      # title(paste(froot,pat), line = -1, outer = TRUE)
       dev.off()
+      
       write.table(as.numeric(classifs_pat),file.path("Output/Output_IMC",paste0(outroot,"__CLASS.txt")),row.names=FALSE,quote=FALSE,col.names=FALSE)
       write.table(posterior_pat[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                    "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",

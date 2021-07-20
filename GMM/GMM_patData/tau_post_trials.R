@@ -3,6 +3,10 @@ library(beanplot)
 library(MASS)
 source("../BootStrapping/parseData.R", local = TRUE)
 
+install.packages("twosamples")
+library(twosamples)
+
+
 myDarkGrey = rgb(169,169,159, max=255, alpha=50)
 myGreen = rgb(25,90,0,max=255,alpha=50)
 myYellow = rgb(225,200,50,max=255, alpha=50)
@@ -104,7 +108,7 @@ pts = grep("P", sbj, value = TRUE)
 
 
 # seperating the control patients 
-for( chan in imc_chan[!(imc_chan=='VDAC1')]){
+for( chan in imc_chan[!(imc_chan=='VDAC1')]) {
   outroot_ctrl = paste( froot, 'CTRL', chan, sep='__')
   posterior_ctrl_file = file.path("Output/Output_IMC",paste0(outroot_ctrl,"__POSTERIOR.txt"))
   
@@ -175,33 +179,62 @@ for( chan in imc_chan[!(imc_chan=='VDAC1')]){
   prec_pred_inv = solve( prec_pred )
   
   df_vec = 2:200
-  kolSmir_test11 = double(length(df_vec))
-  kolSmir_test22 = kolSmir_test11
-  kolSmir_test12 = kolSmir_test11
+  KS_test11 = double(length(df_vec))
+  KS_test22 = KS_test11
+  KS_test12 = KS_test11
+  
+  AD_test11 = double(length(df_vec))
+  AD_test22 = AD_test11
+  AD_test12 = AD_test11
+  
+  CvM_test11 = double(length(df_vec))
+  CvM_test22 = CvM_test11
+  CvM_test12 = CvM_test11
+  
   for( i in 1:length(df_vec)){
     wishart = rWishart(n=MCMCUpdates_Report, df=df_vec[i], Sigma=prec_pred/df_vec[i] )
     
-    kolSmir_test11[i] = ks.test(posterior_ctrl[,'tau[1,1,1]'], wishart[1,1,])$p.value
-    kolSmir_test22[i] = ks.test(posterior_ctrl[,'tau[2,2,1]'], wishart[2,2,])$p.value
-    kolSmir_test12[i] = ks.test(posterior_ctrl[,'tau[1,2,1]'], wishart[1,2,])$p.value
+    KS_test11[i] = ks.test(posterior_ctrl[,'tau[1,1,1]'], wishart[1,1,])$p.value
+    KS_test22[i] = ks.test(posterior_ctrl[,'tau[2,2,1]'], wishart[2,2,])$p.value
+    KS_test12[i] = ks.test(posterior_ctrl[,'tau[1,2,1]'], wishart[1,2,])$p.value
+    
+    AD_test11[i] = ad_test(posterior_ctrl[,'tau[1,1,1]'], wishart[1,1,])[2]
+    AD_test12[i] = ad_test(posterior_ctrl[,'tau[1,2,1]'], wishart[1,2,])[2]
+    AD_test22[i] = ad_test(posterior_ctrl[,'tau[2,2,1]'], wishart[2,2,])[2]
+    
+    CvM_test11[i] = cvm_test(posterior_ctrl[,'tau[1,1,1]'], wishart[1,1,])[2]
+    CvM_test12[i] = cvm_test(posterior_ctrl[,'tau[1,2,1]'], wishart[1,2,])[2]
+    CvM_test22[i] = cvm_test(posterior_ctrl[,'tau[2,2,1]'], wishart[2,2,])[2]
+    
   }
+  
   par(mfrow=c(3,1))
-  plot(df_vec, kolSmir_test11, type='b', xlab='Degrees of Freedom', ylab='p value')
-  plot(df_vec, kolSmir_test12, type='b', xlab='Degrees of Freedom', ylab='p value')
-  plot(df_vec, kolSmir_test22, type='b', xlab='Degrees of Freedom', ylab='p value')
+  plot(df_vec, KS_test11, type='b', col='black',
+       xlab='Degrees of Freedom', ylab='p value', main='Goodness of fit test')
+  lines(df_vec, AD_test11, type='b', col='blue')
+  lines(df_vec, CvM_test11, type='b', col='red')
+  
+  plot(df_vec, KS_test12, type='b', col='black',
+       xlab='Degrees of Freedom', ylab='p value', main='Goodness of fit test')
+  lines(df_vec, AD_test12, type='b', col='blue')
+  lines(df_vec, CvM_test12, type='b', col='red')
+  
+  plot(df_vec, KS_test22, type='b', 
+       xlab='Degrees of Freedom', ylab='p value', main='Goodness of fit test')
+  lines(df_vec, AD_test22, type='b', col='blue')
+  lines(df_vec, CvM_test22, type='b', col='red')
+}
   
   rWish = rWishart(n=10000, df=2, Sigma=prec_pred/2)
-  plot(density(rWish[1,1,]))
+  par(mfrow=c(3,1))
+  plot(density(rWish[1,1,]), main=expression(tau[11] ~ ' Density'))
   lines(density(posterior_ctrl[,'tau[1,1,1]']), col='red')
-  plot(density(rWish[1,2,]))
+  plot(density(rWish[1,2,]), main=expression(tau[12]~' Density'))
   lines(density(posterior_ctrl[,'tau[1,2,1]']), col='red') 
-  plot(density(rWish[2,2,]))
+  plot(density(rWish[2,2,]), main=expression(tau[22]~' Density'))
   lines(density(posterior_ctrl[,'tau[2,2,1]']), col='red')
   
-  title(main=paste(chan))
   
-  
-}
 
 
 
