@@ -65,11 +65,11 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
   par(op)
 } 
 
-MCMCplot = function( MCMCoutput, lag=20, n.chains=1 ){
+MCMCplot = function( MCMCoutput, lag=20){
   col.names = colnames(MCMCoutput[[1]])
-  
+  n.chains = length(MCMCoutput)
   par(mfrow=c(3,3), mar = c(5.5,5.5,3,3))
-  if( n.chains==1){
+  if( n.chains==1 ){
     for(param in col.names){
       plot( 0:lag, autocorr(MCMCoutput[[1]][,param], lags=0:lag), 
             type='h', ylim=c(-1,1), xlab='Index', ylab='')
@@ -160,8 +160,8 @@ MCMCUpdates_Report = 3000
 MCMCUpdates_Thin = 1
 n.chains = 1
 
-# for( chan in imc_chan[-!(imc_chan == mitochan)]){
-for( chan in c('NDUFB8')){
+for( chan in imc_chan[imc_chan != mitochan]){
+# for( chan in c('NDUFB8')){
   outroot = paste( froot, chan, sep='__')
   posterior_file = file.path("Output/Output_allData", paste0(outroot, "__POSTERIOR.txt") )
   
@@ -284,12 +284,12 @@ for( chan in c('NDUFB8')){
     if( pat=='CTRL'){
       pdf(file.path("PDF/PDF_allData/classification", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14,height=8.5)
       priorpost( data=data_pat, prior=prior, posterior=posterior,
-                 classifs=class_pat, title=paste0(froot, pat[i], chan))
+                 classifs=class_pat, title=paste(froot, pat[i], chan, sep='__'))
       dev.off()
     } else {
       pdf(file.path("PDF/PDF_allData/classification", paste0(paste(outroot, pat, sep="__"), ".pdf")), width=14,height=8.5)
       priorpost( data=data_pat, prior=prior, posterior=posterior, ctrl=data_ctrl,
-                 classifs=class_pat, title=paste0(froot, pat[i], chan))
+                 classifs=class_pat, title=paste(froot, pat[i], chan, sep='__'))
       dev.off()
     }
   }
