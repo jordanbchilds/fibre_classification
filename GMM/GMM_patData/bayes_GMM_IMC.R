@@ -22,7 +22,7 @@ classcols = function(classif){
 
 priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior, 
                      pat_data=NULL, pat_prior=NULL, pat_posterior=NULL, 
-                     class_posterior=NULL, classifs=NULL, output_mcmc=NULL, title){
+                     classifs=NULL, title){
   # output: plots the prior and posterior regression lines and data
   
   op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
@@ -43,11 +43,11 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
   } else { # plot ctrl prior-posterior and patient prior-posterior
     class_posterior = colMeans( pat_posterior[,grepl("z",colnames(pat_posterior))])
     
-    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myGreen, pch=20, cex.lab=2, cex.axis=1.5,
+    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Contorl Prior')
     contour( kde2d(ctrl_prior[,'Y_syn[1]'], ctrl_prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
     
-    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myGreen, pch=20, cex.lab=2, cex.axis=1.5,
+    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Posterior')
     contour( kde2d(ctrl_posterior[,'Y_syn[1]'], ctrl_posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
     
@@ -66,90 +66,91 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
     contour( kde2d(pat_posterior[,'Y_syn[1]'], pat_posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
     
     title(main=title, line = -1, outer = TRUE)
-    
-    prior = pat_prior
-    posterior = pat_posterior
   }
-  
-  # par(mfrow=c(2,2))
-  # ## mu_1
-  # # prior
-  # contour( kde2d(prior[,'mu[1,1]'], prior[,'mu[1,2]'], n=100), cex.lab=2, cex.axis=1.5,
-  #          xlab=expression(mu[11]), ylab=expression(mu[12]), nlevels=5,
-  #          main=expression(mu[1]~'Prior Density') )
-  # # posterior 
-  # contour( kde2d(posterior[,'mu[1,1]'], posterior[,'mu[1,2]'], n=100), cex.lab=2, cex.axis=1.5,
-  #          xlab=expression(mu[11]), ylab=expression(mu[12]), nlevels=5,
-  #          main=expression(mu[1]~'Posterior Density') )
-  # ## mu_2
-  # # prior
-  # contour( kde2d(prior[,'mu[2,1]'], prior[,'mu[2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-  #          xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
-  #          main=expression(mu[2]~'Prior Density') ) 
-  # # posterior
-  # contour( kde2d(posterior[,'mu[2,1]'], posterior[,'mu[2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-  #          xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
-  #          main=expression(mu[2]~'Posterior Density') )
-  # title(main=title, line = -1, outer = TRUE)
-  # 
-  # 
-  # par(mfrow=c(2,3))
-  # ## tau_1
-  # # prior
-  # contour( kde2d( prior[,'tau[1,1,1]'], prior[,'tau[2,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-  #          xlab=expression(tau[111]), ylab=expression(tau[221]), nlevels=5,
-  #          main=expression(tau[1]~'Prior Density') )
-  # 
-  # contour( kde2d( prior[,'tau[1,1,1]'], prior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-  #          xlab=expression(tau[111]), ylab=expression(tau[121]), nlevels=5,
-  #          main=expression(tau[1]~'Prior Density') )
-  # 
-  # contour( kde2d( prior[,'tau[2,2,1]'], prior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-  #          xlab=expression(tau[221]), ylab=expression(tau[121]), nlevels=5,
-  #          main=expression(tau[1]~'Prior Density') )
-  # ## tau_1
-  # # posterior
-  # contour( kde2d( posterior[,'tau[1,1,1]'], posterior[,'tau[2,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-  #          xlab=expression(tau[111]), ylab=expression(tau[221]), nlevels=5,
-  #          main=expression(tau[1]~'Posterior Density') )
-  # 
-  # contour( kde2d( posterior[,'tau[1,1,1]'], posterior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-  #          xlab=expression(tau[111]), ylab=expression(tau[121]), nlevels=5,
-  #          main=expression(tau[1]~'Posterior Density') )
-  # 
-  # contour( kde2d( posterior[,'tau[2,2,1]'], posterior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-  #          xlab=expression(tau[221]), ylab=expression(tau[121]), nlevels=5,
-  #          main=expression(tau[1]~'Posterior Density') )
-  # title(main=title, line = -1, outer = TRUE)
-  # 
-  # ## tau_2
-  # # prior
-  # contour( kde2d( prior[,'tau[1,1,2]'], prior[,'tau[2,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-  #          xlab=expression(tau[112]), ylab=expression(tau[222]), nlevels=5,
-  #          main=expression(tau[2]~'Prior Density') )
-  # 
-  # contour( kde2d( prior[,'tau[1,1,2]'], prior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-  #          xlab=expression(tau[112]), ylab=expression(tau[122]), nlevels=5,
-  #          main=expression(tau[2]~'Prior Density') )
-  # 
-  # contour( kde2d( prior[,'tau[2,2,2]'], prior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-  #          xlab=expression(tau[222]), ylab=expression(tau[122]), nlevels=5,
-  #          main=expression(tau[2]~'Prior Density') )
-  # ## tau_2
-  # # posterior
-  # contour( kde2d( posterior[,'tau[1,1,2]'], posterior[,'tau[2,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-  #          xlab=expression(tau[112]), ylab=expression(tau[222]), nlevels=5,
-  #          main=expression(tau[2]~'Posterior Density') )
-  # 
-  # contour( kde2d( posterior[,'tau[1,1,2]'], posterior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-  #          xlab=expression(tau[112]), ylab=expression(tau[122]), nlevels=5,
-  #          main=expression(tau[2]~'Posterior Density') )
-  # 
-  # contour( kde2d( posterior[,'tau[2,2,2]'], posterior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-  #          xlab=expression(tau[222]), ylab=expression(tau[122]), nlevels=5,
-  #          main=expression(tau[2]~'Posterior Density') )
-  # title(main=title, line = -1, outer = TRUE)
-  # 
+  par(op)
+} 
+
+priorpost_marginals = function(prior, posterior, pat_data=NULL, title){
+  op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
+  par(mfrow=c(2,2))
+  ## mu_1
+  # prior
+  contour( kde2d(prior[,'mu[1,1]'], prior[,'mu[1,2]'], n=100), cex.lab=2, cex.axis=1.5,
+           xlab=expression(mu[11]), ylab=expression(mu[12]), nlevels=5,
+           main=expression(mu[1]~'Prior Density') )
+  # posterior
+  contour( kde2d(posterior[,'mu[1,1]'], posterior[,'mu[1,2]'], n=100), cex.lab=2, cex.axis=1.5,
+           xlab=expression(mu[11]), ylab=expression(mu[12]), nlevels=5,
+           main=expression(mu[1]~'Posterior Density') )
+  ## mu_2
+  # prior
+  contour( kde2d(prior[,'mu[2,1]'], prior[,'mu[2,2]'], n=100), cex.lab=2, cex.axis=1.5,
+           xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
+           main=expression(mu[2]~'Prior Density') )
+  # posterior
+  contour( kde2d(posterior[,'mu[2,1]'], posterior[,'mu[2,2]'], n=100), cex.lab=2, cex.axis=1.5,
+           xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
+           main=expression(mu[2]~'Posterior Density') )
+  title(main=title, line = -1, outer = TRUE)
+
+
+  par(mfrow=c(2,3))
+  ## tau_1
+  # prior
+  contour( kde2d( prior[,'tau[1,1,1]'], prior[,'tau[2,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
+           xlab=expression(tau[111]), ylab=expression(tau[221]), nlevels=5,
+           main=expression(tau[1]~'Prior Density') )
+
+  contour( kde2d( prior[,'tau[1,1,1]'], prior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
+           xlab=expression(tau[111]), ylab=expression(tau[121]), nlevels=5,
+           main=expression(tau[1]~'Prior Density') )
+
+  contour( kde2d( prior[,'tau[2,2,1]'], prior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
+           xlab=expression(tau[221]), ylab=expression(tau[121]), nlevels=5,
+           main=expression(tau[1]~'Prior Density') )
+  ## tau_1
+  # posterior
+  contour( kde2d( posterior[,'tau[1,1,1]'], posterior[,'tau[2,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
+           xlab=expression(tau[111]), ylab=expression(tau[221]), nlevels=5,
+           main=expression(tau[1]~'Posterior Density') )
+
+  contour( kde2d( posterior[,'tau[1,1,1]'], posterior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
+           xlab=expression(tau[111]), ylab=expression(tau[121]), nlevels=5,
+           main=expression(tau[1]~'Posterior Density') )
+
+  contour( kde2d( posterior[,'tau[2,2,1]'], posterior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
+           xlab=expression(tau[221]), ylab=expression(tau[121]), nlevels=5,
+           main=expression(tau[1]~'Posterior Density') )
+  title(main=title, line = -1, outer = TRUE)
+
+  ## tau_2
+  # prior
+  contour( kde2d( prior[,'tau[1,1,2]'], prior[,'tau[2,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
+           xlab=expression(tau[112]), ylab=expression(tau[222]), nlevels=5,
+           main=expression(tau[2]~'Prior Density') )
+
+  contour( kde2d( prior[,'tau[1,1,2]'], prior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
+           xlab=expression(tau[112]), ylab=expression(tau[122]), nlevels=5,
+           main=expression(tau[2]~'Prior Density') )
+
+  contour( kde2d( prior[,'tau[2,2,2]'], prior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
+           xlab=expression(tau[222]), ylab=expression(tau[122]), nlevels=5,
+           main=expression(tau[2]~'Prior Density') )
+  ## tau_2
+  # posterior
+  contour( kde2d( posterior[,'tau[1,1,2]'], posterior[,'tau[2,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
+           xlab=expression(tau[112]), ylab=expression(tau[222]), nlevels=5,
+           main=expression(tau[2]~'Posterior Density') )
+
+  contour( kde2d( posterior[,'tau[1,1,2]'], posterior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
+           xlab=expression(tau[112]), ylab=expression(tau[122]), nlevels=5,
+           main=expression(tau[2]~'Posterior Density') )
+
+  contour( kde2d( posterior[,'tau[2,2,2]'], posterior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
+           xlab=expression(tau[222]), ylab=expression(tau[122]), nlevels=5,
+           main=expression(tau[2]~'Posterior Density') )
+  title(main=title, line = -1, outer = TRUE)
+
   if( !is.null(pat_data) ){
     par(mfrow=c(1,2))
     plot( density(posterior[,'probdiff']), cex.lab=2, cex.axis=1.5, xlim=c(0,1),
@@ -157,17 +158,38 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
     lines( density(rbeta(5000,pat_data$alpha_p, pat_data$beta_p)), lwd=2, col='green')
     title(main=title, line = -1, outer = TRUE)
   }
-  # if( !is.null(output_mcmc) ){
-  #   par(mfrow=c(2,3))
-  #   plot(output_mcmc[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
-  #                       "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
-  #                       "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-  #                       "probdiff", "Y_syn[1]", "Y_syn[2]")])
-  #   par(mfrow=c(1,1))
-  # }
-
   par(op)
-} 
+}
+
+MCMCplot = function( MCMCoutput, lag=20, title){
+  col.names = colnames(MCMCoutput[[1]])
+  n.chains = length(MCMCoutput)
+  
+  par(mfrow=c(3,3), mar = c(5.5,5.5,3,3))
+  if( n.chains==1 ){
+    for(param in col.names){
+      plot( 0:lag, autocorr(MCMCoutput[[1]][,param], lags=0:lag), 
+            type='h', ylim=c(-1,1), xlab='Index', ylab='')
+      plot( 1:nrow(MCMCoutput[[1]]), MCMCoutput[[1]][,param], main=param, type='l',
+            ylab='', xlab='Iteration')
+      plot(density(MCMCoutput[[1]][,param] ), main='', xlab='')
+    }
+  } else {
+    for( param in col.names){
+      plot( autocorr(MCMCoutput[[1]][,param], lags=0:lag), type='h', 
+            xlab='Index', ylab='' )
+      for(j in 2:n.chains) lines( autocorr(MCMCoutput[[j]][,param], lags=0:20), type='h', col=j)
+      
+      plot(1:nrow(MCMCoutput[[1]]), MCMCoutput[[1]][,param], main=param, type='l',
+           ylab='', xlab='Iteration')
+      for(j in 2:n.chains) lines(MCMCoutput[[j]][,param], type='l', col=j)
+      
+      plot(density(MCMCoutput[[1]][,param]) )
+      for(j in 2:n.chains) lines(density(MCMCoutput[[j]][,param]), col=j )
+    }
+  }
+  title(main=title, line = -1, outer = TRUE)
+}
 
 modelstring = "
 model {
@@ -198,14 +220,19 @@ dir.create(file.path("Output"), showWarnings = FALSE)
 dir.create(file.path("PDF"), showWarnings = FALSE)
 dir.create(file.path("PNG"), showWarnings = FALSE)
 
-dir.create(file.path("Output/Output_IMC"), showWarnings = FALSE)
-dir.create(file.path("PDF/PDF_IMC"), showWarnings = FALSE)
-dir.create(file.path("PNG/PNG_IMC"), showWarnings = FALSE)
+dir.create(file.path("Output/IMC"), showWarnings = FALSE)
+dir.create(file.path("PDF/IMC"), showWarnings = FALSE)
+dir.create(file.path("PNG/IMC"), showWarnings = FALSE)
+
+dir.create(file.path("PDF/IMC/MCMC"), showWarnings=FALSE)
+dir.create(file.path("PDF/IMC/classifs"), showWarnings=FALSE)
+dir.create(file.path("PDF/IMC/marginals"), showWarnings=FALSE)
 
 # burn-in, chain length, thinning lag
 MCMCUpdates = 2000
 MCMCUpdates_Report = 5000
 MCMCUpdates_Thin = 3
+n.chains = 3
 
 fulldat = 'IMC.RAW.txt'
 
@@ -213,9 +240,7 @@ imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=
 
 # removing unwanted info 
 imc_chan = c('SDHA','OSCP', 'VDAC1', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
-imc_data_1.0 = imc_data[imc_data$channel %in% imc_chan, ]
-
-imcDat=imc_data_1.0
+imcDat = imc_data[imc_data$channel %in% imc_chan, ]
 
 mitochan = "VDAC1"
 
@@ -232,11 +257,10 @@ sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
-
 # seperating the control patients 
-for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
+for( chan in imc_chan[imc_chan!=mitochan]){
   outroot_ctrl = paste( froot, 'CTRL', chan, sep='__')
-  posterior_ctrl_file = file.path("Output/Output_IMC",paste0(outroot_ctrl,"__POSTERIOR.txt"))
+  posterior_ctrl_file = file.path("Output/IMC",paste0(outroot_ctrl,"__POSTERIOR.txt"))
   
   # data frame for mean intensity 
   control = imcDat[(imcDat$patient_type=='control')&(imcDat$type=='mean intensity'), ]
@@ -247,7 +271,6 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
   XY_ctrl = cbind( Xctrl, Yctrl )
   
   if(!file.exists(posterior_ctrl_file)){
-    
     # define prior parameters
     mu1_mean = c(4,4)
     mu2_mean = c(5,5)
@@ -291,27 +314,36 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
     posterior_ctrl = as.data.frame(output_ctrl[[1]])
     prior_ctrl = as.data.frame(output_ctrl_priorpred[[1]])
     
+
+    
     colnames(posterior_ctrl) = colnames(output_ctrl[[1]])
     colnames(prior_ctrl) = colnames(output_ctrl_priorpred[[1]])
     
-    par(mfrow=c(2,3))
-    plot(output_ctrl[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+ 
+    MCMCoutput = output_ctrl[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                         "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                         "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                        "probdiff", "Y_syn[1]", "Y_syn[2]")])
-    par(mfrow=c(1,1))
+                        "probdiff", "Y_syn[1]", "Y_syn[2]")]
+
     
     classifs_ctrl = colMeans(posterior_ctrl[, grepl('z', colnames(posterior_ctrl))])
     
     # prior and posterior prediction for control data
-    predpsumm_ctrl=summary(output_ctrl_priorpred)
     ctrlroot = paste(froot,"CONTROL",chan,sep="__") 
+    ctrl_title = paste(froot, "CTRL")
     
-    pdf(file.path("PDF/PDF_IMC",paste0(ctrlroot,".pdf")),width=14,height=7)
+    pdf(file.path("PDF/IMC/classifs",paste0(ctrlroot,".pdf")),width=14,height=7)
     priorpost(ctrl_prior=prior_ctrl, ctrl_posterior=posterior_ctrl, ctrl_data=data_ctrl, 
-              title=paste(froot,"CTRL"))
+              title=ctrl_title)
     dev.off()
     
+    pdf(file.path("PDF/IMC/marginals", paste0(ctrlroot,".pdf")), width=14, height=7)
+    priorpost_marginals(prior=prior_ctrl, posterior=posterior_ctrl, title=ctrl_title)
+    dev.off()
+    
+    pdf(file.path("PDF/IMC/mcmc", paste0(ctrlroot, ".pdf")), width=14, height=7)
+    MCMCplot( MCMCoutput, title=ctrl_title)
+    dev.off()
     
     write.table(posterior_ctrl[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                   "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
@@ -360,7 +392,7 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
     
     patient = imcDat[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"), ] 
     
-    posterior_file = file.path("Output/Output_IMC",paste0(outroot,"__POSTERIOR.txt"))
+    posterior_file = file.path("Output/IMC",paste0(outroot,"__POSTERIOR.txt"))
     
     if(!file.exists(posterior_file)){ # regression for mitochondrial disease patients
       # Block off file from analysis
@@ -384,7 +416,7 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
       data_pat_priorpred$Y = NULL
       data_pat_priorpred$N = 0
       
-      model_pat=jags.model(textConnection(modelstring), data=data_pat, n.chains=1) 
+      model_pat=jags.model(textConnection(modelstring), data=data_pat, n.chains=n.chains) 
       
       model_pat_priorpred=jags.model(textConnection(modelstring), data=data_pat_priorpred) 
       update(model_pat,n.iter=MCMCUpdates)
@@ -399,33 +431,51 @@ for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
                                           variable.names=c("mu", "tau","Y_syn","z","probdiff"),
                                           n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
       
-      plot(output_pat[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+      MCMCoutput = output_pat[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                          "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                          "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                         "probdiff", "Y_syn[1]", "Y_syn[2]")] )
+                         "probdiff", "Y_syn[1]", "Y_syn[2]")] 
       
-      posterior_pat = as.data.frame(output_pat[[1]])
       prior_pat = as.data.frame(output_pat_priorpred[[1]])
+      posterior_pat = as.data.frame(output_pat[[1]])
+      
+      # if( n.chains==1 ){
+      #   posterior_pat = as.data.frame(output_pat[[1]])
+      # } else {
+      #   posterior_pat = as.data.frame(output_pat[[1]])
+      #   for(i in 2:n.chains) posterior_pat = rbind(posterior_pat, output_pat[[i]])
+      # }
       
       classifs_pat = colMeans( posterior_pat[, grepl('z', colnames(posterior_pat))] )
       colnames(posterior_pat) = colnames(output_pat[[1]])
       colnames(prior_pat) = colnames(output_pat_priorpred[[1]])
+      
+      pat_title = paste(froot, pat)
 
-      #predpsumm_pat=summary(output_pat_priorpred)
-      pdf(file.path("PDF/PDF_IMC",paste0(outroot,".pdf")),width=14,height=8.5)
+      pdf(file.path("PDF/IMC/classifs",paste0(outroot,"__CLASSIF", ".pdf")), width=14,height=8.5)
       priorpost(ctrl_data=data_ctrl, ctrl_prior=prior_ctrl, ctrl_posterior=posterior_ctrl, 
                 pat_prior=prior_pat, pat_posterior=posterior_pat, 
-                pat_data=data_pat, classifs=classifs_pat, output_mcmc=output_pat, title=paste(froot,pat)  )
+                pat_data=data_pat, classifs=classifs_pat, title=pat_title  )
       dev.off()
       
-      write.table(as.numeric(classifs_pat),file.path("Output/Output_IMC",paste0(outroot,"__CLASS.txt")),row.names=FALSE,quote=FALSE,col.names=FALSE)
+      pdf(file.path("PDF/IMC/MCMC", paste0(outroot, "__MCMC.pdf")), width=14, height=7)
+      MCMCplot( MCMCoutput, title=pat_title )
+      dev.off()
+      
+      pdf(file.path("PDF/IMC/marginals", paste0(outroot, "__MARG.pdf")), width=14, height=7)
+      priorpost_marginals(prior=prior_pat, posterior=posterior_pat, pat_data=data_pat, 
+                          title=pat_title)
+      dev.off()
+      
+      write.table(as.numeric(classifs_pat),file.path("Output/IMC",paste0(outroot,"__CLASS.txt")),
+                  row.names=FALSE,quote=FALSE,col.names=FALSE)
+      
       write.table(posterior_pat[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                    "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                                    "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
                                    "probdiff", "Y_syn[1]", "Y_syn[2]")],posterior_file,row.names=FALSE,quote=FALSE)
     }else{ # if file exists load previous data
-      
-      class_pat_file = file.path("Output/Output_IMC", paste0(outroot, "__CLASS.txt"))
+      class_pat_file = file.path("Output/IMC", paste0(outroot, "__CLASS.txt"))
     }
   }
 }

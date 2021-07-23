@@ -164,7 +164,6 @@ model {
     Ypat[i,] ~ dmnorm(mu[,class[i]], tau[,,class[i]])
   }
 
-  # construsting covariance matrix for group 1
   tau[1:2,1:2,1] ~ dwish(U_1, n_1)
   mu[1:2,1] ~ dmnorm(mu1_mean, mu1_prec)
   
@@ -176,7 +175,7 @@ model {
 
   # posterior distribution
   z_syn ~ dbern(probdiff)
-  class_syn = z_syn + 1
+  class_syn = 2 - z_syn 
   Y_syn ~ dmnorm(mu[,class_syn], tau[,,class_syn])
   
   pred_1 ~ dmnorm(mu[,1], tau[,,1])
@@ -185,13 +184,13 @@ model {
 "
 # create files to store raw output and figures
 dir.create(file.path("Output"), showWarnings = FALSE)
-dir.create(file.path("Output/Output_jointQIF"),  showWarnings = FALSE)
+dir.create(file.path("Output/QIF_joint"),  showWarnings = FALSE)
 
 dir.create(file.path("PDF"), showWarnings = FALSE)
-dir.create(file.path("PDF/PDF_jointQIF"), showWarnings = FALSE)
+dir.create(file.path("PDF/QIF_joint"), showWarnings = FALSE)
 
 dir.create(file.path("PNG"), showWarnings = FALSE)
-dir.create(file.path("PNG/PNG_jointQIF"), showWarnings = FALSE)
+dir.create(file.path("PNG/QIF_joint"), showWarnings = FALSE)
 
 # all datasets
 fulldats = c(
@@ -204,11 +203,11 @@ fulldats = c(
 # 10,000 burn-in
 MCMCUpdates = 2000
 # 10,000 posterior draws after burn-in
-MCMCUpdates_Report = 10000
+MCMCUpdates_Report = 5000
 # thin with lag-10 - > 1,000 draws from posterior
 MCMCUpdates_Thin = 1
 # number of inferences
-n.chains = 1
+n.chains = 3
 
 # choose which datasets to estimate parameters for
 # for(fulldat in fulldats){
@@ -280,7 +279,7 @@ for(fulldat in c("IMV.E02.P01.PMT.M3243AG.QIF.TGo.RAW.txt")){
       # froot: data name 
       outroot = paste(froot,pat,chan,sep="__")
       # saves posterior draws in "Output" file
-      posterior_file = file.path("Output/Output_jointQIF",paste0(outroot,"__POSTERIOR.txt"))
+      posterior_file = file.path("Output/QIF_joint",paste0(outroot,"__POSTERIOR.txt"))
       if(!file.exists(posterior_file)){ # regression for mitochondrial disease patients
         
       file.create(posterior_file)
@@ -362,13 +361,13 @@ for(fulldat in c("IMV.E02.P01.PMT.M3243AG.QIF.TGo.RAW.txt")){
       colnames(posterior) = colnames(output[[1]])
       colnames(prior) = colnames(output_priorpred[[1]])
       
-      pdf(file.path("PDF/PDF_jointQIF", paste0(outroot,".pdf")),width=14,height=8.5)
+      pdf(file.path("PDF/QIF_joint", paste0(outroot,".pdf")),width=14,height=8.5)
       
       priorpost(data=data, prior=prior, posterior=posterior,
                 classifs=classifs, title=paste(froot, pat) )
       
       dev.off()
-      write.table(as.numeric(classifs),file.path("Output/Output_jointQIF",paste0(outroot,"__CLASS.txt")),row.names=FALSE,quote=FALSE,col.names=FALSE)
+      write.table(as.numeric(classifs),file.path("Output/QIF_joint",paste0(outroot,"__CLASS.txt")),row.names=FALSE,quote=FALSE,col.names=FALSE)
       write.table(posterior[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                    "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                                    "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
@@ -376,7 +375,7 @@ for(fulldat in c("IMV.E02.P01.PMT.M3243AG.QIF.TGo.RAW.txt")){
       
       } else {
         
-        class_file = file.path("Output/Output_jointQIF", paste0(outroot, "__CLASS.txt"))
+        class_file = file.path("Output/QIF_joint", paste0(outroot, "__CLASS.txt"))
         posterior = read.delim(posterior_file, sep=" ",stringsAsFactors=FALSE)
         colnames(posterior) = c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                     "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
