@@ -24,10 +24,8 @@ classcols = function(classif){
 }
 
 priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
-                     output_mcmc=NULL, title, marginals=FALSE){
+                     title){
   # output: plots the prior and posterior regression lines and data
-
-  
   op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
   if( is.null(ctrl) ){
     x.lim = range(data[,1]) + c(-1,1)
@@ -226,6 +224,7 @@ dir.create(file.path("PNG/IMC_allData"), showWarnings = FALSE)
 
 dir.create(file.path("PDF/IMC_allData/MCMC"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData/classifs"), showWarnings = FALSE)
+dir.create(file.path("PDF/IMC_fullData/marginals"), showWarnings = FALSE)
 
 
 ## tests for RJAGS
@@ -292,10 +291,8 @@ for( chan in c('NDUFB8')){
   data_chan = data.frame(Xchan, Ychan, patient_id)
   colnames(data_chan) = c(mitochan, chan, 'patient')
   
-  # saving output for mcmc 
   Ychan = data_chan[,c(mitochan, chan)]
-  i# s_control = as.numeric( patient_id=="control" )
-  
+
   # row index for each change in patient
   con_pts = c('control', pts)
   pat_index = double(length(con_pts))
