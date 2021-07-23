@@ -21,9 +21,8 @@ classcols = function(classif){
   return(rgb(rgbvals[,1],rgbvals[,2],rgbvals[,3],rgbvals[,4]))
 }
 
-priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior, 
-                     pat_data=NULL, pat_prior=NULL, pat_posterior=NULL, 
-                     class_posterior=NULL, classifs=NULL, output_mcmc=NULL, title){
+priorpost = function(data, prior, posterior, 
+                     classifs, title){
   # output: plots the prior and posterior regression lines and data
   
   op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
@@ -63,110 +62,11 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Patient Posterior',
           ylim=(range(c(ctrl_data$Y[,2], pat_data$Y[,2]))+c(-1,1)), xlim=(range(c(ctrl_data$Y[,1], pat_data$Y[,1]))+c(-1,1)) )
-    points( pat_data$Y[,1], pat_data$Y[,2], col=classcols(class_posterior), pch=20 )
+    points( pat_data$Y[,1], pat_data$Y[,2], col=classcols(classifs), pch=20 )
     contour( kde2d(pat_posterior[,'Y_syn[1]'], pat_posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
     
     title(main=title, line = -1, outer = TRUE)
-    
-    prior = pat_prior
-    posterior = pat_posterior
   }
-  
-  par(mfrow=c(2,2))
-  ## mu_1
-  # prior
-  contour( kde2d(prior[,'mu[1,1]'], prior[,'mu[1,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(mu[11]), ylab=expression(mu[12]), nlevels=5,
-           main=expression(mu[1]~'Prior Density') )
-  # posterior 
-  contour( kde2d(posterior[,'mu[1,1]'], posterior[,'mu[1,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(mu[11]), ylab=expression(mu[12]), nlevels=5,
-           main=expression(mu[1]~'Posterior Density') )
-  ## mu_2
-  # prior
-  contour( kde2d(prior[,'mu[2,1]'], prior[,'mu[2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
-           main=expression(mu[2]~'Prior Density') ) 
-  # posterior
-  contour( kde2d(posterior[,'mu[2,1]'], posterior[,'mu[2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
-           main=expression(mu[2]~'Posterior Density') )
-  title(main=title, line = -1, outer = TRUE)
-  
-  
-  par(mfrow=c(2,3))
-  ## tau_1
-  # prior
-  contour( kde2d( prior[,'tau[1,1,1]'], prior[,'tau[2,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[111]), ylab=expression(tau[221]), nlevels=5,
-           main=expression(tau[1]~'Prior Density') )
-  
-  contour( kde2d( prior[,'tau[1,1,1]'], prior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[111]), ylab=expression(tau[121]), nlevels=5,
-           main=expression(tau[1]~'Prior Density') )
-  
-  contour( kde2d( prior[,'tau[2,2,1]'], prior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[221]), ylab=expression(tau[121]), nlevels=5,
-           main=expression(tau[1]~'Prior Density') )
-  ## tau_1
-  # posterior
-  contour( kde2d( posterior[,'tau[1,1,1]'], posterior[,'tau[2,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[111]), ylab=expression(tau[221]), nlevels=5,
-           main=expression(tau[1]~'Posterior Density') )
-  
-  contour( kde2d( posterior[,'tau[1,1,1]'], posterior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[111]), ylab=expression(tau[121]), nlevels=5,
-           main=expression(tau[1]~'Posterior Density') )
-  
-  contour( kde2d( posterior[,'tau[2,2,1]'], posterior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[221]), ylab=expression(tau[121]), nlevels=5,
-           main=expression(tau[1]~'Posterior Density') )
-  title(main=title, line = -1, outer = TRUE)
-  
-  ## tau_2
-  # prior
-  contour( kde2d( prior[,'tau[1,1,2]'], prior[,'tau[2,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[112]), ylab=expression(tau[222]), nlevels=5,
-           main=expression(tau[2]~'Prior Density') )
-  
-  contour( kde2d( prior[,'tau[1,1,2]'], prior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[112]), ylab=expression(tau[122]), nlevels=5,
-           main=expression(tau[2]~'Prior Density') )
-  
-  contour( kde2d( prior[,'tau[2,2,2]'], prior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[222]), ylab=expression(tau[122]), nlevels=5,
-           main=expression(tau[2]~'Prior Density') )
-  ## tau_2
-  # posterior
-  contour( kde2d( posterior[,'tau[1,1,2]'], posterior[,'tau[2,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[112]), ylab=expression(tau[222]), nlevels=5,
-           main=expression(tau[2]~'Posterior Density') )
-  
-  contour( kde2d( posterior[,'tau[1,1,2]'], posterior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[112]), ylab=expression(tau[122]), nlevels=5,
-           main=expression(tau[2]~'Posterior Density') )
-  
-  contour( kde2d( posterior[,'tau[2,2,2]'], posterior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[222]), ylab=expression(tau[122]), nlevels=5,
-           main=expression(tau[2]~'Posterior Density') )
-  title(main=title, line = -1, outer = TRUE)
-  
-  if( !is.null(pat_data) ){
-    par(mfrow=c(1,2))
-    plot( density(posterior[,'probdiff']), cex.lab=2, cex.axis=1.5, xlim=c(0,1),
-          xlab='probdiff', ylab='density', lwd=2, col='red', main='probdiff Density')
-    lines( density(rbeta(5000,pat_data$alpha_p, pat_data$beta_p)), lwd=2, col='green')
-    title(main=title, line = -1, outer = TRUE)
-  }
-  if( !is.null(output_mcmc) ){
-    par(mfrow=c(2,3))
-    plot(output_mcmc[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
-                        "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
-                        "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                        "probdiff", "Y_syn[1]", "Y_syn[2]")])
-    par(mfrow=c(1,1))
-  }
-  
   par(op)
 } 
 
@@ -356,17 +256,12 @@ froot = gsub('.RAW.txt', '', fulldat)
 
 # getting the ranges of the axis
 
-imc_lims = list()
-for(ch in imc_chan){ 
-  imc_lims[[ch]] = quantile(log(imcDat$value[imcDat$channel==ch]),
-                            c(0.001,0.999), na.rm=TRUE)
-}
-
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
-for( chan in imc_chan[imc_chan != mitochan]){
+#for( chan in imc_chan[imc_chan != mitochan]){
+for( chan in c('NDUFB8')){
   for( pat in pts){
     outroot = paste( froot, pat, chan, sep='__')
     posterior_file = file.path("Output/IMC_joint", paste0(outroot, "__POSTERIOR.txt") )
@@ -442,8 +337,8 @@ for( chan in imc_chan[imc_chan != mitochan]){
       
       #predpsumm_pat=summary(output_pat_priorpred)
       pdf(file.path("PDF/IMC_joint/classifs",paste0(outroot,".pdf")),width=14,height=8.5)
-      priorpost(Yctrl=XY_ctrl, Ypat=XY_pat, posterior=posterior, prior=prior, 
-                     classifs=classifs, title=paste(froot, pat)  )
+      priorpost(data=data, posterior=posterior, prior=prior, 
+                classifs=classifs, title=paste(froot, pat)  )
       dev.off()
       
       pdf(file.path("PDF/IMC_joint/MCMC",paste0(outroot,".pdf")),width=14,height=8.5)
