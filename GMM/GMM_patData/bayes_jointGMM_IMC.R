@@ -5,6 +5,8 @@ library(beanplot)
 library(MASS)
 source("../BootStrapping/parseData.R", local = TRUE)
 
+args = commandArgs(trailingOnly = TRUE)
+
 if (length(args)==0) {
   imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
 } else {
