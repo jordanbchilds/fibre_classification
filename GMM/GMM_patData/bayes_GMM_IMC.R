@@ -315,10 +315,10 @@ for( chan in imc_chan){
     
     update(model_ctrl, n.iter=MCMCUpdates)
     
-    output_ctrl=coda.samples(model=model_ctrl,variable.names=c("mu","tau","Y_syn","z","probdiff"),
+    output_ctrl=coda.samples(model=model_ctrl,variable.names=c("mu","tau","Y_syn","z","probdiff", 'compOne', ' compTwo'),
                              n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
     
-    output_ctrl_priorpred=coda.samples(model=model_ctrl_priorpred,variable.names=c("mu","tau","Y_syn", "z", "probdiff"),
+    output_ctrl_priorpred=coda.samples(model=model_ctrl_priorpred,variable.names=c("mu","tau","Y_syn", "z", "probdiff", 'compOne', 'compTwo'),
                                        n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
     
     posterior_ctrl = as.data.frame(output_ctrl[[1]])
@@ -431,14 +431,14 @@ for( chan in imc_chan){
       model_pat_priorpred=jags.model(textConnection(modelstring), data=data_pat_priorpred) 
       update(model_pat,n.iter=MCMCUpdates)
       
-      converge_pat = coda.samples(model=model_pat,variable.names=c("mu","tau","Y_syn","z","probdiff"),
+      converge_pat = coda.samples(model=model_pat,variable.names=c("mu","tau","Y_syn","z","probdiff", "compOne", "compTwo"),
                                   n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
       
-      output_pat = coda.samples(model=model_pat,variable.names=c("mu", "tau","Y_syn","z","probdiff"),
+      output_pat = coda.samples(model=model_pat,variable.names=c("mu", "tau","Y_syn","z","probdiff", 'compOne', 'compTwo'),
                                 n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
       
       output_pat_priorpred = coda.samples(model=model_pat_priorpred,
-                                          variable.names=c("mu", "tau","Y_syn","z","probdiff"),
+                                          variable.names=c("mu", "tau","Y_syn","z","probdiff", 'compOne', 'compTwo'),
                                           n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
       
       MCMCoutput = output_pat[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
@@ -489,9 +489,8 @@ for( chan in imc_chan){
     }
   }
 }
+
 end_time = Sys.time()
-
 time_taken = data.frame( 'time_taken' = end_time - start_time )
-
 write.csv(time_taken, file=file.path('Time/IMC' ) )
 

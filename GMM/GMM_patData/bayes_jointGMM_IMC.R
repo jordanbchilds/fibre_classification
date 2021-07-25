@@ -248,10 +248,6 @@ fulldat = 'IMC.RAW.txt'
 
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
-colnames(imc_data)
-
-unique(imc_data$channel)
-
 mitochan = "VDAC1"
 
 # removing unwanted info 
