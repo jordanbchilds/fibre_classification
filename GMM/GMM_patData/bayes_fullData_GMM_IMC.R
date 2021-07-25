@@ -155,7 +155,7 @@ priorpost_marginals = function(prior, posterior, pat_data=NULL, title){
     par(mfrow=c(1,2))
     plot( density(posterior[,'probdiff']), cex.lab=2, cex.axis=1.5, xlim=c(0,1),
           xlab='probdiff', ylab='density', lwd=2, col='red', main='probdiff Density')
-    lines( density(rbeta(5000,pat_data$alpha_p, pat_data$beta_p)), lwd=2, col='green')
+    lines( density(rbeta(5000,pat_data$alpha, pat_data$beta)), lwd=2, col='green')
     title(main=title, line = -1, outer = TRUE)
   }
   par(op)
@@ -231,7 +231,7 @@ dir.create(file.path("PNG/IMC_allData"), showWarnings = FALSE)
 
 dir.create(file.path("PDF/IMC_allData/MCMC"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData/classifs"), showWarnings = FALSE)
-dir.create(file.path("PDF/IMC_fullData/marginals"), showWarnings = FALSE)
+dir.create(file.path("PDF/IMC_allData/marginals"), showWarnings = FALSE)
 
 
 ## tests for RJAGS
