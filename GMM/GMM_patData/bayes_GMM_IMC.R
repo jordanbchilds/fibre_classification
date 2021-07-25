@@ -5,14 +5,17 @@ library(beanplot)
 library(MASS)
 source("../BootStrapping/parseData.R", local = TRUE)
 
-args = commandArgs(trailingOnly = TRUE)
+# args = commandArgs(trailingOnly = TRUE)
+# 
+# # test if there is at least one argument: if not, return an error
+# if( length(args)==0 ){
+#   imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
+# } else {
+#   imc_chan = args
+# }
 
-# test if there is at least one argument: if not, return an error
-if( length(args)==0 ){
-  imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
-} else {
-  imc_chan = args
-}
+imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
+
 
 myDarkGrey = rgb(169,169,159, max=255, alpha=50)
 myGreen = rgb(25,90,0,max=255,alpha=50)
@@ -207,7 +210,7 @@ model {
   for(i in 1:N){
     z[i] ~ dbern(probdiff)
     class[i] =  2 - z[i]
-    Y[i,] ~ dmnorm(mu[,class[i]], tau[,,class[i]] )
+    Y[i,1:2] ~ dmnorm(mu[,class[i]], tau[,,class[i]] )
   }
   
   # construsting covariance matrix for group 1
@@ -253,10 +256,10 @@ fulldat = 'IMC.RAW.txt'
 
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
-# removing unwanted info 
-imcDat = imc_data[imc_data$channel %in% imc_chan, ]
-
 mitochan = "VDAC1"
+
+# removing unwanted info 
+imcDat = imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
 
 froot = gsub('.RAW.txt', '', fulldat)
 

@@ -238,10 +238,9 @@ dir.create(file.path("PDF/IMC_fullData/marginals"), showWarnings = FALSE)
 fulldat = 'IMC.RAW.txt'
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
-# removing unwanted info 
-incDat = imc_data[imc_data$channel %in% imc_chan, ]
-
 mitochan = "VDAC1"
+# removing unwanted info 
+incDat = imc_data[imc_data$channel %in% c(imc_chan, mtiochan), ]
 
 froot = gsub('.RAW.txt', '', fulldat)
 

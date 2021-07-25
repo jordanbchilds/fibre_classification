@@ -252,10 +252,10 @@ colnames(imc_data)
 
 unique(imc_data$channel)
 
-# removing unwanted info 
-imcDat = imc_data[imc_data$channel %in% imc_chan, ]
-
 mitochan = "VDAC1"
+
+# removing unwanted info 
+imcDat = imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
 
 froot = gsub('.RAW.txt', '', fulldat)
 
