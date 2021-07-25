@@ -5,16 +5,14 @@ library(beanplot)
 library(MASS)
 source("../BootStrapping/parseData.R", local = TRUE)
 
-# args = commandArgs(trailingOnly = TRUE)
-# 
-# # test if there is at least one argument: if not, return an error
-# if( length(args)==0 ){
-#   imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
-# } else {
-#   imc_chan = args
-# }
+args = commandArgs(trailingOnly = TRUE)
 
-imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
+# test if there is at least one argument: if not, return an error
+if( length(args)==0 ){
+  imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
+} else {
+  imc_chan = args
+}
 
 
 myDarkGrey = rgb(169,169,159, max=255, alpha=50)
@@ -351,7 +349,7 @@ for( chan in imc_chan){
     priorpost_marginals(prior=prior_ctrl, posterior=posterior_ctrl, title=ctrl_title)
     dev.off()
     
-    pdf(file.path("PDF/IMC/mcmc", paste0(ctrlroot, ".pdf")), width=14, height=7)
+    pdf(file.path("PDF/IMC/MCMC", paste0(ctrlroot, ".pdf")), width=14, height=7)
     MCMCplot( MCMCoutput, title=ctrl_title)
     dev.off()
     

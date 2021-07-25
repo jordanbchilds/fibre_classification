@@ -240,7 +240,7 @@ imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=
 
 mitochan = "VDAC1"
 # removing unwanted info 
-incDat = imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
+imcDat = imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
 
 froot = gsub('.RAW.txt', '', fulldat)
 
