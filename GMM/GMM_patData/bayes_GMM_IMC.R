@@ -1,7 +1,18 @@
+start_time = Sys.time()
+
 library(rjags)
 library(beanplot)
 library(MASS)
 source("../BootStrapping/parseData.R", local = TRUE)
+
+args = commandArgs(trailingOnly = TRUE)
+
+# test if there is at least one argument: if not, return an error
+if( length(args)==0 ){
+  imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
+} else {
+  imc_chan = args
+}
 
 myDarkGrey = rgb(169,169,159, max=255, alpha=50)
 myGreen = rgb(25,90,0,max=255,alpha=50)
@@ -30,11 +41,11 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
     
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Prior')
-    contour( kde2d(ctrl_prior[,'Y_syn[1]'], ctrl_prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    contour( kde2d(ctrl_prior[,'compOne[1]'], ctrl_prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Posterior')
-    contour( kde2d(ctrl_posterior[,'Y_syn[1]'], ctrl_posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    contour( kde2d(ctrl_posterior[,'compOne[1]'], ctrl_posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
     
     title(main=title, line = -1, outer = TRUE)
     
@@ -207,18 +218,22 @@ model {
   mu[1:2,2] ~ dmnorm(mu2_mean, mu2_prec)
   
   # classification
-  p ~ dbeta(alpha_p, beta_p)
-  probdiff = ifelse( pi==1, p, 0) # probability of being 'like-control'
+  p ~ dbeta(alpha, beta)
+  probdiff = ifelse( pi==1, p, 0) 
   
   # posterior distribution
   z_syn ~ dbern(probdiff)
   class_syn = 2 - z_syn 
   Y_syn ~ dmnorm(mu[,class_syn], tau[,,class_syn])
+  
+  compOne ~ dmnorm(mu[,1], tau[,,1])
+  compTwo ~ dmnorm(mu[,2], tau[,,2])
 }
 "
 dir.create(file.path("Output"), showWarnings = FALSE)
 dir.create(file.path("PDF"), showWarnings = FALSE)
 dir.create(file.path("PNG"), showWarnings = FALSE)
+dir.create(file.path('Time'), showWarnings = FALSE)
 
 dir.create(file.path("Output/IMC"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC"), showWarnings = FALSE)
@@ -239,26 +254,18 @@ fulldat = 'IMC.RAW.txt'
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
 # removing unwanted info 
-imc_chan = c('SDHA','OSCP', 'VDAC1', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
 imcDat = imc_data[imc_data$channel %in% imc_chan, ]
 
 mitochan = "VDAC1"
 
 froot = gsub('.RAW.txt', '', fulldat)
 
-# getting the ranges of the axis
-imc_lims = list()
-for(ch in imc_chan){ 
-  imc_lims[[ch]] = quantile(log(imcDat$value[imcDat$channel==ch]),
-                            c(0.001,0.999), na.rm=TRUE)
-}
-
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
 # seperating the control patients 
-for( chan in imc_chan[imc_chan!=mitochan]){
+for( chan in imc_chan){
   outroot_ctrl = paste( froot, 'CTRL', chan, sep='__')
   posterior_ctrl_file = file.path("Output/IMC",paste0(outroot_ctrl,"__POSTERIOR.txt"))
   
@@ -281,8 +288,8 @@ for( chan in imc_chan[imc_chan!=mitochan]){
     n_1 = 2
     U_2 = solve(matrix(c(2,0,0,2), ncol=2, nrow=2, byrow=TRUE))
     n_2 = 2
-    alpha_p = 1
-    beta_p = 1
+    alpha = 1
+    beta = 1
     pi = 0
     
     # Bayesian inference using JAGS
@@ -292,7 +299,7 @@ for( chan in imc_chan[imc_chan!=mitochan]){
     # parameter list for RJAGS
     data_ctrl = list(Y=XY_ctrl, N=Nctrl, mu1_mean=mu1_mean, mu1_prec=mu1_prec, 
                      mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
-                     U_1=U_1, U_2=U_2, alpha_p=alpha_p, beta_p=beta_p, pi=pi)
+                     U_1=U_1, U_2=U_2, alpha=alpha, beta=beta, pi=pi)
     
     data_ctrl_priorpred = data_ctrl # same parameters used for prior prediction RJAGS code
     data_ctrl_priorpred$Y = NULL # removes for prior prediction RJAGS 
@@ -383,8 +390,8 @@ for( chan in imc_chan[imc_chan!=mitochan]){
   mu2_mean = mu1_mean
   mu2_prec = mu1_prec/100
   
-  alpha_p = 1
-  beta_p = 1
+  alpha = 1
+  beta = 1
   pi = 1
   
   for(pat in pts){ # loop through patients
@@ -410,7 +417,7 @@ for( chan in imc_chan[imc_chan!=mitochan]){
       
       data_pat = list(Y=XY_pat, N=Npat, mu1_mean=mu1_mean, mu1_prec=mu1_prec, 
                       mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
-                      U_1=U_1, U_2=U_2, alpha_p=alpha_p, beta_p=beta_p, pi=pi)
+                      U_1=U_1, U_2=U_2, alpha=alpha, beta=beta, pi=pi)
       
       data_pat_priorpred = data_pat
       data_pat_priorpred$Y = NULL
@@ -479,5 +486,9 @@ for( chan in imc_chan[imc_chan!=mitochan]){
     }
   }
 }
+end_time = Sys.time()
 
+time_taken = data.frame( 'time_taken' = end_time - start_time )
+
+write.csv(time_taken, file=file.path('Time/IMC' ) )
 

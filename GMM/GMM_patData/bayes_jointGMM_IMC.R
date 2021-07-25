@@ -1,8 +1,15 @@
+start_time = Sys.time()
 
 library(rjags)
 library(beanplot)
 library(MASS)
 source("../BootStrapping/parseData.R", local = TRUE)
+
+if (length(args)==0) {
+  imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
+} else {
+  imc_chan = args
+}
 
 myDarkGrey = rgb(169,169,159, max=255, alpha=100)
 myGreen = rgb(25,90,0,max=255,alpha=50)
@@ -21,52 +28,44 @@ classcols = function(classif){
   return(rgb(rgbvals[,1],rgbvals[,2],rgbvals[,3],rgbvals[,4]))
 }
 
-priorpost = function(data, prior, posterior, 
-                     classifs, title){
+priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
+                     title){
   # output: plots the prior and posterior regression lines and data
-  
   op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
-  if( is.null(pat_data) ){ # plot ctrl prior and posterior
+  if( is.null(ctrl) ){
+    x.lim = range(data[,1]) + c(-1,1)
+    y.lim = range(data[,2]) + c(-1,1)
     
-    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
-          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Prior')
-    contour( kde2d(ctrl_prior[,'Y_syn[1]'], ctrl_prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    plot(data[,1], data[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
+         xlim=x.lim, ylim=y.lim)
+    contour( kde2d(prior[,'compOne[1]'], prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     
-    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
-          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Posterior')
-    contour( kde2d(ctrl_posterior[,'Y_syn[1]'], ctrl_posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
-    
-    title(main=title, line = -1, outer = TRUE)
-    
-    prior = ctrl_prior
-    posterior = ctrl_posterior
-  } else { # plot ctrl prior-posterior and patient prior-posterior
-    class_posterior = colMeans( pat_posterior[,grepl("z",colnames(pat_posterior))])
-    
-    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myGreen, pch=20, cex.lab=2, cex.axis=1.5,
-          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Contorl Prior')
-    contour( kde2d(ctrl_prior[,'Y_syn[1]'], ctrl_prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
-    
-    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myGreen, pch=20, cex.lab=2, cex.axis=1.5,
-          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Posterior')
-    contour( kde2d(ctrl_posterior[,'Y_syn[1]'], ctrl_posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    plot(data[,1], data[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
+         xlim=x.lim, ylim=y.lim)
+    contour( kde2d(posterior[,'compOne[1]'], posterior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     
     title(main=title, line = -1, outer = TRUE)
+  } else {
+    x.lim = range( data[,1], ctrl[,1] ) + c(-1,1)
+    y.lim = range( data[,2], ctrl[,2] ) + c(-1,1)
     
-    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
-          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Patient Prior',
-          ylim=(range(c(ctrl_data$Y[,2], pat_data$Y[,2]))+c(-1,1)), xlim=(range(c(ctrl_data$Y[,1], pat_data$Y[,1]))+c(-1,1)) )
-    points(  pat_data$Y[,1], pat_data$Y[,2], col=myGreen,  pch=20 )
-    contour( kde2d(pat_prior[,'Y_syn[1]'], pat_prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
+    plot(ctrl[,1], ctrl[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
+         xlim=x.lim, ylim=y.lim)
+    points( data[,1], data[,2], col=myYellow, pch=20)
+    contour( kde2d(prior[,'compOne[1]'], prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     
-    plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
-          xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Patient Posterior',
-          ylim=(range(c(ctrl_data$Y[,2], pat_data$Y[,2]))+c(-1,1)), xlim=(range(c(ctrl_data$Y[,1], pat_data$Y[,1]))+c(-1,1)) )
-    points( pat_data$Y[,1], pat_data$Y[,2], col=classcols(classifs), pch=20 )
-    contour( kde2d(pat_posterior[,'Y_syn[1]'], pat_posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
+    plot(ctrl[,1], ctrl[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
+         xlim=x.lim, ylim=y.lim)
     
+    points( data[,1], data[,2], col=classcols(classifs), pch=20)
+    contour( kde2d(posterior[,'compOne[1]'], posterior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     title(main=title, line = -1, outer = TRUE)
   }
+  
   par(op)
 } 
 
@@ -151,7 +150,7 @@ priorpost_marginals = function(prior, posterior, data=NULL, title){
            main=expression(tau[2]~'Posterior Density') )
   title(main=title, line = -1, outer = TRUE)
   
-  if( !is.null(pat_data) ){
+  if( !is.null(data) ){
     par(mfrow=c(1,2))
     plot( density(posterior[,'probdiff']), cex.lab=2, cex.axis=1.5, xlim=c(0,1),
           xlab='probdiff', ylab='density', lwd=2, col='red', main='probdiff Density')
@@ -161,7 +160,7 @@ priorpost_marginals = function(prior, posterior, data=NULL, title){
   par(op)
 }
 
-MCMCplot = function( MCMCoutput, lag=20, title){
+MCMCplot = function( MCMCoutput, lag=20, title ){
   col.names = colnames(MCMCoutput[[1]])
   n.chains = length(MCMCoutput)
   
@@ -217,11 +216,16 @@ model {
   z_syn ~ dbern(probdiff)
   class_syn = 2 - z_syn 
   Y_syn ~ dmnorm(mu[,class_syn], tau[,,class_syn])
+  
+  compOne ~ dmnorm(mu[,1], tau[,,1])
+  compTwo~ dmnorm(mu[,2], tau[,,2])
 }
 "
+
 dir.create(file.path("Output"), showWarnings = FALSE)
 dir.create(file.path("PDF"), showWarnings = FALSE)
 dir.create(file.path("PNG"), showWarnings = FALSE)
+dir.create(file.path("Time"), showWarnings = FALSE)
 
 dir.create(file.path("Output/IMC_joint"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint"), showWarnings = FALSE)
@@ -247,7 +251,6 @@ colnames(imc_data)
 unique(imc_data$channel)
 
 # removing unwanted info 
-imc_chan = c('SDHA','OSCP', 'VDAC1', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
 imcDat = imc_data[imc_data$channel %in% imc_chan, ]
 
 mitochan = "VDAC1"
@@ -260,8 +263,7 @@ sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
-#for( chan in imc_chan[imc_chan != mitochan]){
-for( chan in c('NDUFB8')){
+for( chan in imc_chan ){
   for( pat in pts){
     outroot = paste( froot, pat, chan, sep='__')
     posterior_file = file.path("Output/IMC_joint", paste0(outroot, "__POSTERIOR.txt") )
@@ -313,14 +315,14 @@ for( chan in c('NDUFB8')){
       
       update(model, n.iter=MCMCUpdates)
       
-      converge = coda.samples(model=model, variable.names=c("mu","tau","Y_syn","z","probdiff", "pred_1", "pred_2"),
+      converge = coda.samples(model=model, variable.names=c("mu","tau","Y_syn","z","probdiff", "compOne", "compTwo"),
                                   n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
       
-      output = coda.samples(model=model, variable.names=c("mu", "tau","Y_syn","z","probdiff", "pred_1", "pred_2"),
+      output = coda.samples(model=model, variable.names=c("mu", "tau","Y_syn","z","probdiff", "compOne", "compTwo"),
                                 n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
       
       output_priorpred = coda.samples(model=model_priorpred,
-                                          variable.names=c("mu", "tau","Y_syn","z","probdiff", "pred_1", "pred_2"),
+                                          variable.names=c("mu", "tau","Y_syn","z","probdiff", "compOne", "compTwo"),
                                           n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
       
       MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
@@ -335,21 +337,31 @@ for( chan in c('NDUFB8')){
       colnames(posterior) = colnames(output[[1]])
       colnames(prior) = colnames(output_priorpred[[1]])
       
-      #predpsumm_pat=summary(output_pat_priorpred)
-      pdf(file.path("PDF/IMC_joint/classifs",paste0(outroot,".pdf")),width=14,height=8.5)
-      priorpost(data=data, posterior=posterior, prior=prior, 
-                classifs=classifs, title=paste(froot, pat)  )
-      dev.off()
-      
-      pdf(file.path("PDF/IMC_joint/MCMC",paste0(outroot,".pdf")),width=14,height=8.5)
-      MCMCplot(mcmc_output = MCMCoutput, title = paste(froot, pat))
-      dev.off()
-      
-      pdf(file.path("PDF/IMC_joint/marginals", paste0(outroot,".pdf")), width=14, height=8.5)
-      priorpost_marginals(prior=prior, posterior=posterior, data=data)
-      
+      if( pat=='CTRL'){
+        pdf(file.path("PDF/IMC_joint/classifs", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14,height=8.5)
+        priorpost( data=data$Yctrl, prior=prior, posterior=posterior,
+                   classifs=classifs, title=paste(froot, pat, chan, sep='__'))
+        dev.off()
+        pdf(file.path("PDF/IMC_joint/marginals", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14, height=8.5)
+        priorpost_marginals(prior=prior, posterior=posterior, 
+                            title=paste(froot, pat , chan, sep='__'))
+        dev.off()
+      } else { 
+        pdf(file.path("PDF/IMC_joint/classifs", paste0(paste(outroot, pat, sep="__"), ".pdf")), width=14,height=8.5)
+        priorpost( data=data$Ypat, prior=prior, posterior=posterior, ctrl=data$Yctrl,
+                   classifs=classifs, title=paste(froot, pat, chan, sep='__'))
+        dev.off()
+        pdf(file.path("PDF/IMC_joint/marginals", paste0(paste(outroot, pat ,sep='__'), ".pdf")), width=14, height=8.5)
+        priorpost_marginals(prior=prior, posterior=posterior, data=data,
+                            title=paste(froot, pat, chan, sep='__'))
+        dev.off()
+      }
       write.table(as.numeric(classifs),file.path("Output/IMC_joint",paste0(outroot,"__CLASS.txt")),
                   row.names=FALSE,quote=FALSE,col.names=FALSE)
+      
+      pdf(file.path("PDF/IMC_joint/MCMC", paste0(paste(outroot, pat, sep='__'), '.pdf')), width=14, height=8.5)
+      MCMCplot( MCMCoutput, title=paste(froot, pat, chan, sep='__'))
+      dev.off()
       
       write.table(posterior[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
@@ -359,6 +371,12 @@ for( chan in c('NDUFB8')){
     }
   }
 }
+
+end_time = Sys.time()
+
+time_taken = data.frame( 'time_taken' = end_time - start_time )
+ 
+write.csv(time_taken, file=file.path('Time/IMC_joint') )
 
 
 

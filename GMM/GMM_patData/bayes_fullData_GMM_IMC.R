@@ -1,14 +1,19 @@
-######################
-#### A MODEL FOR ALL THE DATA, AT ONCE, IN ONE GO, BECASUE WHY NOT?
-######################
+start_time = Sys.time()
+
 library(rjags)
 library(MASS)
 source("../BootStrapping/parseData.R", local = TRUE)
 
+if (length(args)==0) {
+  imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
+} else {
+  # default output file
+  imc_chan = args
+}
+
 myDarkGrey = rgb(169,169,159, max=255, alpha=50)
 myGreen = rgb(0,255,0,max=255,alpha=50)
 myYellow = rgb(225,200,50,max=255, alpha=50)
-
 
 cramp = colorRamp(c(rgb(1,0,0,0.25),rgb(0,0,1,0.25)),alpha=TRUE)
 # rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
@@ -232,7 +237,6 @@ fulldat = 'IMC.RAW.txt'
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
 # removing unwanted info 
-imc_chan = c('SDHA','OSCP', 'VDAC1', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
 incDat = imc_data[imc_data$channel %in% imc_chan, ]
 
 mitochan = "VDAC1"
@@ -248,8 +252,7 @@ MCMCUpdates_Report = 3000
 MCMCUpdates_Thin = 1
 n.chains = 3
 
-#for( chan in imc_chan[imc_chan != mitochan]){
-for( chan in c('NDUFB8')){
+for( chan in imc_chan ){
   outroot = paste( froot, chan, sep='__')
   posterior_file = file.path("Output/IMC_allData", paste0(outroot, "__POSTERIOR.txt") )
   
@@ -359,7 +362,7 @@ for( chan in c('NDUFB8')){
   # plots for each patient
   for(i in 1:length(N)) {
     pat = c('CTRL', pts)[i]
-    class_pat = classifs[(pat_ind[i]+1):pat_ind[i+1]]
+    classifs = classifs[(pat_ind[i]+1):pat_ind[i+1]]
 
     write.table(as.numeric(classifs),file.path("Output/IMC_allData",paste(outroot, pts[i], "CLASS.txt", sep='__')),
                 row.names=FALSE,quote=FALSE,col.names=FALSE)
@@ -370,7 +373,7 @@ for( chan in c('NDUFB8')){
     if( pat=='CTRL'){
       pdf(file.path("PDF/IMC_allData/classifs", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14,height=8.5)
       priorpost( data=data_pat, prior=prior, posterior=posterior,
-                 classifs=class_pat, title=paste(froot, pat, chan, sep='__'))
+                 classifs=classifs, title=paste(froot, pat, chan, sep='__'))
       dev.off()
       pdf(file.path("PDF/IMC_allData/marginals", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14, height=8.5)
       priorpost_marginals(prior=prior, posterior=posterior, 
@@ -379,7 +382,7 @@ for( chan in c('NDUFB8')){
     } else { 
       pdf(file.path("PDF/IMC_allData/classifs", paste0(paste(outroot, pat, sep="__"), ".pdf")), width=14,height=8.5)
       priorpost( data=data_pat, prior=prior, posterior=posterior, ctrl=data_ctrl,
-                 classifs=class_pat, title=paste(froot, pat, chan, sep='__'))
+                 classifs=classifs, title=paste(froot, pat, chan, sep='__'))
       dev.off()
       pdf(file.path("PDF/IMC_allData/marginals", paste0(paste(outroot, pat ,sep='__'), ".pdf")), width=14, height=8.5)
       priorpost_marginals(prior=prior, posterior=posterior, pat_data=data_pat,
@@ -401,4 +404,11 @@ for( chan in c('NDUFB8')){
                            "probdiff[9]","probdiff[10]","Y_syn[1]", "Y_syn[2]")],
               posterior_file, row.names=FALSE, quote=FALSE)
 }
+
+end_time = Sys.time()
+
+time_taken = data.frame( 'time_taken' = end_time - start_time )
+
+write.csv(time_taken, file=file.path('Time/IMC_allData' ) )
+
 
