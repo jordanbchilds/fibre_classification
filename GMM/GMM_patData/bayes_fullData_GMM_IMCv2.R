@@ -44,7 +44,7 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
     contour( kde2d(prior[,'Y_syn[1]'], prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
     
     plot(data[,1], data[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
          xlim=x.lim, ylim=y.lim)
     contour( kde2d(posterior[,'Y_syn[1]'], posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
     
@@ -60,7 +60,7 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
     contour( kde2d(prior[,'Y_syn[1]'], prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
     
     plot(ctrl[,1], ctrl[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
          xlim=x.lim, ylim=y.lim)
     points( data[,1], data[,2], col=classcols(classifs), pch=20)
     contour( kde2d(posterior[,'Y_syn[1]'], posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
@@ -197,9 +197,8 @@ model {
     probdiff[i] = ifelse(i==1, 0, p[i])
     
     for(j in 1:N[i]){
-    
       z[ pat_index[i]+j-1 ] ~ dbern( probdiff[i] )
-      comp[pat_index[i]+j-1] = 2 - z[pat_index[i]+j-1] 
+      comp[pat_index[i]+j-1] = z[pat_index[i]+j-1] + 1
       Y[pat_index[i]+j-1, 1:2] ~ dmnorm(mu[,comp[pat_index[i]+j-1]], tau[,,comp[pat_index[i]+j-1]])
     }
   }
@@ -211,14 +210,11 @@ model {
   tau[1:2,1:2,2] ~ dwish(U_2, n_2)
   mu[1:2,2] ~ dmnorm(mu2_mean, mu2_prec)
   
-  # classification
-  for(i in 1:length(N)) p[i] ~ dbeta(alpha, beta)
+  for(k in 1:length(N)){ p[k] ~ dbeta(alpha, beta) }
 
-  # posterior distribution
-  z_syn ~ dbern(p)
-  class_syn = 2 - z_syn 
-  Y_syn ~ dmnorm(mu[,class_syn], tau[,,class_syn])
-
+  # posterior predictive distribution
+  compOne ~ dmnorm(mu[,1], tau[,,1])
+  compTwo ~ dmnorm(mu[,2], tau[,,2])
 }
 "
 
@@ -349,7 +345,8 @@ for( chan in imc_chan ){
                          "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
                          "probdiff[2]","probdiff[3]","probdiff[4]",
                          "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
-                         "probdiff[9]","probdiff[10]","Y_syn[1]", "Y_syn[2]")]
+                         "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
+                         "copmTwo[1]", "compTwo[2]")]
 
   posterior = as.data.frame(output[[1]])
   prior = as.data.frame(output_priorpred[[1]])
@@ -397,7 +394,8 @@ for( chan in imc_chan ){
                            "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
                            "probdiff[2]","probdiff[3]","probdiff[4]",
                            "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
-                           "probdiff[9]","probdiff[10]","Y_syn[1]", "Y_syn[2]")],
+                           "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
+                           "copmTwo[1]", "compTwo[2]")],
               posterior_file, row.names=FALSE, quote=FALSE)
 }
 
