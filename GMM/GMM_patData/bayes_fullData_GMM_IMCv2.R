@@ -230,9 +230,9 @@ dir.create(file.path("Output/IMC_allData"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData"), showWarnings = FALSE)
 dir.create(file.path("PNG/IMC_allData"), showWarnings = FALSE)
 
-dir.create(file.path("PDF/IMC_allData/MCMC"), showWarnings = FALSE)
-dir.create(file.path("PDF/IMC_allData/classifs"), showWarnings = FALSE)
-dir.create(file.path("PDF/IMC_allData/marginals"), showWarnings = FALSE)
+dir.create(file.path("PDF/IMC_allData/MCMC_v2"), showWarnings = FALSE)
+dir.create(file.path("PDF/IMC_allData/classifs_v2"), showWarnings = FALSE)
+dir.create(file.path("PDF/IMC_allData/marginals_v2"), showWarnings = FALSE)
 
 
 ## tests for RJAGS
@@ -370,16 +370,12 @@ for( chan in imc_chan ){
     data_pat = data_chan[(pat_ind[i]+1):pat_ind[i+1], ]
 
     if( pat=='CTRL'){
-      pdf(file.path("PDF/IMC_allData/classifs", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14,height=8.5)
+      pdf(file.path("PDF/IMC_allData/classifs_v2", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14,height=8.5)
       priorpost( data=data_pat, prior=prior, posterior=posterior,
                  classifs=classifs, title=paste(froot, pat, chan, sep='__'))
       dev.off()
-      # pdf(file.path("PDF/IMC_allData/marginals", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14, height=8.5)
-      # priorpost_marginals(prior=prior, posterior=posterior, pat_data,
-      #                     title=paste(froot, pat , chan, sep='__'))
-      # dev.off()
     } else { 
-      pdf(file.path("PDF/IMC_allData/classifs", paste0(paste(outroot, pat, sep="__"), ".pdf")), width=14,height=8.5)
+      pdf(file.path("PDF/IMC_allData/classifs_v2", paste0(paste(outroot, pat, sep="__"), ".pdf")), width=14,height=8.5)
       priorpost( data=data_pat, prior=prior, posterior=posterior, ctrl=data_ctrl,
                  classifs=classifs, title=paste(froot, pat, chan, sep='__'))
       dev.off()
@@ -387,11 +383,11 @@ for( chan in imc_chan ){
   }
   
   # plots for mcmc 
-  pdf(file.path("PDF/IMC_allData/MCMC", paste0(outroot,".pdf")), width=14,height=8.5)
+  pdf(file.path("PDF/IMC_allData/MCMC_v2", paste0(outroot,".pdf")), width=14,height=8.5)
   MCMCplot(MCMCoutput, pat_data=pat_data, title=paste(froot, chan, sep='__'))
   dev.off()
   
-  pdf(file.path("PDF/IMC_allData/marginals", paste0(paste(outroot, pat ,sep='__'), ".pdf")), width=14, height=8.5)
+  pdf(file.path("PDF/IMC_allData/marginals_v2", paste0(paste(outroot, pat ,sep='__'), ".pdf")), width=14, height=8.5)
   priorpost_marginals(prior=prior, posterior=posterior, data=data,
                       title=paste(froot, pat, chan, sep='__'))
   dev.off()
@@ -409,6 +405,6 @@ end_time = Sys.time()
 
 time_taken = data.frame( 'time_taken' = end_time - start_time )
 
-write.csv(time_taken, file=file.path('Time/IMC_allData' ) )
+write.csv(time_taken, file=file.path('Time/IMC_allData_v2' ) )
 
 
