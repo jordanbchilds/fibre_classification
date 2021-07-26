@@ -70,7 +70,7 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
   par(op)
 } 
 
-priorpost_marginals = function(prior, posterior, pat_data=NULL, title){
+priorpost_marginals = function(prior, posterior, data, title){
   op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
   par(mfrow=c(2,2))
   ## mu_1
@@ -150,13 +150,14 @@ priorpost_marginals = function(prior, posterior, pat_data=NULL, title){
            xlab=expression(tau[222]), ylab=expression(tau[122]), nlevels=5,
            main=expression(tau[2]~'Posterior Density') )
   title(main=title, line = -1, outer = TRUE)
-  
-  if( !is.null(pat_data) ){
-    par(mfrow=c(1,2))
-    plot( density(posterior[,'probdiff']), cex.lab=2, cex.axis=1.5, xlim=c(0,1),
-          xlab='probdiff', ylab='density', lwd=2, col='red', main='probdiff Density')
-    lines( density(rbeta(5000,pat_data$alpha, pat_data$beta)), lwd=2, col='green')
-    title(main=title, line = -1, outer = TRUE)
+
+  par(mfrow=c(2,5))
+  for( i in 1:length(pts)){
+  pdiff = paste0('probdiff[',i+1,']')
+  plot( density(posterior[,pdiff]), cex.lab=2, cex.axis=1.5, xlim=c(0,1),
+        xlab=pdiff, ylab='density', lwd=2, col='red', main=paste(pts[i],pdiff,'Density'))
+  lines( density(rbeta(5000, data$alpha, data$beta)), lwd=2, col='green')
+  title(main=title, line = -1, outer = TRUE)
   }
   par(op)
 }
@@ -353,7 +354,7 @@ for( chan in imc_chan ){
   posterior = as.data.frame(output[[1]])
   prior = as.data.frame(output_priorpred[[1]])
 
-  classifs = colMeans( posterior[, grepl('z', colnames(posterior))] )
+  classifs_all = colMeans( posterior[, grepl('z', colnames(posterior))] )
   colnames(posterior) = colnames(output[[1]])
   colnames(prior) = colnames(output_priorpred[[1]])
 
@@ -363,38 +364,36 @@ for( chan in imc_chan ){
   # plots for each patient
   for(i in 1:length(N)) {
     pat = c('CTRL', pts)[i]
-    classifs = classifs[(pat_ind[i]+1):pat_ind[i+1]]
-
+    classifs = classifs_all[(pat_ind[i]+1):pat_ind[i+1]]
     write.table(as.numeric(classifs),file.path("Output/IMC_allData",paste(outroot, pts[i], "CLASS.txt", sep='__')),
                 row.names=FALSE,quote=FALSE,col.names=FALSE)
-
     data_pat = data_chan[(pat_ind[i]+1):pat_ind[i+1], ]
-
 
     if( pat=='CTRL'){
       pdf(file.path("PDF/IMC_allData/classifs", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14,height=8.5)
       priorpost( data=data_pat, prior=prior, posterior=posterior,
                  classifs=classifs, title=paste(froot, pat, chan, sep='__'))
       dev.off()
-      pdf(file.path("PDF/IMC_allData/marginals", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14, height=8.5)
-      priorpost_marginals(prior=prior, posterior=posterior, 
-                          title=paste(froot, pat , chan, sep='__'))
-      dev.off()
+      # pdf(file.path("PDF/IMC_allData/marginals", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14, height=8.5)
+      # priorpost_marginals(prior=prior, posterior=posterior, pat_data,
+      #                     title=paste(froot, pat , chan, sep='__'))
+      # dev.off()
     } else { 
       pdf(file.path("PDF/IMC_allData/classifs", paste0(paste(outroot, pat, sep="__"), ".pdf")), width=14,height=8.5)
       priorpost( data=data_pat, prior=prior, posterior=posterior, ctrl=data_ctrl,
                  classifs=classifs, title=paste(froot, pat, chan, sep='__'))
-      dev.off()
-      pdf(file.path("PDF/IMC_allData/marginals", paste0(paste(outroot, pat ,sep='__'), ".pdf")), width=14, height=8.5)
-      priorpost_marginals(prior=prior, posterior=posterior, pat_data=data_pat,
-                          title=paste(froot, pat, chan, sep='__'))
       dev.off()
     }
   }
   
   # plots for mcmc 
   pdf(file.path("PDF/IMC_allData/MCMC", paste0(outroot,".pdf")), width=14,height=8.5)
-  MCMCplot(MCMCoutput, title=paste(froot, chan, sep='__'))
+  MCMCplot(MCMCoutput, pat_data=pat_data, title=paste(froot, chan, sep='__'))
+  dev.off()
+  
+  pdf(file.path("PDF/IMC_allData/marginals", paste0(paste(outroot, pat ,sep='__'), ".pdf")), width=14, height=8.5)
+  priorpost_marginals(prior=prior, posterior=posterior, data=data,
+                      title=paste(froot, pat, chan, sep='__'))
   dev.off()
 
   write.table(posterior[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
