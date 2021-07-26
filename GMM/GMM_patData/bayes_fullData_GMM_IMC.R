@@ -331,14 +331,14 @@ for( chan in imc_chan ){
 
   update(model, n.iter=MCMCUpdates)
 
-  converge = coda.samples(model=model, variable.names=c("mu","tau","Y_syn","z","probdiff", 'compOne', 'compTwo'),
+  converge = coda.samples(model=model, variable.names=c("mu","tau","z","probdiff", 'compOne', 'compTwo'),
                           n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
 
-  output = coda.samples(model=model, variable.names=c("mu", "tau","Y_syn","z","probdiff", 'compOne', 'compTwo'),
+  output = coda.samples(model=model, variable.names=c("mu", "tau","z","probdiff", 'compOne', 'compTwo'),
                         n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
 
   output_priorpred = coda.samples(model=model_priorpred,
-                                  variable.names=c("mu", "tau","Y_syn","z","probdiff", 'compOne', 'compTwo'),
+                                  variable.names=c("mu", "tau","z","probdiff", 'compOne', 'compTwo'),
                                   n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
 
   MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
