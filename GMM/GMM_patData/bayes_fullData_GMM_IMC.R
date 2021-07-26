@@ -176,7 +176,7 @@ MCMCplot = function( MCMCoutput, lag=20, title){
     }
   } else {
     for( param in col.names){
-      plot( autocorr(MCMcoutput[[1]][,param], lags=0:lag), type='h', 
+      plot( autocorr(MCMCoutput[[1]][,param], lags=0:lag), type='h', 
       xlab='Index', ylab='' )
       for(j in 2:n.chains) lines( autocorr(MCMCoutput[[j]][,param], lags=0:20), type='h', col=j)
       
