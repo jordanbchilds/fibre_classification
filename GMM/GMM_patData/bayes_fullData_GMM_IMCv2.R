@@ -194,9 +194,10 @@ MCMCplot = function( MCMCoutput, lag=20, title){
 modelstring = "
 model {
   for(i in 1:length(N)){
-    probdiff[i] = ifelse(i==1, 0, p)
+    probdiff[i] = ifelse(i==1, 0, p[i])
     
     for(j in 1:N[i]){
+    
       z[ pat_index[i]+j-1 ] ~ dbern( probdiff[i] )
       comp[pat_index[i]+j-1] = 2 - z[pat_index[i]+j-1] 
       Y[pat_index[i]+j-1, 1:2] ~ dmnorm(mu[,comp[pat_index[i]+j-1]], tau[,,comp[pat_index[i]+j-1]])
@@ -211,12 +212,13 @@ model {
   mu[1:2,2] ~ dmnorm(mu2_mean, mu2_prec)
   
   # classification
-  p ~ dbeta(alpha, beta)
+  for(i in 1:length(N)) p[i] ~ dbeta(alpha, beta)
 
   # posterior distribution
   z_syn ~ dbern(p)
   class_syn = 2 - z_syn 
   Y_syn ~ dmnorm(mu[,class_syn], tau[,,class_syn])
+
 }
 "
 
