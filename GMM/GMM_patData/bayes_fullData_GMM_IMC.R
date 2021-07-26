@@ -41,12 +41,12 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
     plot(data[,1], data[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
          xlim=x.lim, ylim=y.lim)
-    contour( kde2d(prior[,'Y_syn[1]'], prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    contour( kde2d(prior[,'compOne[1]'], prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     
     plot(data[,1], data[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
          xlim=x.lim, ylim=y.lim)
-    contour( kde2d(posterior[,'Y_syn[1]'], posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    contour( kde2d(posterior[,'compOne[1]'], posterior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     
     title(main=title, line = -1, outer = TRUE)
   } else {
@@ -57,13 +57,13 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
          xlim=x.lim, ylim=y.lim)
     points( data[,1], data[,2], col=myYellow, pch=20)
-    contour( kde2d(prior[,'Y_syn[1]'], prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    contour( kde2d(prior[,'compOne[1]'], prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     
     plot(ctrl[,1], ctrl[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
          xlim=x.lim, ylim=y.lim)
     points( data[,1], data[,2], col=classcols(classifs), pch=20)
-    contour( kde2d(posterior[,'Y_syn[1]'], posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    contour( kde2d(posterior[,'compOne[1]'], posterior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     title(main=title, line = -1, outer = TRUE)
   }
 
