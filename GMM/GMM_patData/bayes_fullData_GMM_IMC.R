@@ -198,7 +198,7 @@ model {
     
     for(j in 1:N[i]){
       z[ pat_index[i]+j-1 ] ~ dbern( probdiff[i] )
-      comp[pat_index[i]+j-1] = 2 - z[pat_index[i]+j-1] 
+      comp[pat_index[i]+j-1] = z[pat_index[i]+j-1] + 1
       Y[pat_index[i]+j-1, 1:2] ~ dmnorm(mu[,comp[pat_index[i]+j-1]], tau[,,comp[pat_index[i]+j-1]])
     }
   }
@@ -213,10 +213,9 @@ model {
   # classification
   p ~ dbeta(alpha, beta)
 
-  # posterior distribution
-  z_syn ~ dbern(p)
-  class_syn = 2 - z_syn 
-  Y_syn ~ dmnorm(mu[,class_syn], tau[,,class_syn])
+  # posterior predictive distribution
+  compOne ~ dmnorm(mu[,1], tau[,,1])
+  compTwo ~ dmnorm(mu[,2], tau[,,2])
 }
 "
 
@@ -347,7 +346,8 @@ for( chan in imc_chan ){
                          "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
                          "probdiff[2]","probdiff[3]","probdiff[4]",
                          "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
-                         "probdiff[9]","probdiff[10]","Y_syn[1]", "Y_syn[2]")]
+                         "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
+                         "copmTwo[1]", "compTwo[2]")]
 
   posterior = as.data.frame(output[[1]])
   prior = as.data.frame(output_priorpred[[1]])
@@ -372,10 +372,6 @@ for( chan in imc_chan ){
       priorpost( data=data_pat, prior=prior, posterior=posterior,
                  classifs=classifs, title=paste(froot, pat, chan, sep='__'))
       dev.off()
-      # pdf(file.path("PDF/IMC_allData/marginals", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14, height=8.5)
-      # priorpost_marginals(prior=prior, posterior=posterior, pat_data,
-      #                     title=paste(froot, pat , chan, sep='__'))
-      # dev.off()
     } else { 
       pdf(file.path("PDF/IMC_allData/classifs", paste0(paste(outroot, pat, sep="__"), ".pdf")), width=14,height=8.5)
       priorpost( data=data_pat, prior=prior, posterior=posterior, ctrl=data_ctrl,
@@ -386,7 +382,7 @@ for( chan in imc_chan ){
   
   # plots for mcmc 
   pdf(file.path("PDF/IMC_allData/MCMC", paste0(outroot,".pdf")), width=14,height=8.5)
-  MCMCplot(MCMCoutput, pat_data=pat_data, title=paste(froot, chan, sep='__'))
+  MCMCplot(MCMCoutput, title=paste(froot, chan, sep='__'))
   dev.off()
   
   pdf(file.path("PDF/IMC_allData/marginals", paste0(paste(outroot, pat ,sep='__'), ".pdf")), width=14, height=8.5)
@@ -399,7 +395,8 @@ for( chan in imc_chan ){
                            "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
                            "probdiff[2]","probdiff[3]","probdiff[4]",
                            "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
-                           "probdiff[9]","probdiff[10]","Y_syn[1]", "Y_syn[2]")],
+                           "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
+                           "copmTwo[1]", "compTwo[2]")],
               posterior_file, row.names=FALSE, quote=FALSE)
 }
 

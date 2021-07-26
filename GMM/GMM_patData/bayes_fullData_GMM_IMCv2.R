@@ -381,7 +381,7 @@ for( chan in imc_chan ){
   
   # plots for mcmc 
   pdf(file.path("PDF/IMC_allData/MCMC_v2", paste0(outroot,".pdf")), width=14,height=8.5)
-  MCMCplot(MCMCoutput, pat_data=pat_data, title=paste(froot, chan, sep='__'))
+  MCMCplot(MCMCoutput, title=paste(froot, chan, sep='__'))
   dev.off()
   
   pdf(file.path("PDF/IMC_allData/marginals_v2", paste0(paste(outroot, pat ,sep='__'), ".pdf")), width=14, height=8.5)
