@@ -222,7 +222,7 @@ dir.create(file.path("Output"), showWarnings = FALSE)
 dir.create(file.path("PDF"), showWarnings = FALSE)
 dir.create(file.path("PNG"), showWarnings = FALSE)
 
-dir.create(file.path("Output/IMC_allData"), showWarnings = FALSE)
+dir.create(file.path("Output/IMC_allData_v2"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData"), showWarnings = FALSE)
 dir.create(file.path("PNG/IMC_allData"), showWarnings = FALSE)
 
@@ -252,7 +252,7 @@ n.chains = 3
 
 for( chan in imc_chan ){
   outroot = paste( froot, chan, sep='__')
-  posterior_file = file.path("Output/IMC_allData", paste0(outroot, "__POSTERIOR.txt") )
+  posterior_file = file.path("Output/IMC_allData_v2", paste0(outroot, "__POSTERIOR.txt") )
   
   # dataset with only the current protein and VDAC1
   data_chan = imcDat[(imcDat$channel==chan)|(imcDat$channel==mitochan),]
@@ -362,7 +362,7 @@ for( chan in imc_chan ){
   for(i in 1:length(N)) {
     pat = c('CTRL', pts)[i]
     classifs = classifs_all[(pat_ind[i]+1):pat_ind[i+1]]
-    write.table(as.numeric(classifs),file.path("Output/IMC_allData",paste(outroot, pts[i], "CLASS.txt", sep='__')),
+    write.table(as.numeric(classifs),file.path("Output/IMC_allData_v2",paste(outroot, pts[i], "CLASS.txt", sep='__')),
                 row.names=FALSE,quote=FALSE,col.names=FALSE)
     data_pat = data_chan[(pat_ind[i]+1):pat_ind[i+1], ]
 
