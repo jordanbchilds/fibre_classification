@@ -44,7 +44,7 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
     contour( kde2d(prior[,'compOne[1]'], prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     
     plot(data[,1], data[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
          xlim=x.lim, ylim=y.lim)
     contour( kde2d(posterior[,'compOne[1]'], posterior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     
@@ -60,7 +60,7 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
     contour( kde2d(prior[,'compOne[1]'], prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     
     plot(ctrl[,1], ctrl[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
          xlim=x.lim, ylim=y.lim)
     
     points( data[,1], data[,2], col=classcols(classifs), pch=20)
@@ -214,11 +214,6 @@ model {
   # classification
   probdiff ~ dbeta(alpha, beta)
 
-  # posterior distribution
-  z_syn ~ dbern(probdiff)
-  class_syn = 2 - z_syn 
-  Y_syn ~ dmnorm(mu[,class_syn], tau[,,class_syn])
-  
   compOne ~ dmnorm(mu[,1], tau[,,1])
   compTwo~ dmnorm(mu[,2], tau[,,2])
 }
@@ -313,20 +308,21 @@ for( chan in imc_chan ){
       
       update(model, n.iter=MCMCUpdates)
       
-      converge = coda.samples(model=model, variable.names=c("mu","tau","Y_syn","z","probdiff", "compOne", "compTwo"),
+      converge = coda.samples(model=model, variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo"),
                                   n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
       
-      output = coda.samples(model=model, variable.names=c("mu", "tau","Y_syn","z","probdiff", "compOne", "compTwo"),
+      output = coda.samples(model=model, variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo"),
                                 n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
       
       output_priorpred = coda.samples(model=model_priorpred,
-                                          variable.names=c("mu", "tau","Y_syn","z","probdiff", "compOne", "compTwo"),
+                                          variable.names=c("mu", "tau","z","probdiff", "compOne", "compTwo"),
                                           n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
       
       MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                              "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                              "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                             "probdiff", "Y_syn[1]", "Y_syn[2]")]
+                             "probdiff", "compOne[1]", "compOne[2]", "compTwo[1]",
+                             "compTwo[2]")]
       
       posterior = as.data.frame(output[[1]])
       prior = as.data.frame(output_priorpred[[1]])
@@ -364,7 +360,8 @@ for( chan in imc_chan ){
       write.table(posterior[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                                "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                               "probdiff", "Y_syn[1]", "Y_syn[2]")],
+                               "probdiff", "compOne[1]", "compOne[2]", "compTwo[1]",
+                               "compTwo[2]")],
                   posterior_file, row.names=FALSE, quote=FALSE)
     }
   }

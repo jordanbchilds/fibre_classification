@@ -346,7 +346,7 @@ for( chan in imc_chan ){
                          "probdiff[2]","probdiff[3]","probdiff[4]",
                          "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
                          "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
-                         "copmTwo[1]", "compTwo[2]")]
+                         "compTwo[1]", "compTwo[2]")]
 
   posterior = as.data.frame(output[[1]])
   prior = as.data.frame(output_priorpred[[1]])
@@ -395,7 +395,7 @@ for( chan in imc_chan ){
                            "probdiff[2]","probdiff[3]","probdiff[4]",
                            "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
                            "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
-                           "copmTwo[1]", "compTwo[2]")],
+                           "compTwo[1]", "compTwo[2]")],
               posterior_file, row.names=FALSE, quote=FALSE)
 }
 

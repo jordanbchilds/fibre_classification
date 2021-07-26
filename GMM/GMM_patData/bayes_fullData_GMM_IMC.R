@@ -338,7 +338,7 @@ for( chan in imc_chan ){
                         n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
 
   output_priorpred = coda.samples(model=model_priorpred,
-                                  variable.names=c("mu", "tau","z","probdiff", 'compOne', 'compTwo'),
+                                  variable.names=c("mu","tau","z","probdiff", 'compOne', 'compTwo'),
                                   n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
 
   MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
@@ -347,7 +347,7 @@ for( chan in imc_chan ){
                          "probdiff[2]","probdiff[3]","probdiff[4]",
                          "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
                          "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
-                         "copmTwo[1]", "compTwo[2]")]
+                         "compTwo[1]", "compTwo[2]")]
 
   posterior = as.data.frame(output[[1]])
   prior = as.data.frame(output_priorpred[[1]])
@@ -396,7 +396,7 @@ for( chan in imc_chan ){
                            "probdiff[2]","probdiff[3]","probdiff[4]",
                            "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
                            "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
-                           "copmTwo[1]", "compTwo[2]")],
+                           "compTwo[1]", "compTwo[2]")],
               posterior_file, row.names=FALSE, quote=FALSE)
 }
 
