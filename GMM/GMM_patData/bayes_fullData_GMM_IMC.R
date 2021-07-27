@@ -16,6 +16,8 @@ if (length(args)==0) {
 myDarkGrey = rgb(169,169,159, max=255, alpha=50)
 myGreen = rgb(0,255,0,max=255,alpha=50)
 myYellow = rgb(225,200,50,max=255, alpha=50)
+myBlue = cramp(1)
+myRed = cramp(0)
 
 cramp = colorRamp(c(rgb(1,0,0,0.25),rgb(0,0,1,0.25)),alpha=TRUE)
 # rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
@@ -28,6 +30,19 @@ classcols = function(classif){
   # output: rgb colour name
   rgbvals = cramp(classif)/255.0
   return(rgb(rgbvals[,1],rgbvals[,2],rgbvals[,3],rgbvals[,4]))
+}
+
+priorpost_comp = function(prior, posterior, title){
+  # prior
+  contour( kde2d(prior[,'compOne[1]'], prior[,'compOne[2]'], n=100), col=myYellow, nlevels=5 )
+  contour( kde2d(prior[,'compTwo[1]'], prior[,'compTwo[2]'], n=100), col=myGreen, add=TRUE, nlevels=5 )
+  legend('topleft', lgeend=c('Comp 1', 'Comp 2'), col=c(myYellow, myGreen), lty=1)
+  # posterior
+  contour( kde2d(posterior[,'compOne[1]'], posterior[,'compOne[2]'], n=100), col=myYellow, nlevels=5 )
+  contour( kde2d(posterior[,'compTwo[1]'], prior[,'compTwo[2]'], n=100), col=myGreen, add=TRUE, nlevels=5 )
+  legend('topleft', lgeend=c('Comp 1', 'Comp 2'), col=c(myYellow, myGreen), lty=1)
+  
+  title(main=title, line = -1, outer = TRUE)
 }
 
 priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
@@ -44,7 +59,7 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
     contour( kde2d(prior[,'compOne[1]'], prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     
     plot(data[,1], data[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
          xlim=x.lim, ylim=y.lim)
     contour( kde2d(posterior[,'compOne[1]'], posterior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     
@@ -60,12 +75,21 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
     contour( kde2d(prior[,'compOne[1]'], prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     
     plot(ctrl[,1], ctrl[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
          xlim=x.lim, ylim=y.lim)
     points( data[,1], data[,2], col=classcols(classifs), pch=20)
     contour( kde2d(posterior[,'compOne[1]'], posterior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     title(main=title, line = -1, outer = TRUE)
-  }
+    
+    # densities
+    plot(ctrl[,1], ctrl[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
+         xlim=x.lim, ylim=y.lim)
+    points( data[,1], data[,2], col=classcols(classifs), pch=20)
+    contour( kde2d(posterior[,'compOne[1]'], posterior[,'compOne[2]'], n=100), col=myBlue, add=TRUE, nlevels=5 )
+    contour( kde2d(posterior[,'compTwo[1]'], posterior[,'compTwo[2]'], n=100), col=myRed, add=TRUE, nlevels=5 )
+    
+    title(main=title, line = -1, outer = TRUE)  }
 
   par(op)
 } 
@@ -194,7 +218,7 @@ MCMCplot = function( MCMCoutput, lag=20, title){
 modelstring = "
 model {
   for(i in 1:length(N)){
-    probdiff[i] = ifelse(i==1, 0, p)
+    probdiff[i] = ifelse(i==1, 0, p[i])
     
     for(j in 1:N[i]){
       z[ pat_index[i]+j-1 ] ~ dbern( probdiff[i] )
@@ -210,8 +234,7 @@ model {
   tau[1:2,1:2,2] ~ dwish(U_2, n_2)
   mu[1:2,2] ~ dmnorm(mu2_mean, mu2_prec)
   
-  # classification
-  p ~ dbeta(alpha, beta)
+  for(k in 1:length(N)){ p[k] ~ dbeta(alpha, beta) }
 
   # posterior predictive distribution
   compOne ~ dmnorm(mu[,1], tau[,,1])
@@ -223,7 +246,7 @@ dir.create(file.path("Output"), showWarnings = FALSE)
 dir.create(file.path("PDF"), showWarnings = FALSE)
 dir.create(file.path("PNG"), showWarnings = FALSE)
 
-dir.create(file.path("Output/IMC_allData_v1"), showWarnings = FALSE)
+dir.create(file.path("Output/IMC_allData"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData"), showWarnings = FALSE)
 dir.create(file.path("PNG/IMC_allData"), showWarnings = FALSE)
 
@@ -253,27 +276,25 @@ n.chains = 3
 
 for( chan in imc_chan ){
   outroot = paste( froot, chan, sep='__')
-  posterior_file = file.path("Output/IMC_allData_v1", paste0(outroot, "__POSTERIOR.txt") )
-  
-  # dataset with only the current protein and VDAC1
+  posterior_file = file.path("Output/IMC_allData", paste0(outroot, "__POSTERIOR.txt") )
+    # dataset with only the current protein and VDAC1
   data_chan = imcDat[(imcDat$channel==chan)|(imcDat$channel==mitochan),]
-  
   # control data for chan
   control = imcDat[(imcDat$patient_type=='control')&(imcDat$type=='mean intensity'), ]
   Xctrl = log(control$value[control$channel==mitochan])
   Yctrl = log(control$value[control$channel==chan])
   Nctrl = length(Yctrl)
-  
+    
   Xchan = Xctrl
   Ychan = Yctrl
   patient_id = rep('control', Nctrl)
-  
+    
   data_ctrl = data.frame(Xctrl, Yctrl,  rep('control', Nctrl))
   colnames(data_ctrl) = c(mitochan, chan, 'patient')
-  
+    
   N = double(10) # store the number of observations per patient 
   N[1] = Nctrl
-  
+    
   for( j in 1:length(pts) ){
     # all the patient data for chan
     patient = imcDat[(imcDat$patient_id==pts[j])&(imcDat$type=="mean intensity"), ] 
@@ -281,7 +302,6 @@ for( chan in imc_chan ){
     Xpat = log(patient$value[patient$channel==mitochan])
     Ypat = log(patient$value[patient$channel==chan]) 
     Npat = length(Xpat)
-
     # add patient data to data matrix
     Xchan = c(Xchan, Xpat)
     Ychan = c(Ychan, Ypat)
@@ -289,121 +309,175 @@ for( chan in imc_chan ){
 
     N[j+1] = Npat
   }
-  # make data frame from data matrix
+  
   data_chan = data.frame(Xchan, Ychan, patient_id)
   colnames(data_chan) = c(mitochan, chan, 'patient')
   
-  Ychan = data_chan[,c(mitochan, chan)]
+  if( !file.exists(posterior_file) ){
+    # make data frame from data matrix
 
-  # row index for each change in patient
-  con_pts = c('control', pts)
-  pat_index = double(length(con_pts))
-  for(i in 1:length(con_pts)) pat_index[i] = min(which(data_chan[,'patient']==con_pts[i]))
+    Ychan = data_chan[,c(mitochan, chan)]
   
-  ## PRIORS
-  mu1_mean = c(1,1.5)
-  mu2_mean = mu1_mean
+    # row index for each change in patient
+    con_pts = c('control', pts)
+    pat_index = double(length(con_pts))
+    for(i in 1:length(con_pts)) pat_index[i] = min(which(data_chan[,'patient']==con_pts[i]))
+    
+    ## PRIORS
+    mu1_mean = c(1,1.5)
+    mu2_mean = mu1_mean
+    
+    mu1_prec = solve( matrix(c(0.2,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
+    mu2_prec = solve( 5*diag(2) )
+    
+    U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
+    n_1 = 50
+    U_2 = 3*diag(2)
+    n_2 = 20
+    
+    alpha = 1
+    beta = 1
+    
+    
+    data = list(Y=Ychan, N=N, pat_index=pat_index,
+                mu1_mean=mu1_mean, mu1_prec=mu1_prec,
+                mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
+                U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
+    
+    data_priorpred = data
+    data_priorpred$Y = NULL
+    data_priorpred$N = 0
   
-  mu1_prec = solve( matrix(c(0.2,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
-  mu2_prec = solve( 5*diag(2) )
+    model = jags.model(textConnection(modelstring), data=data, n.chains=n.chains)
   
-  U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
-  n_1 = 50
-  U_2 = 3*diag(2)
-  n_2 = 20
+    model_priorpred = jags.model(textConnection(modelstring), data=data_priorpred)
   
-  alpha = 1
-  beta = 1
+    update(model, n.iter=MCMCUpdates)
   
+    converge = coda.samples(model=model, variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo"),
+                            n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
   
-  data = list(Y=Ychan, N=N, pat_index=pat_index,
-              mu1_mean=mu1_mean, mu1_prec=mu1_prec,
-              mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
-              U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
-  
-  data_priorpred = data
-  data_priorpred$Y = NULL
-  data_priorpred$N = 0
-
-  model = jags.model(textConnection(modelstring), data=data, n.chains=n.chains)
-
-  model_priorpred = jags.model(textConnection(modelstring), data=data_priorpred)
-
-  update(model, n.iter=MCMCUpdates)
-
-  converge = coda.samples(model=model, variable.names=c("mu","tau","z","probdiff", 'compOne', 'compTwo'),
+    output = coda.samples(model=model, variable.names=c("mu", "tau","z","probdiff", "compOne", "compTwo"),
                           n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
-
-  output = coda.samples(model=model, variable.names=c("mu", "tau","z","probdiff", 'compOne', 'compTwo'),
-                        n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
-
-  output_priorpred = coda.samples(model=model_priorpred,
-                                  variable.names=c("mu","tau","z","probdiff", 'compOne', 'compTwo'),
-                                  n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
-
-  MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
-                         "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
-                         "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                         "probdiff[2]","probdiff[3]","probdiff[4]",
-                         "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
-                         "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
-                         "compTwo[1]", "compTwo[2]")]
-
-  posterior = as.data.frame(output[[1]])
-  prior = as.data.frame(output_priorpred[[1]])
-
-  classifs_all = colMeans( posterior[, grepl('z', colnames(posterior))] )
-  colnames(posterior) = colnames(output[[1]])
-  colnames(prior) = colnames(output_priorpred[[1]])
-
-  pat_ind = c(0,N)
-  pat_ind = cumsum(pat_ind)
-
-  # plots for each patient
-  for(i in 1:length(N)) {
-    pat = c('CTRL', pts)[i]
-    classifs = classifs_all[(pat_ind[i]+1):pat_ind[i+1]]
-    write.table(as.numeric(classifs),file.path("Output/IMC_allData_v1",paste(outroot, pts[i], "CLASS.txt", sep='__')),
-                row.names=FALSE,quote=FALSE,col.names=FALSE)
-    data_pat = data_chan[(pat_ind[i]+1):pat_ind[i+1], ]
-
-    if( pat=='CTRL'){
-      pdf(file.path("PDF/IMC_allData/classifs", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14,height=8.5)
-      priorpost( data=data_pat, prior=prior, posterior=posterior,
-                 classifs=classifs, title=paste(froot, pat, chan, sep='__'))
-      dev.off()
-    } else { 
-      pdf(file.path("PDF/IMC_allData/classifs", paste0(paste(outroot, pat, sep="__"), ".pdf")), width=14,height=8.5)
-      priorpost( data=data_pat, prior=prior, posterior=posterior, ctrl=data_ctrl,
-                 classifs=classifs, title=paste(froot, pat, chan, sep='__'))
-      dev.off()
-    }
-  }
   
-  # plots for mcmc 
-  pdf(file.path("PDF/IMC_allData/MCMC", paste0(outroot,".pdf")), width=14,height=8.5)
-  MCMCplot(MCMCoutput, title=paste(froot, chan, sep='__'))
-  dev.off()
+    output_priorpred = coda.samples(model=model_priorpred,
+                                    variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo"),
+                                    n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
   
-  pdf(file.path("PDF/IMC_allData/marginals", paste0(paste(outroot, pat ,sep='__'), ".pdf")), width=14, height=8.5)
-  priorpost_marginals(prior=prior, posterior=posterior, data=data,
-                      title=paste(froot, pat, chan, sep='__'))
-  dev.off()
-
-  write.table(posterior[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+    MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                            "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                            "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
                            "probdiff[2]","probdiff[3]","probdiff[4]",
                            "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
                            "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
-                           "compTwo[1]", "compTwo[2]")],
-              posterior_file, row.names=FALSE, quote=FALSE)
+                           "compTwo[1]", "compTwo[2]")]
+  
+    posterior = as.data.frame(output[[1]])
+    prior = as.data.frame(output_priorpred[[1]])
+  
+    classifs_all = colMeans( posterior[, grepl('z', colnames(posterior))] )
+    colnames(posterior) = colnames(output[[1]])
+    colnames(prior) = colnames(output_priorpred[[1]])
+    
+    write.table(posterior[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+                             "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                             "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                             "probdiff[2]","probdiff[3]","probdiff[4]",
+                             "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
+                             "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
+                             "compTwo[1]", "compTwo[2]")],
+                posterior_file, row.names=FALSE, quote=FALSE)
+    
+  } else {
+
+    mu1_mean = c(1,1.5)
+    mu2_mean = mu1_mean
+    mu1_prec = solve( matrix(c(0.2,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
+    mu2_prec = solve( 5*diag(2) )
+    U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
+    n_1 = 50
+    U_2 = 3*diag(2)
+    n_2 = 20
+    alpha = 1
+    beta = 1
+    
+    con_pts = c('control', pts)
+    pat_index = double(length(con_pts))
+    for(i in 1:length(con_pts)) pat_index[i] = min(which(data_chan[,'patient']==con_pts[i]))
+    
+    data_priorpred = list(Y=NULL, N=0, pat_index=pat_index,
+                mu1_mean=mu1_mean, mu1_prec=mu1_prec,
+                mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
+                U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
+    model_priorpred = jags.model(textConnection(modelstring), data=data_priorpred)
+    output_priorpred = coda.samples(model=model_priorpred,
+                                    variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo"),
+                                    n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
+    prior = as.data.frame(output_priorpred[[1]])
+    colnames(prior) = colnames(output_priorpred[[1]])
+    
+    posterior = read.delim( posterior_file, header=TRUE, sep=" ", stringsAsFactors = FALSE)
+    colnames(posterior) = c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+                            "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                            "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                            "probdiff[2]","probdiff[3]","probdiff[4]",
+                            "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
+                            "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
+                            "compTwo[1]", "compTwo[2]")
+    
+    classifs_all = read.delim( )
+    
+  }
+  
+  pat_ind = c(0,N)
+  pat_ind = cumsum(pat_ind)
+  con_pats = c('CTRL', pts)
+  
+  # plots for each patient
+  for(i in 1:length(N)) {
+    pat = con_pats[i]
+    data_pat = data_chan[(pat_ind[i]+1):pat_ind[i+1], ]
+    
+    class_filePath = file.path("PDF/IMC_allData/classifs", paste0(paste(outroot, pat, sep="__"), ".pdf"))
+    if( !file.exists(class_filePath)){
+      if( pat=='CTRL'){
+        pdf(class_filePath, width=14,height=8.5)
+        priorpost( data=data_pat, prior=prior, posterior=posterior,
+                   classifs=classifs, title=paste(froot, pat, chan, sep='__'))
+        dev.off()
+      } else { 
+        pdf(class_filePath, width=14,height=8.5)
+        priorpost( data=data_pat, prior=prior, posterior=posterior, ctrl=data_ctrl,
+                   classifs=classifs, title=paste(froot, pat, chan, sep='__'))
+        dev.off()
+        
+        classifs = classifs_all[(pat_ind[i]+1):pat_ind[i+1]]
+        write.table(as.numeric(classifs),file.path("Output/IMC_allData",paste(outroot, pat, "CLASS.txt", sep='__')),
+                    row.names=FALSE,quote=FALSE,col.names=FALSE)
+      }
+    }         
+  }
+  
+  mcmc_filePath = file.path("PDF/IMC_allData/MCMC", paste0(outroot,".pdf"))
+  if(!file.exists(mcmc_filePath)){
+    pdf(mcmc_filePath, width=14,height=8.5)
+    MCMCplot(MCMCoutput, title=paste(froot, chan, sep='__'))
+    dev.off()
+  }
+  
+  marg_filePath = file.path("PDF/IMC_allData/marginals", paste0(paste(outroot, pat ,sep='__'), ".pdf"))
+  if(!file.exists(marg_filePath)){
+    pdf(marg_filePath, width=14, height=8.5)
+    priorpost_marginals(prior=prior, posterior=posterior, data=data,
+                        title=paste(froot, pat, chan, sep='__'))
+    dev.off()
+  }
+
+
 }
 
 end_time = Sys.time()
-
 time_taken = data.frame( 'time_taken' = end_time - start_time )
-
 write.csv(time_taken, file=file.path('Time/IMC_allData' ) )
 
 
