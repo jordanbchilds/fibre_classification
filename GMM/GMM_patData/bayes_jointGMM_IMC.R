@@ -1,8 +1,8 @@
-start_time = Sys.time()
 
 library(rjags)
 library(beanplot)
 library(MASS)
+library(tictoc)
 source("../BootStrapping/parseData.R", local = TRUE)
 
 args = commandArgs(trailingOnly = TRUE)
@@ -12,6 +12,8 @@ if (length(args)==0) {
 } else {
   imc_chan = args
 }
+
+tic(paste("bayes_jointGMM_IMC.R", imc_chan))
 
 myDarkGrey = rgb(169,169,159, max=255, alpha=100)
 myGreen = rgb(25,90,0,max=255,alpha=50)
@@ -367,10 +369,8 @@ for( chan in imc_chan ){
   }
 }
 
-end_time = Sys.time()
-
-time_taken = data.frame( 'time_taken' = end_time - start_time )
- 
+time = toc()
+time_taken = data.frame( 'time_taken' = time$toc - time$tic )
 write.csv(time_taken, file=file.path('Time/IMC_joint') )
 
 
