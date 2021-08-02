@@ -200,7 +200,7 @@ model {
   }
   for(j in 1:Npat ){ # fit to patient data
     z[j] ~ dbern(probdiff)
-    class[j] =  z[j] + 1
+    class[j] =   2 - z[j]
     Ypat[j,] ~ dmnorm(mu[,class[j]], tau[,,class[j]] )
   }
   
@@ -222,12 +222,12 @@ model {
 
 dir.create(file.path("Output"), showWarnings = FALSE)
 dir.create(file.path("PDF"), showWarnings = FALSE)
-dir.create(file.path("PNG"), showWarnings = FALSE)
+# dir.create(file.path("PNG"), showWarnings = FALSE)
 dir.create(file.path("Time"), showWarnings = FALSE)
 
 dir.create(file.path("Output/IMC_joint"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint"), showWarnings = FALSE)
-dir.create(file.path("PNG/IMC_joint"), showWarnings = FALSE)
+# dir.create(file.path("PNG/IMC_joint"), showWarnings = FALSE)
 
 dir.create(file.path("PDF/IMC_joint/MCMC"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint/classifs"), showWarnings = FALSE)

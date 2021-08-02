@@ -206,7 +206,7 @@ modelstring = "
 model {
   for(i in 1:N){
     z[i] ~ dbern(probdiff)
-    class[i] =  z[i] + 1
+    class[i] =  2 - z[i]
     Y[i,1:2] ~ dmnorm(mu[,class[i]], tau[,,class[i]] )
     
   }

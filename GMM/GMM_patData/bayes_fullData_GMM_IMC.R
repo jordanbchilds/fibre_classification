@@ -216,7 +216,7 @@ MCMCplot = function( MCMCoutput, lag=20, title){
 modelstring = "
 model {
   for(i in 1:length(N)){
-    probdiff[i] = ifelse(i==1, 0, p[i])
+    probdiff[i] = ifelse(i==1, 1, p[i])
     
     for(j in 1:N[i]){
       z[ pat_index[i]+j-1 ] ~ dbern( probdiff[i] )
