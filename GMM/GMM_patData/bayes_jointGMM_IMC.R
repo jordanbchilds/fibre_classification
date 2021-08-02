@@ -2,7 +2,6 @@
 library(rjags)
 library(beanplot)
 library(MASS)
-library(tictoc)
 source("../BootStrapping/parseData.R", local = TRUE)
 
 args = commandArgs(trailingOnly = TRUE)
@@ -13,16 +12,16 @@ if (length(args)==0) {
   imc_chan = args
 }
 
-tic(paste("bayes_jointGMM_IMC.R", imc_chan))
+cramp = colorRamp(c(rgb(0,0,1,0.20),rgb(1,0,0,0.2)), alpha=TRUE)
+# rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
+# 0.25 determines how transparent the colour is, 1 being opaque 
+# cramp is a function which generates colours on a scale between two specifies colours
 
 myDarkGrey = rgb(169,169,159, max=255, alpha=100)
 myGreen = rgb(25,90,0,max=255,alpha=50)
 myYellow = rgb(225,200,50,max=255, alpha=50)
-
-cramp = colorRamp(c(rgb(1,0,0,0.2), rgb(0,0,1,0.20)), alpha=TRUE)
-# rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
-# 0.25 determines how transparent the colour is, 1 being opaque 
-# cramp is a function which generates colours on a scale between two specifies colours
+myBlue = cramp(1)
+myRed = cramp(0)
 
 classcols = function(classif){
   # A function using the cramp specified colours to generate rgb colour names
@@ -201,7 +200,7 @@ model {
   }
   for(j in 1:Npat ){ # fit to patient data
     z[j] ~ dbern(probdiff)
-    class[j] =  2 - z[j]
+    class[j] =  z[j] + 1
     Ypat[j,] ~ dmnorm(mu[,class[j]], tau[,,class[j]] )
   }
   
@@ -239,7 +238,7 @@ dir.create(file.path("PDF/IMC_joint/marginals"), showWarnings = FALSE)
 MCMCUpdates = 2000
 MCMCUpdates_Report = 5000
 MCMCUpdates_Thin = 1
-n.chains = 3
+n.chains = 1
 
 fulldat = 'IMC.RAW.txt'
 
@@ -368,11 +367,6 @@ for( chan in imc_chan ){
     }
   }
 }
-
-time = toc()
-time_taken = data.frame( 'time_taken' = time$toc - time$tic )
-write.csv(time_taken, file=file.path('Time/IMC_joint') )
-
 
 
 

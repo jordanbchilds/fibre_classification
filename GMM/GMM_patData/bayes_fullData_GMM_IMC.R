@@ -1,8 +1,5 @@
-
-
 library(rjags)
 library(MASS)
-library(tictoc)
 source("../BootStrapping/parseData.R", local = TRUE)
 
 args = commandArgs(trailingOnly = TRUE)
@@ -14,18 +11,17 @@ if (length(args)==0) {
   imc_chan = args
 }
 
-tic(paste("bayes_GMM_IMC.R", imc_chan) )
+
+cramp = colorRamp(c(rgb(0,0,1,0.25),rgb(1,0,0,0.25)),alpha=TRUE)
+# rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
+# 0.25 determines how transparent the colour is, 1 being opaque 
+# cramp is a function which generates colours on a scale between two specifies colours
 
 myDarkGrey = rgb(169,169,159, max=255, alpha=50)
 myGreen = rgb(0,255,0,max=255,alpha=50)
 myYellow = rgb(225,200,50,max=255, alpha=50)
 myBlue = cramp(1)
 myRed = cramp(0)
-
-cramp = colorRamp(c(rgb(1,0,0,0.25),rgb(0,0,1,0.25)),alpha=TRUE)
-# rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
-# 0.25 determines how transparent the colour is, 1 being opaque 
-# cramp is a function which generates colours on a scale between two specifies colours
 
 classcols = function(classif){
   # A function using the cramp specified colours to generate rgb colour names
@@ -225,7 +221,7 @@ model {
     
     for(j in 1:N[i]){
       z[ pat_index[i]+j-1 ] ~ dbern( probdiff[i] )
-      comp[pat_index[i]+j-1] = z[pat_index[i]+j-1] + 1
+      comp[pat_index[i]+j-1] = 2 - z[pat_index[i]+j-1]
       Y[pat_index[i]+j-1, 1:2] ~ dmnorm(mu[,comp[pat_index[i]+j-1]], tau[,,comp[pat_index[i]+j-1]])
     }
   }
@@ -273,9 +269,9 @@ crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
 MCMCUpdates = 2000
-MCMCUpdates_Report = 3000
+MCMCUpdates_Report = 5000
 MCMCUpdates_Thin = 1
-n.chains = 3
+n.chains = 1
 
 for( chan in imc_chan ){
   outroot = paste( froot, chan, sep='__')
@@ -475,12 +471,6 @@ for( chan in imc_chan ){
                         title=paste(froot, pat, chan, sep='__'))
     dev.off()
   }
-
-
 }
-
-time = toc()
-time_taken = data.frame( 'time_taken' = time$toc - time$tic )
-write.csv(time_taken, file=file.path('Time/IMC_allData' ) )
 
 

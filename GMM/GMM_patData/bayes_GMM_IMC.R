@@ -1,7 +1,5 @@
 library(rjags)
-library(beanplot)
 library(MASS)
-library(tictoc)
 source("../BootStrapping/parseData.R", local = TRUE)
 
 args = commandArgs(trailingOnly = TRUE)
@@ -13,16 +11,17 @@ if( length(args)==0 ){
   imc_chan = args
 }
 
-tic(paste("bayes_GMM_IMC.R", imch_chan))
+
+cramp = colorRamp(c(rgb(0,0,1,0.25),rgb(1,0,0,0.25)),alpha=TRUE)
+# rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
+# 0.25 determines how transparent the colour is, 1 being opaque 
+# cramp is a function which generates colours on a scale between two specifies colours
 
 myDarkGrey = rgb(169,169,159, max=255, alpha=50)
 myGreen = rgb(25,90,0,max=255,alpha=50)
 myYellow = rgb(225,200,50,max=255, alpha=50)
-
-cramp = colorRamp(c(rgb(1,0,0,0.25),rgb(0,0,1,0.25)),alpha=TRUE)
-# rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
-# 0.25 determines how transparent the colour is, 1 being opaque 
-# cramp is a function which generates colours on a scale between two specifies colours
+myBlue = cramp(0)
+myRed = cramp(1)
 
 classcols = function(classif){
   # A function using the cramp specified colours to generate rgb colour names
@@ -207,8 +206,9 @@ modelstring = "
 model {
   for(i in 1:N){
     z[i] ~ dbern(probdiff)
-    class[i] =  2 - z[i]
+    class[i] =  z[i] + 1
     Y[i,1:2] ~ dmnorm(mu[,class[i]], tau[,,class[i]] )
+    
   }
   
   # construsting covariance matrix for group 1
@@ -221,11 +221,6 @@ model {
   # classification
   p ~ dbeta(alpha, beta)
   probdiff = ifelse( pi==1, p, 0) 
-  
-  # posterior distribution
-  z_syn ~ dbern(probdiff)
-  class_syn = 2 - z_syn 
-  Y_syn ~ dmnorm(mu[,class_syn], tau[,,class_syn])
   
   compOne ~ dmnorm(mu[,1], tau[,,1])
   compTwo ~ dmnorm(mu[,2], tau[,,2])
@@ -247,8 +242,8 @@ dir.create(file.path("PDF/IMC/marginals"), showWarnings=FALSE)
 # burn-in, chain length, thinning lag
 MCMCUpdates = 2000
 MCMCUpdates_Report = 5000
-MCMCUpdates_Thin = 3
-n.chains = 3
+MCMCUpdates_Thin = 1
+n.chains = 1
 
 fulldat = 'IMC.RAW.txt'
 
@@ -487,9 +482,4 @@ for( chan in imc_chan){
     }
   }
 }
-
-
-time = toc()
-time_taken = data.frame( 'time_taken' = time$toc - time$tic )
-write.csv(time_taken, file=file.path('Time/IMC' ) )
 
