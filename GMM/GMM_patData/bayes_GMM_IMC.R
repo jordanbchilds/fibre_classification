@@ -45,7 +45,7 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
     
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Posterior')
-    contour( kde2d(ctrl_posterior[,'compOne[1]'], ctrl_posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    contour( kde2d(ctrl_posterior[,'compOne[1]'], ctrl_posterior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     
     title(main=title, line = -1, outer = TRUE)
     
@@ -56,11 +56,11 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
     
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Contorl Prior')
-    contour( kde2d(ctrl_prior[,'Y_syn[1]'], ctrl_prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    contour( kde2d(ctrl_prior[,'compOne[1]'], ctrl_prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Posterior')
-    contour( kde2d(ctrl_posterior[,'Y_syn[1]'], ctrl_posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5 )
+    contour( kde2d(ctrl_posterior[,'compOne[1]'], ctrl_posterior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
     
     title(main=title, line = -1, outer = TRUE)
     
@@ -68,13 +68,13 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Patient Prior',
           ylim=(range(c(ctrl_data$Y[,2], pat_data$Y[,2]))+c(-1,1)), xlim=(range(c(ctrl_data$Y[,1], pat_data$Y[,1]))+c(-1,1)) )
     points(  pat_data$Y[,1], pat_data$Y[,2], col=myGreen,  pch=20 )
-    contour( kde2d(pat_prior[,'Y_syn[1]'], pat_prior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
+    contour( kde2d(pat_prior[,'compOne[1]'], pat_prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5)
     
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Patient Posterior',
           ylim=(range(c(ctrl_data$Y[,2], pat_data$Y[,2]))+c(-1,1)), xlim=(range(c(ctrl_data$Y[,1], pat_data$Y[,1]))+c(-1,1)) )
     points( pat_data$Y[,1], pat_data$Y[,2], col=classcols(class_posterior), pch=20 )
-    contour( kde2d(pat_posterior[,'Y_syn[1]'], pat_posterior[,'Y_syn[2]'], n=100), add=TRUE, nlevels=5)
+    contour( kde2d(pat_posterior[,'compOne[1]'], pat_posterior[,'compOne[2]'], n=100), add=TRUE, nlevels=5)
     
     title(main=title, line = -1, outer = TRUE)
   }
@@ -308,10 +308,10 @@ for( chan in imc_chan){
     
     update(model_ctrl, n.iter=MCMCUpdates)
     
-    output_ctrl=coda.samples(model=model_ctrl,variable.names=c("mu","tau","Y_syn","z","probdiff", 'compOne', ' compTwo'),
+    output_ctrl=coda.samples(model=model_ctrl,variable.names=c("mu","tau","z","probdiff", 'compOne', ' compTwo'),
                              n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
     
-    output_ctrl_priorpred=coda.samples(model=model_ctrl_priorpred,variable.names=c("mu","tau","Y_syn", "z", "probdiff", 'compOne', 'compTwo'),
+    output_ctrl_priorpred=coda.samples(model=model_ctrl_priorpred,variable.names=c("mu","tau","z", "probdiff", 'compOne', 'compTwo'),
                                        n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
     
     posterior_ctrl = as.data.frame(output_ctrl[[1]])
@@ -326,7 +326,8 @@ for( chan in imc_chan){
     MCMCoutput = output_ctrl[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                         "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                         "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                        "probdiff", "Y_syn[1]", "Y_syn[2]")]
+                        "probdiff", "compOne[1]", "compOne[2]", "compTwo[1]",
+                        "compTwo[2]")]
 
     
     classifs_ctrl = colMeans(posterior_ctrl[, grepl('z', colnames(posterior_ctrl))])
@@ -351,7 +352,8 @@ for( chan in imc_chan){
     write.table(posterior_ctrl[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                   "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                                   "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                                  "probdiff", "Y_syn[1]", "Y_syn[2]")],
+                                  "probdiff", "compOne[1]", "compOne[2]", "compTwo[1]", 
+                                  "compTwo[2]")],
                 posterior_ctrl_file,row.names=FALSE,quote=FALSE)
     
   } else {
@@ -360,7 +362,8 @@ for( chan in imc_chan){
     colnames(posterior_ctrl) = c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                  "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                                  "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                                 "probdiff", "Y_syn[1]", "Y_syn[2]")
+                                 "probdiff", "compOne[1]", "compOne[2]", "compTwo[1]",
+                                 "compTwo[2]")
   }
   ###
   ### prior specification for patient data
@@ -424,20 +427,21 @@ for( chan in imc_chan){
       model_pat_priorpred=jags.model(textConnection(modelstring), data=data_pat_priorpred) 
       update(model_pat,n.iter=MCMCUpdates)
       
-      converge_pat = coda.samples(model=model_pat,variable.names=c("mu","tau","Y_syn","z","probdiff", "compOne", "compTwo"),
+      converge_pat = coda.samples(model=model_pat,variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo"),
                                   n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
       
-      output_pat = coda.samples(model=model_pat,variable.names=c("mu", "tau","Y_syn","z","probdiff", 'compOne', 'compTwo'),
+      output_pat = coda.samples(model=model_pat,variable.names=c("mu", "tau","z","probdiff", 'compOne', 'compTwo'),
                                 n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
       
       output_pat_priorpred = coda.samples(model=model_pat_priorpred,
-                                          variable.names=c("mu", "tau","Y_syn","z","probdiff", 'compOne', 'compTwo'),
+                                          variable.names=c("mu", "tau","z","probdiff", 'compOne', 'compTwo'),
                                           n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
       
       MCMCoutput = output_pat[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                          "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                          "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                         "probdiff", "Y_syn[1]", "Y_syn[2]")] 
+                         "probdiff",  "compOne[1]", "compOne[2]", "compTwo[1]",
+                         "compTwo[2]")] 
       
       prior_pat = as.data.frame(output_pat_priorpred[[1]])
       posterior_pat = as.data.frame(output_pat[[1]])
@@ -476,7 +480,8 @@ for( chan in imc_chan){
       write.table(posterior_pat[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                    "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                                    "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                                   "probdiff", "Y_syn[1]", "Y_syn[2]")],posterior_file,row.names=FALSE,quote=FALSE)
+                                   "probdiff",  "compOne[1]", "compOne[2]", "compTwo[1]",
+                                   "compTwo[2]")],posterior_file,row.names=FALSE,quote=FALSE)
     }else{ # if file exists load previous data
       class_pat_file = file.path("Output/IMC", paste0(outroot, "__CLASS.txt"))
     }
