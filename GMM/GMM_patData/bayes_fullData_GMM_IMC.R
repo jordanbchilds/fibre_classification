@@ -11,7 +11,6 @@ if (length(args)==0) {
   imc_chan = args
 }
 
-
 cramp = colorRamp(c(rgb(0,0,1,0.25),rgb(1,0,0,0.25)),alpha=TRUE)
 # rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
 # 0.25 determines how transparent the colour is, 1 being opaque 
@@ -274,7 +273,7 @@ MCMCUpdates_Thin = 1
 n.chains = 1
 
 for( chan in imc_chan ){
-  outroot = paste( froot, chan, sep='__')
+  outroot = paste(froot, chan, sep='__')
   posterior_file = file.path("Output/IMC_allData", paste0(outroot, "__POSTERIOR.txt") )
     # dataset with only the current protein and VDAC1
   data_chan = imcDat[(imcDat$channel==chan)|(imcDat$channel==mitochan),]
@@ -424,17 +423,15 @@ for( chan in imc_chan ){
                             "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
                             "compTwo[1]", "compTwo[2]")
     
-    classifs_all = read.delim( )
-    
   }
   
   pat_ind = c(0,N)
   pat_ind = cumsum(pat_ind)
-  con_pats = c('CTRL', pts)
+  ctrl_pts = c('CTRL', pts)
   
   # plots for each patient
   for(i in 1:length(N)) {
-    pat = con_pats[i]
+    pat = ctrl_pts[i]
     data_pat = data_chan[(pat_ind[i]+1):pat_ind[i+1], ]
     
     class_filePath = file.path("PDF/IMC_allData/classifs", paste0(paste(outroot, pat, sep="__"), ".pdf"))
