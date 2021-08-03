@@ -1,5 +1,6 @@
 library(rjags)
 library(MASS)
+library(loo)
 source("../BootStrapping/parseData.R", local = TRUE)
 
 args = commandArgs(trailingOnly = TRUE)
@@ -11,8 +12,7 @@ if( length(args)==0 ){
   imc_chan = args
 }
 
-
-cramp = colorRamp(c(rgb(0,0,1,0.25),rgb(1,0,0,0.25)),alpha=TRUE)
+cramp = colorRamp(c(rgb(1,0,0,0.25),rgb(0,0,1,0.25)),alpha=TRUE)
 # rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
 # 0.25 determines how transparent the colour is, 1 being opaque 
 # cramp is a function which generates colours on a scale between two specifies colours
@@ -208,7 +208,7 @@ model {
     z[i] ~ dbern(probdiff)
     class[i] =  2 - z[i]
     Y[i,1:2] ~ dmnorm(mu[,class[i]], tau[,,class[i]] )
-    
+    logLik[i] <- logdensity.mnorm(Y[i,], mu[,class[i]], tau[,,class[i]] )
   }
   
   # construsting covariance matrix for group 1
@@ -240,8 +240,8 @@ dir.create(file.path("PDF/IMC/classifs"), showWarnings=FALSE)
 dir.create(file.path("PDF/IMC/marginals"), showWarnings=FALSE)
 
 # burn-in, chain length, thinning lag
-MCMCUpdates = 2000
-MCMCUpdates_Report = 5000
+MCMCUpdates = 1000
+MCMCUpdates_Report = 100
 MCMCUpdates_Thin = 1
 n.chains = 1
 
@@ -250,6 +250,7 @@ fulldat = 'IMC.RAW.txt'
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
 mitochan = "VDAC1"
+imc_chan = "NDUFB8"
 
 # removing unwanted info 
 imcDat = imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
@@ -259,7 +260,7 @@ froot = gsub('.RAW.txt', '', fulldat)
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
-
+pts = c("P01", "P02")
 # seperating the control patients 
 for( chan in imc_chan){
   outroot_ctrl = paste( froot, 'CTRL', chan, sep='__')
@@ -308,20 +309,17 @@ for( chan in imc_chan){
     
     update(model_ctrl, n.iter=MCMCUpdates)
     
-    output_ctrl=coda.samples(model=model_ctrl,variable.names=c("mu","tau","z","probdiff", 'compOne', ' compTwo'),
+    output_ctrl=coda.samples(model=model_ctrl,variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo", "logLik"),
                              n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
     
-    output_ctrl_priorpred=coda.samples(model=model_ctrl_priorpred,variable.names=c("mu","tau","z", "probdiff", 'compOne', 'compTwo'),
+    output_ctrl_priorpred=coda.samples(model=model_ctrl_priorpred,variable.names=c("mu","tau","z", "probdiff", "compOne", "compTwo", "logLik"),
                                        n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
     
     posterior_ctrl = as.data.frame(output_ctrl[[1]])
     prior_ctrl = as.data.frame(output_ctrl_priorpred[[1]])
     
-
-    
     colnames(posterior_ctrl) = colnames(output_ctrl[[1]])
     colnames(prior_ctrl) = colnames(output_ctrl_priorpred[[1]])
-    
  
     MCMCoutput = output_ctrl[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                         "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
@@ -329,7 +327,6 @@ for( chan in imc_chan){
                         "probdiff", "compOne[1]", "compOne[2]", "compTwo[1]",
                         "compTwo[2]")]
 
-    
     classifs_ctrl = colMeans(posterior_ctrl[, grepl('z', colnames(posterior_ctrl))])
     
     # prior and posterior prediction for control data
@@ -424,17 +421,15 @@ for( chan in imc_chan){
       
       model_pat=jags.model(textConnection(modelstring), data=data_pat, n.chains=n.chains) 
       
-      model_pat_priorpred=jags.model(textConnection(modelstring), data=data_pat_priorpred) 
-      update(model_pat,n.iter=MCMCUpdates)
-      
-      converge_pat = coda.samples(model=model_pat,variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo"),
+      converge_pat = coda.samples(model=model_pat, variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo", "logLik"),
                                   n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
-      
-      output_pat = coda.samples(model=model_pat,variable.names=c("mu", "tau","z","probdiff", 'compOne', 'compTwo'),
+      output_pat = coda.samples(model=model_pat, variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo", "logLik"),
                                 n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
       
+      model_pat_priorpred=jags.model(textConnection(modelstring), data=data_pat_priorpred) 
+      update(model_pat,n.iter=MCMCUpdates)
       output_pat_priorpred = coda.samples(model=model_pat_priorpred,
-                                          variable.names=c("mu", "tau","z","probdiff", 'compOne', 'compTwo'),
+                                          variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo", "logLik"),
                                           n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
       
       MCMCoutput = output_pat[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",

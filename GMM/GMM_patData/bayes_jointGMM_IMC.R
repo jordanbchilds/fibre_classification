@@ -12,7 +12,7 @@ if (length(args)==0) {
   imc_chan = args
 }
 
-cramp = colorRamp(c(rgb(0,0,1,0.20),rgb(1,0,0,0.2)), alpha=TRUE)
+cramp = colorRamp(c(rgb(1,0,0,0.2),rgb(0,0,1,0.20)), alpha=TRUE)
 # rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
 # 0.25 determines how transparent the colour is, 1 being opaque 
 # cramp is a function which generates colours on a scale between two specifies colours

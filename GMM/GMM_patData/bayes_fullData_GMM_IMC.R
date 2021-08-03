@@ -11,7 +11,7 @@ if (length(args)==0) {
   imc_chan = args
 }
 
-cramp = colorRamp(c(rgb(0,0,1,0.25),rgb(1,0,0,0.25)),alpha=TRUE)
+cramp = colorRamp(c(rgb(1,0,0,0.25),rgb(0,0,1,0.25)),alpha=TRUE)
 # rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
 # 0.25 determines how transparent the colour is, 1 being opaque 
 # cramp is a function which generates colours on a scale between two specifies colours
@@ -387,7 +387,6 @@ for( chan in imc_chan ){
                 posterior_file, row.names=FALSE, quote=FALSE)
     
   } else {
-
     mu1_mean = c(1,1.5)
     mu2_mean = mu1_mean
     mu1_prec = solve( matrix(c(0.2,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
@@ -435,7 +434,6 @@ for( chan in imc_chan ){
     data_pat = data_chan[(pat_ind[i]+1):pat_ind[i+1], ]
     
     class_filePath = file.path("PDF/IMC_allData/classifs", paste0(paste(outroot, pat, sep="__"), ".pdf"))
-    if( !file.exists(class_filePath)){
       if( pat=='CTRL'){
         pdf(class_filePath, width=14,height=8.5)
         priorpost( data=data_pat, prior=prior, posterior=posterior,
@@ -451,23 +449,18 @@ for( chan in imc_chan ){
         write.table(as.numeric(classifs),file.path("Output/IMC_allData",paste(outroot, pat, "CLASS.txt", sep='__')),
                     row.names=FALSE,quote=FALSE,col.names=FALSE)
       }
-    }         
   }
   
   mcmc_filePath = file.path("PDF/IMC_allData/MCMC", paste0(outroot,".pdf"))
-  if(!file.exists(mcmc_filePath)){
-    pdf(mcmc_filePath, width=14,height=8.5)
-    MCMCplot(MCMCoutput, title=paste(froot, chan, sep='__'))
-    dev.off()
-  }
+  pdf(mcmc_filePath, width=14,height=8.5)
+  MCMCplot(MCMCoutput, title=paste(froot, chan, sep='__'))
+  dev.off()
   
   marg_filePath = file.path("PDF/IMC_allData/marginals", paste0(paste(outroot, pat ,sep='__'), ".pdf"))
-  if(!file.exists(marg_filePath)){
-    pdf(marg_filePath, width=14, height=8.5)
-    priorpost_marginals(prior=prior, posterior=posterior, data=data,
-                        title=paste(froot, pat, chan, sep='__'))
-    dev.off()
-  }
+  pdf(marg_filePath, width=14, height=8.5)
+  priorpost_marginals(prior=prior, posterior=posterior, data=data,
+                      title=paste(froot, pat, chan, sep='__'))
+  dev.off()
 }
 
 
