@@ -257,117 +257,121 @@ sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
-for( chan in imc_chan ){
-  for( pat in pts){
-    outroot = paste( froot, pat, chan, sep='__')
-    posterior_file = file.path("Output/IMC_joint", paste0(outroot, "__POSTERIOR.txt") )
-  
-    if( !file.exists(posterior_file)){
+time = system.time({
+  for( chan in imc_chan ){
+    for( pat in pts){
+      outroot = paste( froot, pat, chan, sep='__')
+      posterior_file = file.path("Output/IMC_joint", paste0(outroot, "__POSTERIOR.txt") )
     
-      ## CONTROL DATA
-      control = imcDat[(imcDat$patient_type=='control')&(imcDat$type=='mean intensity'), ]
-      Xctrl = log(control$value[control$channel==mitochan])
-      Yctrl = log(control$value[control$channel==chan])
-      XY_ctrl = cbind( Xctrl, Yctrl )
-      Nctrl = nrow(XY_ctrl)
+      if( !file.exists(posterior_file)){
       
-      ## PATIENT DATA
-      patient = imcDat[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"), ] 
-      Xpat = log(patient$value[patient$channel==mitochan])
-      Ypat = log(patient$value[patient$channel==chan]) 
-      XY_pat = cbind(Xpat, Ypat)
-      Npat = nrow(XY_pat)
-      
-      ## PRIORS
-      mu1_mean = c(1,1.5)
-      mu2_mean = 1.5*mu1_mean
-      mu1_prec = solve( matrix(c(0.2,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
-      mu2_prec = solve( 5*diag(2) )
-      
-      U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
-      n_1 = 50
-      U_2 = 3*diag(2)
-      n_2 = 20
-      
-      alpha = 1
-      beta = 1
-      
-      data = list(Yctrl=XY_ctrl, Nctrl=Nctrl, Ypat=XY_pat, Npat=Npat,
-                  mu1_mean=mu1_mean, mu1_prec=mu1_prec,
-                  mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
-                  U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
-
-      data_priorpred = data
-      data_priorpred$Yctrl = NULL
-      data_priorpred$Ypat = NULL
-      data_priorpred$Nctrl = 0
-      data_priorpred$Npat = 0 
-      
-      model = jags.model(textConnection(modelstring), data=data, n.chains=n.chains) 
-      
-      model_priorpred = jags.model(textConnection(modelstring), data=data_priorpred) 
-      
-      update(model, n.iter=MCMCUpdates)
-      
-      converge = coda.samples(model=model, variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo"),
+        ## CONTROL DATA
+        control = imcDat[(imcDat$patient_type=='control')&(imcDat$type=='mean intensity'), ]
+        Xctrl = log(control$value[control$channel==mitochan])
+        Yctrl = log(control$value[control$channel==chan])
+        XY_ctrl = cbind( Xctrl, Yctrl )
+        Nctrl = nrow(XY_ctrl)
+        
+        ## PATIENT DATA
+        patient = imcDat[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"), ] 
+        Xpat = log(patient$value[patient$channel==mitochan])
+        Ypat = log(patient$value[patient$channel==chan]) 
+        XY_pat = cbind(Xpat, Ypat)
+        Npat = nrow(XY_pat)
+        
+        ## PRIORS
+        mu1_mean = c(1,1.5)
+        mu2_mean = 1.5*mu1_mean
+        mu1_prec = solve( matrix(c(0.2,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
+        mu2_prec = solve( 5*diag(2) )
+        
+        U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
+        n_1 = 50
+        U_2 = 3*diag(2)
+        n_2 = 20
+        
+        alpha = 1
+        beta = 1
+        
+        data = list(Yctrl=XY_ctrl, Nctrl=Nctrl, Ypat=XY_pat, Npat=Npat,
+                    mu1_mean=mu1_mean, mu1_prec=mu1_prec,
+                    mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
+                    U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
+  
+        data_priorpred = data
+        data_priorpred$Yctrl = NULL
+        data_priorpred$Ypat = NULL
+        data_priorpred$Nctrl = 0
+        data_priorpred$Npat = 0 
+        
+        model = jags.model(textConnection(modelstring), data=data, n.chains=n.chains) 
+        
+        model_priorpred = jags.model(textConnection(modelstring), data=data_priorpred) 
+        
+        update(model, n.iter=MCMCUpdates)
+        
+        converge = coda.samples(model=model, variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo"),
+                                    n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
+        
+        output = coda.samples(model=model, variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo"),
                                   n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
-      
-      output = coda.samples(model=model, variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo"),
-                                n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
-      
-      output_priorpred = coda.samples(model=model_priorpred,
-                                          variable.names=c("mu", "tau","z","probdiff", "compOne", "compTwo"),
-                                          n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
-      
-      MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
-                             "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
-                             "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                             "probdiff", "compOne[1]", "compOne[2]", "compTwo[1]",
-                             "compTwo[2]")]
-      
-      posterior = as.data.frame(output[[1]])
-      prior = as.data.frame(output_priorpred[[1]])
-      
-      classifs = colMeans( posterior[, grepl('z', colnames(posterior))] )
-      colnames(posterior) = colnames(output[[1]])
-      colnames(prior) = colnames(output_priorpred[[1]])
-      
-      if( pat=='CTRL'){
-        pdf(file.path("PDF/IMC_joint/classifs", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14,height=8.5)
-        priorpost( data=data$Yctrl, prior=prior, posterior=posterior,
-                   classifs=classifs, title=paste(froot, pat, chan, sep='__'))
-        dev.off()
-        pdf(file.path("PDF/IMC_joint/marginals", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14, height=8.5)
-        priorpost_marginals(prior=prior, posterior=posterior, 
-                            title=paste(froot, pat , chan, sep='__'))
-        dev.off()
-      } else { 
-        pdf(file.path("PDF/IMC_joint/classifs", paste0(paste(outroot, pat, sep="__"), ".pdf")), width=14,height=8.5)
-        priorpost( data=data$Ypat, prior=prior, posterior=posterior, ctrl=data$Yctrl,
-                   classifs=classifs, title=paste(froot, pat, chan, sep='__'))
-        dev.off()
-        pdf(file.path("PDF/IMC_joint/marginals", paste0(paste(outroot, pat ,sep='__'), ".pdf")), width=14, height=8.5)
-        priorpost_marginals(prior=prior, posterior=posterior, data=data,
-                            title=paste(froot, pat, chan, sep='__'))
-        dev.off()
-      }
-      write.table(as.numeric(classifs),file.path("Output/IMC_joint",paste0(outroot,"__CLASS.txt")),
-                  row.names=FALSE,quote=FALSE,col.names=FALSE)
-      
-      pdf(file.path("PDF/IMC_joint/MCMC", paste0(paste(outroot, pat, sep='__'), '.pdf')), width=14, height=8.5)
-      MCMCplot( MCMCoutput, title=paste(froot, pat, chan, sep='__'))
-      dev.off()
-      
-      write.table(posterior[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+        
+        output_priorpred = coda.samples(model=model_priorpred,
+                                            variable.names=c("mu", "tau","z","probdiff", "compOne", "compTwo"),
+                                            n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
+        
+        MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                                "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
                                "probdiff", "compOne[1]", "compOne[2]", "compTwo[1]",
-                               "compTwo[2]")],
-                  posterior_file, row.names=FALSE, quote=FALSE)
+                               "compTwo[2]")]
+        
+        posterior = as.data.frame(output[[1]])
+        prior = as.data.frame(output_priorpred[[1]])
+        
+        classifs = colMeans( posterior[, grepl('z', colnames(posterior))] )
+        colnames(posterior) = colnames(output[[1]])
+        colnames(prior) = colnames(output_priorpred[[1]])
+        
+        if( pat=='CTRL'){
+          pdf(file.path("PDF/IMC_joint/classifs", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14,height=8.5)
+          priorpost( data=data$Yctrl, prior=prior, posterior=posterior,
+                     classifs=classifs, title=paste(froot, pat, chan, sep='__'))
+          dev.off()
+          pdf(file.path("PDF/IMC_joint/marginals", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14, height=8.5)
+          priorpost_marginals(prior=prior, posterior=posterior, 
+                              title=paste(froot, pat , chan, sep='__'))
+          dev.off()
+        } else { 
+          pdf(file.path("PDF/IMC_joint/classifs", paste0(paste(outroot, pat, sep="__"), ".pdf")), width=14,height=8.5)
+          priorpost( data=data$Ypat, prior=prior, posterior=posterior, ctrl=data$Yctrl,
+                     classifs=classifs, title=paste(froot, pat, chan, sep='__'))
+          dev.off()
+          pdf(file.path("PDF/IMC_joint/marginals", paste0(paste(outroot, pat ,sep='__'), ".pdf")), width=14, height=8.5)
+          priorpost_marginals(prior=prior, posterior=posterior, data=data,
+                              title=paste(froot, pat, chan, sep='__'))
+          dev.off()
+        }
+        write.table(as.numeric(classifs),file.path("Output/IMC_joint",paste0(outroot,"__CLASS.txt")),
+                    row.names=FALSE,quote=FALSE,col.names=FALSE)
+        
+        pdf(file.path("PDF/IMC_joint/MCMC", paste0(paste(outroot, pat, sep='__'), '.pdf')), width=14, height=8.5)
+        MCMCplot( MCMCoutput, title=paste(froot, pat, chan, sep='__'))
+        dev.off()
+        
+        write.table(posterior[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+                                 "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                                 "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                                 "probdiff", "compOne[1]", "compOne[2]", "compTwo[1]",
+                                 "compTwo[2]")],
+                    posterior_file, row.names=FALSE, quote=FALSE)
+      }
     }
   }
-}
+})
 
+time_df = data.frame(time=time[3])
+write.table(time_df,  file=paste("Time/jointGMM", imc_chan, sep="__") )
 
 
 
