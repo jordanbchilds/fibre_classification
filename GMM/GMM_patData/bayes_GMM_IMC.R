@@ -267,7 +267,6 @@ fulldat = 'IMC.RAW.txt'
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
 mitochan = "VDAC1"
-imc_chan = "NDUFB8"
 
 # removing unwanted info 
 imcDat = imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
