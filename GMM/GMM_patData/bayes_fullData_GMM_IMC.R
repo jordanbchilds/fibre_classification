@@ -30,17 +30,16 @@ classcols = function(classif){
   return(rgb(rgbvals[,1],rgbvals[,2],rgbvals[,3],rgbvals[,4]))
 }
 
-priorpost_comp = function(prior, posterior, title){
-  # prior
-  contour( kde2d(prior[,'compOne[1]'], prior[,'compOne[2]'], n=100), col=myYellow, nlevels=5 )
-  contour( kde2d(prior[,'compTwo[1]'], prior[,'compTwo[2]'], n=100), col=myGreen, add=TRUE, nlevels=5 )
-  legend('topleft', lgeend=c('Comp 1', 'Comp 2'), col=c(myYellow, myGreen), lty=1)
-  # posterior
-  contour( kde2d(posterior[,'compOne[1]'], posterior[,'compOne[2]'], n=100), col=myYellow, nlevels=5 )
-  contour( kde2d(posterior[,'compTwo[1]'], prior[,'compTwo[2]'], n=100), col=myGreen, add=TRUE, nlevels=5 )
-  legend('topleft', lgeend=c('Comp 1', 'Comp 2'), col=c(myYellow, myGreen), lty=1)
-  
-  title(main=title, line = -1, outer = TRUE)
+percentiles = function(xdat, ydat, probs=c(0.95, 0.5, 0.1)){
+  dens = kde2d(xdat, ydat, n=200); ## estimate the z counts
+  dx = diff(dens$x[1:2])
+  dy = diff(dens$y[1:2])
+  sz = sort(dens$z)
+  c1 = cumsum(sz) * dx * dy
+  levs = sapply(probs, function(x) {
+    approx(c1, sz, xout = 1 - x)$y
+  })
+  return( list(dens=dens, levels=levs, probs=probs))
 }
 
 priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
@@ -54,12 +53,14 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
     plot(data[,1], data[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
          xlim=x.lim, ylim=y.lim)
-    contour( kde2d(prior[,'compOne[1]'], prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
+    contours = percentiles(prior[,"compOne[1]"], prior[,"compOne[2]"])
+    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     
     plot(data[,1], data[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
          xlim=x.lim, ylim=y.lim)
-    contour( kde2d(posterior[,'compOne[1]'], posterior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
+    contours = percentiles(posterior[,"compOne[1]"], posterior[,"compOne[2]"])
+    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     
     title(main=title, line = -1, outer = TRUE)
   } else {
@@ -70,24 +71,29 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
          xlim=x.lim, ylim=y.lim)
     points( data[,1], data[,2], col=myYellow, pch=20)
-    contour( kde2d(prior[,'compOne[1]'], prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
+    contours = percentiles(prior[,"compOne[1]"], prior[,"compOne[2]"])
+    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     
     plot(ctrl[,1], ctrl[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
          xlim=x.lim, ylim=y.lim)
     points( data[,1], data[,2], col=classcols(classifs), pch=20)
-    contour( kde2d(posterior[,'compOne[1]'], posterior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
+    contours = percentiles(posterior[,"compOne[1]"], posterior[,"compOne[2]"])
+    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     title(main=title, line = -1, outer = TRUE)
     
     # densities
-    plot(ctrl[,1], ctrl[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
-         xlim=x.lim, ylim=y.lim)
-    points( data[,1], data[,2], col=classcols(classifs), pch=20)
-    contour( kde2d(posterior[,'compOne[1]'], posterior[,'compOne[2]'], n=100), col=myBlue, add=TRUE, nlevels=5 )
-    contour( kde2d(posterior[,'compTwo[1]'], posterior[,'compTwo[2]'], n=100), col=myRed, add=TRUE, nlevels=5 )
-    
-    title(main=title, line = -1, outer = TRUE)  }
+    # plot(ctrl[,1], ctrl[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
+    #      xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
+    #      xlim=x.lim, ylim=y.lim)
+    # points( data[,1], data[,2], col=classcols(classifs), pch=20)
+    # contours = percetniles(prior[,"compOne[1]"], prior[,"compOne[2]"])
+    # contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
+    # contours = percentiles(posterior[,"compOne[1]"], posterior[,"compOne[2]"])
+    # contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
+    # 
+    # title(main=title, line = -1, outer = TRUE)
+  }
 
   par(op)
 } 
@@ -239,12 +245,10 @@ model {
   compTwo ~ dmnorm(mu[,2], tau[,,2])
 }
 "
-
 dir.create(file.path("Output"), showWarnings = FALSE)
 dir.create(file.path("PDF"), showWarnings = FALSE)
 dir.create(file.path("PNG"), showWarnings = FALSE)
 dir.create(file.path("Time"), showWarnings = FALSE)
-
 
 dir.create(file.path("Output/IMC_allData"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData"), showWarnings = FALSE)
@@ -269,8 +273,8 @@ sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
-MCMCUpdates = 2000
-MCMCUpdates_Report = 5000
+MCMCUpdates = 100
+MCMCUpdates_Report = 100
 MCMCUpdates_Thin = 1
 n.chains = 1
 
@@ -327,18 +331,14 @@ time = system.time({
       ## PRIORS
       mu1_mean = c(1,1.5)
       mu2_mean = mu1_mean
-      
       mu1_prec = solve( matrix(c(0.2,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
       mu2_prec = solve( 5*diag(2) )
-      
       U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
       n_1 = 50
       U_2 = 3*diag(2)
       n_2 = 20
-      
       alpha = 1
       beta = 1
-      
       
       data = list(Y=Ychan, N=N, pat_index=pat_index,
                   mu1_mean=mu1_mean, mu1_prec=mu1_prec,
@@ -355,14 +355,14 @@ time = system.time({
     
       update(model, n.iter=MCMCUpdates)
     
-      converge = coda.samples(model=model, variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo"),
+      converge = coda.samples(model=model, variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo"),
                               n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
     
-      output = coda.samples(model=model, variable.names=c("mu", "tau","z","probdiff", "compOne", "compTwo"),
+      output = coda.samples(model=model, variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo"),
                             n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
     
       output_priorpred = coda.samples(model=model_priorpred,
-                                      variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo"),
+                                      variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo"),
                                       n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
     
       MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
@@ -387,7 +387,7 @@ time = system.time({
                                "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
                                "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
                                "compTwo[1]", "compTwo[2]")],
-                  posterior_file, row.names=FALSE, quote=FALSE)
+                  file=posterior_file, row.names=FALSE, quote=FALSE)
       
     } else {
       mu1_mean = c(1,1.5)
@@ -401,7 +401,7 @@ time = system.time({
       alpha = 1
       beta = 1
       
-      con_pts = c('control', pts)
+      con_pts = c('con', pts)
       pat_index = double(length(con_pts))
       for(i in 1:length(con_pts)) pat_index[i] = min(which(data_chan[,'patient']==con_pts[i]))
       
@@ -411,7 +411,7 @@ time = system.time({
                   U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
       model_priorpred = jags.model(textConnection(modelstring), data=data_priorpred)
       output_priorpred = coda.samples(model=model_priorpred,
-                                      variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo"),
+                                      variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo"),
                                       n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
       prior = as.data.frame(output_priorpred[[1]])
       colnames(prior) = colnames(output_priorpred[[1]])
@@ -424,7 +424,6 @@ time = system.time({
                               "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
                               "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
                               "compTwo[1]", "compTwo[2]")
-      
     }
     
     pat_ind = c(0,N)
@@ -435,6 +434,7 @@ time = system.time({
     for(i in 1:length(N)) {
       pat = ctrl_pts[i]
       data_pat = data_chan[(pat_ind[i]+1):pat_ind[i+1], ]
+      classifs = classifs_all[(pat_ind[i]+1):pat_ind[i+1]]
       
       class_filePath = file.path("PDF/IMC_allData/classifs", paste0(paste(outroot, pat, sep="__"), ".pdf"))
         if( pat=='CTRL'){
@@ -453,7 +453,6 @@ time = system.time({
                       row.names=FALSE,quote=FALSE,col.names=FALSE)
         }
     }
-    
     mcmc_filePath = file.path("PDF/IMC_allData/MCMC", paste0(outroot,".pdf"))
     pdf(mcmc_filePath, width=14,height=8.5)
     MCMCplot(MCMCoutput, title=paste(froot, chan, sep='__'))

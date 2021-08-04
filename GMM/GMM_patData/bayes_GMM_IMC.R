@@ -1,6 +1,5 @@
 library(rjags)
 library(MASS)
-library(loo)
 source("../BootStrapping/parseData.R", local = TRUE)
 
 args = commandArgs(trailingOnly = TRUE)
@@ -31,6 +30,18 @@ classcols = function(classif){
   return(rgb(rgbvals[,1],rgbvals[,2],rgbvals[,3],rgbvals[,4]))
 }
 
+percentiles = function(xdat, ydat, probs=c(0.95, 0.5, 0.1)){
+  dens = kde2d(xdat, ydat, n=200); ## estimate the z counts
+  dx = diff(dens$x[1:2])
+  dy = diff(dens$y[1:2])
+  sz = sort(dens$z)
+  c1 = cumsum(sz) * dx * dy
+  levs = sapply(probs, function(x) {
+    approx(c1, sz, xout = 1 - x)$y
+  })
+  return( list(dens=dens, levels=levs, probs=probs))
+}
+
 priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior, 
                      pat_data=NULL, pat_prior=NULL, pat_posterior=NULL, 
                      classifs=NULL, title){
@@ -41,11 +52,13 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
     
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Prior')
-    contour( kde2d(ctrl_prior[,'compOne[1]'], ctrl_prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
-    
+    contours = percentiles(ctrl_prior[,"compOne[1]"], ctrl_prior[,"compOne[2]"])
+    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
+
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Posterior')
-    contour( kde2d(ctrl_posterior[,'compOne[1]'], ctrl_posterior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
+    contours = percentiles(ctrl_posterior[,"compOne[1]"], ctrl_posterior[,"compOne[2]"])
+    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     
     title(main=title, line = -1, outer = TRUE)
     
@@ -56,11 +69,13 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
     
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Contorl Prior')
-    contour( kde2d(ctrl_prior[,'compOne[1]'], ctrl_prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
+    contours = percentiles(ctrl_prior[,"compOne[1]"], ctrl_prior[,"compOne[2]"])
+    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Posterior')
-    contour( kde2d(ctrl_posterior[,'compOne[1]'], ctrl_posterior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
+    contours = percentiles(ctrl_posterior[,"compOne[1]"], ctrl_posterior[,"compOne[2]"])
+    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     
     title(main=title, line = -1, outer = TRUE)
     
@@ -68,13 +83,15 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Patient Prior',
           ylim=(range(c(ctrl_data$Y[,2], pat_data$Y[,2]))+c(-1,1)), xlim=(range(c(ctrl_data$Y[,1], pat_data$Y[,1]))+c(-1,1)) )
     points(  pat_data$Y[,1], pat_data$Y[,2], col=myGreen,  pch=20 )
-    contour( kde2d(pat_prior[,'compOne[1]'], pat_prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5)
+    contours = percentiles(pat_prior[,"compOne[1]"], pat_prior[,"compOne[2]"])
+    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Patient Posterior',
           ylim=(range(c(ctrl_data$Y[,2], pat_data$Y[,2]))+c(-1,1)), xlim=(range(c(ctrl_data$Y[,1], pat_data$Y[,1]))+c(-1,1)) )
     points( pat_data$Y[,1], pat_data$Y[,2], col=classcols(class_posterior), pch=20 )
-    contour( kde2d(pat_posterior[,'compOne[1]'], pat_posterior[,'compOne[2]'], n=100), add=TRUE, nlevels=5)
+    contours = percentiles(pat_posterior[,"compOne[1]"], pat_posterior[,"compOne[2]"])
+    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     
     title(main=title, line = -1, outer = TRUE)
   }
@@ -240,7 +257,7 @@ dir.create(file.path("PDF/IMC/classifs"), showWarnings=FALSE)
 dir.create(file.path("PDF/IMC/marginals"), showWarnings=FALSE)
 
 # burn-in, chain length, thinning lag
-MCMCUpdates = 1000
+MCMCUpdates = 100
 MCMCUpdates_Report = 100
 MCMCUpdates_Thin = 1
 n.chains = 1

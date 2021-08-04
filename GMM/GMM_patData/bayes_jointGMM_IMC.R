@@ -31,6 +31,18 @@ classcols = function(classif){
   return(rgb(rgbvals[,1],rgbvals[,2],rgbvals[,3],rgbvals[,4]))
 }
 
+percentiles = function(xdat, ydat, probs=c(0.95, 0.5, 0.1)){
+  dens = kde2d(xdat, ydat, n=200); ## estimate the z counts
+  dx = diff(dens$x[1:2])
+  dy = diff(dens$y[1:2])
+  sz = sort(dens$z)
+  c1 = cumsum(sz) * dx * dy
+  levs = sapply(probs, function(x) {
+    approx(c1, sz, xout = 1 - x)$y
+  })
+  return( list(dens=dens, levels=levs, probs=probs))
+}
+
 priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
                      title){
   # output: plots the prior and posterior regression lines and data
@@ -42,12 +54,14 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
     plot(data[,1], data[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
          xlim=x.lim, ylim=y.lim)
-    contour( kde2d(prior[,'compOne[1]'], prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
+    contours = percentiles(prior[,"compOne[1]"], prior[,"compOne[2]"])
+    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2 )
     
     plot(data[,1], data[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
          xlim=x.lim, ylim=y.lim)
-    contour( kde2d(posterior[,'compOne[1]'], posterior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
+    contours = percentiles(posterior[,"compOne[1]"], posterior[,"compOne[2]"])
+    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2 )
     
     title(main=title, line = -1, outer = TRUE)
   } else {
@@ -58,14 +72,16 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
          xlim=x.lim, ylim=y.lim)
     points( data[,1], data[,2], col=myYellow, pch=20)
-    contour( kde2d(prior[,'compOne[1]'], prior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
+    contours = percentiles(prior[,"compOne[1]"], prior[,"compOne[2]"])
+    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2 )
     
     plot(ctrl[,1], ctrl[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
          xlim=x.lim, ylim=y.lim)
     
     points( data[,1], data[,2], col=classcols(classifs), pch=20)
-    contour( kde2d(posterior[,'compOne[1]'], posterior[,'compOne[2]'], n=100), add=TRUE, nlevels=5 )
+    contours = percentiles(posterior[,"compOne[1]"], posterior[,"compOne[2]"])
+    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2 )
     title(main=title, line = -1, outer = TRUE)
   }
   
