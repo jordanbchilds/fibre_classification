@@ -30,7 +30,7 @@ classcols = function(classif){
   return(rgb(rgbvals[,1],rgbvals[,2],rgbvals[,3],rgbvals[,4]))
 }
 
-percentiles = function(xdat, ydat, probs=c(0.95, 0.5, 0.1)){
+percentiles = function(xdat, ydat, probs=c(0.95)){
   dens = kde2d(xdat, ydat, n=200); ## estimate the z counts
   dx = diff(dens$x[1:2])
   dy = diff(dens$y[1:2])
@@ -52,8 +52,8 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
     
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Prior')
-    contours = percentiles(ctrl_prior[,"compOne[1]"], ctrl_prior[,"compOne[2]"])
-    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
+    # contours = percentiles(ctrl_prior[,"compOne[1]"], ctrl_prior[,"compOne[2]"])
+    # contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
 
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Posterior')
@@ -61,16 +61,13 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
     contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     
     title(main=title, line = -1, outer = TRUE)
-    
-    prior = ctrl_prior
-    posterior = ctrl_posterior
   } else { # plot ctrl prior-posterior and patient prior-posterior
     class_posterior = colMeans( pat_posterior[,grepl("z",colnames(pat_posterior))])
     
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Contorl Prior')
-    contours = percentiles(ctrl_prior[,"compOne[1]"], ctrl_prior[,"compOne[2]"])
-    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
+    # contours = percentiles(ctrl_prior[,"compOne[1]"], ctrl_prior[,"compOne[2]"])
+    # contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Posterior')
@@ -82,9 +79,9 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Patient Prior',
           ylim=(range(c(ctrl_data$Y[,2], pat_data$Y[,2]))+c(-1,1)), xlim=(range(c(ctrl_data$Y[,1], pat_data$Y[,1]))+c(-1,1)) )
-    points(  pat_data$Y[,1], pat_data$Y[,2], col=myGreen,  pch=20 )
-    contours = percentiles(pat_prior[,"compOne[1]"], pat_prior[,"compOne[2]"])
-    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
+    points(  pat_data$Y[,1], pat_data$Y[,2], col=myYellow,  pch=20 )
+    #contours = percentiles(pat_prior[,"compOne[1]"], pat_prior[,"compOne[2]"])
+    #contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Patient Posterior',
@@ -189,7 +186,7 @@ priorpost_marginals = function(prior, posterior, pat_data=NULL, title){
   par(op)
 }
 
-MCMCplot = function( MCMCoutput, lag=20, title){
+MCMCplot = function(MCMCoutput, lag=20, title){
   col.names = colnames(MCMCoutput[[1]])
   n.chains = length(MCMCoutput)
   
@@ -257,8 +254,8 @@ dir.create(file.path("PDF/IMC/classifs"), showWarnings=FALSE)
 dir.create(file.path("PDF/IMC/marginals"), showWarnings=FALSE)
 
 # burn-in, chain length, thinning lag
-MCMCUpdates = 100
-MCMCUpdates_Report = 100
+MCMCUpdates = 2000
+MCMCUpdates_Report = 5000
 MCMCUpdates_Thin = 1
 n.chains = 1
 
@@ -266,6 +263,7 @@ fulldat = 'IMC.RAW.txt'
 
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
+imc_chan = "NDUFB8"
 mitochan = "VDAC1"
 
 # removing unwanted info 
@@ -276,7 +274,7 @@ froot = gsub('.RAW.txt', '', fulldat)
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
-
+pts = c("P01")
 
 time = system.time({
   for( chan in imc_chan){
@@ -390,11 +388,11 @@ time = system.time({
                         nrow=2, ncol=2, byrow=TRUE )
     
     prec_pred_inv = solve( prec_pred )
-    n_1 = 2 # degrees of freedom
+    n_1 = 560 # degrees of freedom
     
     # define prior parameter
     U_1 = prec_pred_inv*n_1
-    n_2 = 2
+    n_2 = 10
     U_2 = solve( matrix( c(2,0,0,2), nrow=2, ncol=2, byrow=TRUE) )*n_2
     
     mu1_mean = colMeans( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])
@@ -457,13 +455,6 @@ time = system.time({
         
         prior_pat = as.data.frame(output_pat_priorpred[[1]])
         posterior_pat = as.data.frame(output_pat[[1]])
-        
-        # if( n.chains==1 ){
-        #   posterior_pat = as.data.frame(output_pat[[1]])
-        # } else {
-        #   posterior_pat = as.data.frame(output_pat[[1]])
-        #   for(i in 2:n.chains) posterior_pat = rbind(posterior_pat, output_pat[[i]])
-        # }
         
         classifs_pat = colMeans( posterior_pat[, grepl('z', colnames(posterior_pat))] )
         colnames(posterior_pat) = colnames(output_pat[[1]])

@@ -1,20 +1,38 @@
 library(rjags)
-library(beanplot)
 library(MASS)
-source("../BootStrapping/parseData.R", local = TRUE)
-
-install.packages("twosamples")
 library(twosamples)
 
+source("../BootStrapping/parseData.R", local = TRUE)
 
-myDarkGrey = rgb(169,169,159, max=255, alpha=50)
+myDarkGrey = rgb(169,169,159, max=255, alpha=20)
 myGreen = rgb(25,90,0,max=255,alpha=50)
 myYellow = rgb(225,200,50,max=255, alpha=50)
+myBlue = rgb(0,0,255,max-255, alpha=50)
 
 cramp = colorRamp(c(rgb(0,0,1,0.25),rgb(1,0,0,0.25)),alpha=TRUE)
 # rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
 # 0.25 determines how transparent the colour is, 1 being opaque 
 # cramp is a function which generates colours on a scale between two specifies colours
+
+plotWishart = function(output){
+  if(length(dim(output))==3){
+    par(mfrow=c(2,2))
+    plot( output[1,1,], output[1,2,], pch=20, col=myDarkGrey, 
+          xlab=expression(tau[11]), ylab=expression(tau[12]))
+    plot( output[2,2,], output[1,2,], pch=20, col=myDarkGrey, 
+          xlab=expression(tau[22]), ylab=expression(tau[12]))
+    plot( output[1,1,], output[2,2,], pch=20, col=myDarkGrey, 
+          xlab=expression(tau[11]), ylab=expression(tau[22]))
+  } else {
+    par(mfrow=c(2,2))
+    plot( output[,"tau[1,1,1]"], output[,"tau[1,2,1]"], pch=20, col=myDarkGrey, 
+          xlab=expression(tau[11]), ylab=expression(tau[12]))
+    plot( output[,"tau[2,2,1]"], output[,"tau[1,2,1]"], pch=20, col=myDarkGrey, 
+          xlab=expression(tau[22]), ylab=expression(tau[12]))
+    plot( output[,"tau[1,1,1]"], output[,"tau[2,2,1]"], pch=20, col=myDarkGrey, 
+          xlab=expression(tau[11]), ylab=expression(tau[22]))
+  }
+}
 
 classcols = function(classif){
   # A function using the cramp specified colours to generate rgb colour names
@@ -37,21 +55,12 @@ comparedensities=function(priorvec, posteriorvec, xlab="", main="", xlim=-99){
   points(density(priorvec),lwd=3,col="black",type="l")
 }
 
-priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior, 
-                     pat_data=NULL, pat_prior=NULL, pat_posterior=NULL, 
-                     class_posterior=NULL, classifs=NULL, output_mcmc=NULL, title){
-  # output: plots the prior and posterior regression lines and data
-  
-  
-  par(op)
-} 
-
 modelstring = "
 model {
   for(i in 1:N){
     z[i] ~ dbern(probdiff)
     class[i] =  2 - z[i]
-    Y[i,] ~ dmnorm(mu[,class[i]], tau[,,class[i]] )
+    Y[i,1:2] ~ dmnorm(mu[1:2,class[i]], tau[1:2,1:2,class[i]] )
   }
   
   # construsting covariance matrix for group 1
@@ -63,12 +72,7 @@ model {
   
   # classification
   p ~ dbeta(alpha_p, beta_p)
-  probdiff = ifelse( pi==1, p, 0) # probability of being 'like-control'
-  
-  # posterior distribution
-  z_syn ~ dbern(probdiff)
-  class_syn = 2 - z_syn 
-  Y_syn ~ dmnorm(mu[,class_syn], tau[,,class_syn])
+  probdiff = ifelse( pi==1, p, 1)
 }
 "
 dir.create(file.path("Output"), showWarnings = FALSE)
@@ -88,27 +92,24 @@ fulldat = 'IMC.RAW.txt'
 
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
-colnames(imc_data)
-
-unique(imc_data$channel)
+mitochan = "VDAC1"
+# imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
+imc_chan = "UqCRC2"
 
 # removing unwanted info 
-imc_chan = c('SDHA','OSCP', 'VDAC1', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
-imc_data_1.0 = imc_data[imc_data$channel %in% imc_chan, ]
-
-imcDat=imc_data_1.0
-
-mitochan = "VDAC1"
+# imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
+imcDat= imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
 
 froot = gsub('.RAW.txt', '', fulldat)
 
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
+pts = c("P01")
 
 
 # seperating the control patients 
-for( chan in imc_chan[!(imc_chan=='VDAC1')]) {
+for( chan in imc_chan ) {
   outroot_ctrl = paste( froot, 'CTRL', chan, sep='__')
   posterior_ctrl_file = file.path("Output/Output_IMC",paste0(outroot_ctrl,"__POSTERIOR.txt"))
   
@@ -169,8 +170,6 @@ for( chan in imc_chan[!(imc_chan=='VDAC1')]) {
     colnames(prior_ctrl) = colnames(output_ctrl_priorpred[[1]])
     
   } 
-  
-  
   # define the expected value of the patient prior (prec_pred) be the mean of the control
   # posterior
   prec_pred = matrix( colMeans(posterior_ctrl[,c('tau[1,1,1]', 'tau[1,2,1]', 'tau[2,1,1]','tau[2,2,1]')]),
@@ -178,18 +177,23 @@ for( chan in imc_chan[!(imc_chan=='VDAC1')]) {
   
   prec_pred_inv = solve( prec_pred )
   
-  df_vec = 2:200
+  var = var( posterior_ctrl[c('tau[1,1,1]', 'tau[1,2,1]','tau[2,2,1]')])
+  d11 = var[1,1]/( 2*prec_pred_inv[1,1]^2 )
+  d12 = var[2,2]/( prec_pred_inv[1,2]^2 + prec_pred_inv[1,1]*prec_pred_inv[2,2] )
+  d22 = var[3,3]/( 2*prec_pred_inv[2,2]^2 )
+  
+  df_vec = seq(500, 650, by=20)
   KS_test11 = double(length(df_vec))
   KS_test22 = KS_test11
   KS_test12 = KS_test11
   
-  AD_test11 = double(length(df_vec))
-  AD_test22 = AD_test11
-  AD_test12 = AD_test11
-  
-  CvM_test11 = double(length(df_vec))
-  CvM_test22 = CvM_test11
-  CvM_test12 = CvM_test11
+  # AD_test11 = double(length(df_vec))
+  # AD_test22 = AD_test11
+  # AD_test12 = AD_test11
+  # 
+  # CvM_test11 = double(length(df_vec))
+  # CvM_test22 = CvM_test11
+  # CvM_test12 = CvM_test11
   
   for( i in 1:length(df_vec)){
     wishart = rWishart(n=MCMCUpdates_Report, df=df_vec[i], Sigma=prec_pred/df_vec[i] )
@@ -198,43 +202,76 @@ for( chan in imc_chan[!(imc_chan=='VDAC1')]) {
     KS_test22[i] = ks.test(posterior_ctrl[,'tau[2,2,1]'], wishart[2,2,])$p.value
     KS_test12[i] = ks.test(posterior_ctrl[,'tau[1,2,1]'], wishart[1,2,])$p.value
     
-    AD_test11[i] = ad_test(posterior_ctrl[,'tau[1,1,1]'], wishart[1,1,])[2]
-    AD_test12[i] = ad_test(posterior_ctrl[,'tau[1,2,1]'], wishart[1,2,])[2]
-    AD_test22[i] = ad_test(posterior_ctrl[,'tau[2,2,1]'], wishart[2,2,])[2]
-    
-    CvM_test11[i] = cvm_test(posterior_ctrl[,'tau[1,1,1]'], wishart[1,1,])[2]
-    CvM_test12[i] = cvm_test(posterior_ctrl[,'tau[1,2,1]'], wishart[1,2,])[2]
-    CvM_test22[i] = cvm_test(posterior_ctrl[,'tau[2,2,1]'], wishart[2,2,])[2]
-    
+    # AD_test11[i] = ad_test(posterior_ctrl[,'tau[1,1,1]'], wishart[1,1,])[2]
+    # AD_test12[i] = ad_test(posterior_ctrl[,'tau[1,2,1]'], wishart[1,2,])[2]
+    # AD_test22[i] = ad_test(posterior_ctrl[,'tau[2,2,1]'], wishart[2,2,])[2]
+    # 
+    # CvM_test11[i] = cvm_test(posterior_ctrl[,'tau[1,1,1]'], wishart[1,1,])[2]
+    # CvM_test12[i] = cvm_test(posterior_ctrl[,'tau[1,2,1]'], wishart[1,2,])[2]
+    # CvM_test22[i] = cvm_test(posterior_ctrl[,'tau[2,2,1]'], wishart[2,2,])[2]
   }
   
   par(mfrow=c(3,1))
   plot(df_vec, KS_test11, type='b', col='black',
-       xlab='Degrees of Freedom', ylab='p value', main='Goodness of fit test')
-  lines(df_vec, AD_test11, type='b', col='blue')
-  lines(df_vec, CvM_test11, type='b', col='red')
+       xlab='Degrees of Freedom', ylab='p value', main=paste(chan))
+  # lines(df_vec, AD_test11, type='b', col='blue')
+  # lines(df_vec, CvM_test11, type='b', col='red')
   
   plot(df_vec, KS_test12, type='b', col='black',
-       xlab='Degrees of Freedom', ylab='p value', main='Goodness of fit test')
-  lines(df_vec, AD_test12, type='b', col='blue')
-  lines(df_vec, CvM_test12, type='b', col='red')
+       xlab='Degrees of Freedom', ylab='p value')
+  # lines(df_vec, AD_test12, type='b', col='blue')
+  # lines(df_vec, CvM_test12, type='b', col='red')
   
   plot(df_vec, KS_test22, type='b', 
-       xlab='Degrees of Freedom', ylab='p value', main='Goodness of fit test')
-  lines(df_vec, AD_test22, type='b', col='blue')
-  lines(df_vec, CvM_test22, type='b', col='red')
+       xlab='Degrees of Freedom', ylab='p value')
+  # lines(df_vec, AD_test22, type='b', col='blue')
+  # lines(df_vec, CvM_test22, type='b', col='red')
 }
-  
-  rWish = rWishart(n=10000, df=2, Sigma=prec_pred/2)
-  par(mfrow=c(3,1))
-  plot(density(rWish[1,1,]), main=expression(tau[11] ~ ' Density'))
-  lines(density(posterior_ctrl[,'tau[1,1,1]']), col='red')
-  plot(density(rWish[1,2,]), main=expression(tau[12]~' Density'))
-  lines(density(posterior_ctrl[,'tau[1,2,1]']), col='red') 
-  plot(density(rWish[2,2,]), main=expression(tau[22]~' Density'))
-  lines(density(posterior_ctrl[,'tau[2,2,1]']), col='red')
-  
-  
+
+d=100
+rWish = rWishart(n=10000, df=d, Sigma=prec_pred/d )
+par(mfrow=c(3,1))
+plot(density(rWish[1,1,]), main=expression(tau[11] ~ ' Density'))
+lines(density(posterior_ctrl[,'tau[1,1,1]']), col='red')
+plot(density(rWish[1,2,]), main=expression(tau[12]~' Density'))
+lines(density(posterior_ctrl[,'tau[1,2,1]']), col='red') 
+plot(density(rWish[2,2,]), main=expression(tau[22]~' Density'))
+lines(density(posterior_ctrl[,'tau[2,2,1]']), col='red')
+
+plotWishart(output=rWish)
+plotWishart(output=posterior_ctrl[,c('tau[1,1,1]', 'tau[1,2,1]', 'tau[2,1,1]','tau[2,2,1]')])
+
+
+
+
+
+## NDUFB8 has an optimal d in (500,700), best tested was 560
+### this however is not clean cut as one d can varying effects on different elements of T
+### many values of d in this range have densities that look very similar
+
+## SDHA has an optimal d in (500,700), best tested was 560
+### this however is not clean cut as one d can varying effects on different elements of T
+### many values of d in this range have densities that look very similar
+
+## OSCP has an optimal d in (500,700), best tested was 560
+### this however is not clean cut as one d can varying effects on different elements of T
+### many values of d in this range have densities that look very similar
+
+## GRIM19 has an optimal d in (500,700), best tested was 560
+### this however is not clean cut as one d can varying effects on different elements of T
+### many values of d in this range have densities that look very similar
+
+##  MTCO1has an optimal d in (500,700), best tested was 580
+### this however is not clean cut as one d can varying effects on different elements of T
+### many values of d in this range have densities that look very similar
+
+##  COX4+4L2 has an optimal d in (500,700), best tested was 580
+### this however is not clean cut as one d can varying effects on different elements of T
+### many values of d in this range have densities that look very similar
+
+##  UqCRC2 has an optimal d in (500,700), best tested was 580
+### this however is not clean cut as one d can varying effects on different elements of T
+### many values of d in this range have densities that look very similar
 
 
 
