@@ -263,7 +263,6 @@ fulldat = 'IMC.RAW.txt'
 
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
-imc_chan = "NDUFB8"
 mitochan = "VDAC1"
 
 # removing unwanted info 
@@ -274,7 +273,6 @@ froot = gsub('.RAW.txt', '', fulldat)
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
-pts = c("P01")
 
 time = system.time({
   for( chan in imc_chan){
