@@ -30,7 +30,7 @@ classcols = function(classif){
   return(rgb(rgbvals[,1],rgbvals[,2],rgbvals[,3],rgbvals[,4]))
 }
 
-percentiles = function(xdat, ydat, probs=c(0.95)){
+percentiles = function(xdat, ydat, probs=c(0.95, 0.5, 0.1)){
   dens = kde2d(xdat, ydat, n=200); ## estimate the z counts
   dx = diff(dens$x[1:2])
   dy = diff(dens$y[1:2])
@@ -80,8 +80,8 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Patient Prior',
           ylim=(range(c(ctrl_data$Y[,2], pat_data$Y[,2]))+c(-1,1)), xlim=(range(c(ctrl_data$Y[,1], pat_data$Y[,1]))+c(-1,1)) )
     points(  pat_data$Y[,1], pat_data$Y[,2], col=myYellow,  pch=20 )
-    #contours = percentiles(pat_prior[,"compOne[1]"], pat_prior[,"compOne[2]"])
-    #contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
+    contours = percentiles(pat_prior[,"compOne[1]"], pat_prior[,"compOne[2]"])
+    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Patient Posterior',
@@ -95,7 +95,7 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
   par(op)
 } 
 
-priorpost_marginals = function(prior, posterior, pat_data=NULL, title){
+priorpost_marginals = function( prior, posterior, pat_data=NULL, title ){
   op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
   par(mfrow=c(2,2))
   ## mu_1
@@ -186,6 +186,30 @@ priorpost_marginals = function(prior, posterior, pat_data=NULL, title){
   par(op)
 }
 
+component_densities = function( ctrl_data, pat_data, pat_posterior, 
+                                classifs, title ){
+
+  par(mfrow=c(1,2))
+  plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
+       xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
+       main="Component One")
+  points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
+  contour_one = percentiles(pat_posterior[,"compOne[1]"], pat_posterior[,"compOne[2]"])
+  contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$labels,
+           col='blue', lwd=2, add=TRUE)
+  
+  plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
+       xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
+       main="Component Two")
+  points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
+  contour_one = percentiles(pat_posterior[,"compTwo[1]"], pat_posterior[,"compTwo[2]"])
+  contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$labels, 
+           col='red', lwd=2, add=TRUE)
+  
+  title(main=title, line = -1, outer = TRUE)
+  
+}
+
 MCMCplot = function(MCMCoutput, lag=20, title){
   col.names = colnames(MCMCoutput[[1]])
   n.chains = length(MCMCoutput)
@@ -252,6 +276,7 @@ dir.create(file.path("PNG/IMC"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC/MCMC"), showWarnings=FALSE)
 dir.create(file.path("PDF/IMC/classifs"), showWarnings=FALSE)
 dir.create(file.path("PDF/IMC/marginals"), showWarnings=FALSE)
+dir.create(file.path("PDF/IMC/components"), showWarnings=FALSE)
 
 # burn-in, chain length, thinning lag
 MCMCUpdates = 2000
@@ -264,6 +289,7 @@ fulldat = 'IMC.RAW.txt'
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
 mitochan = "VDAC1"
+imc_chan = c("NDUFB8")
 
 # removing unwanted info 
 imcDat = imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
@@ -273,6 +299,7 @@ froot = gsub('.RAW.txt', '', fulldat)
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
+pts = c("P01")
 
 time = system.time({
   for( chan in imc_chan){
@@ -394,7 +421,7 @@ time = system.time({
     U_2 = solve( matrix( c(2,0,0,2), nrow=2, ncol=2, byrow=TRUE) )*n_2
     
     mu1_mean = colMeans( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])
-    mu1_prec = solve( var( posterior_ctrl[,c('mu[1,1]','mu[2,1]')]) )
+    mu1_prec = solve( var( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])*10 )
     
     mu2_mean = mu1_mean
     mu2_prec = mu1_prec/100
@@ -466,13 +493,18 @@ time = system.time({
                   pat_data=data_pat, classifs=classifs_pat, title=pat_title  )
         dev.off()
         
-        pdf(file.path("PDF/IMC/MCMC", paste0(outroot, "__MCMC.pdf")), width=14, height=7)
+        pdf(file.path("PDF/IMC/MCMC", paste0(outroot, "__MCMC.pdf")), width=14, height=8.5)
         MCMCplot( MCMCoutput, title=pat_title )
         dev.off()
         
-        pdf(file.path("PDF/IMC/marginals", paste0(outroot, "__MARG.pdf")), width=14, height=7)
+        pdf(file.path("PDF/IMC/marginals", paste0(outroot, "__MARG.pdf")), width=14, height=8.5)
         priorpost_marginals(prior=prior_pat, posterior=posterior_pat, pat_data=data_pat, 
                             title=pat_title)
+        dev.off()
+        
+        pdf(file.path("PDF/IMC/components", paste0(outroot, "__COMPS.pdf")), width=14 ,height=8.5)
+        component_densities(ctrl_data=data_ctrl, pat_data=data_pat, pat_posterior=posterior_pat, 
+                            classifs=classifs_pat, title=pat_title)
         dev.off()
         
         write.table(as.numeric(classifs_pat),file.path("Output/IMC",paste0(outroot,"__CLASS.txt")),
