@@ -245,18 +245,15 @@ model {
     class[j] =   2 - z[j]
     Ypat[j,] ~ dmnorm(mu[,class[j]], tau[,,class[j]] )
   }
-  
   # covariance matrix for component 1
   tau[1:2,1:2,1] ~ dwish(U_1, n_1)
   mu[1:2,1] ~ dmnorm(mu1_mean, mu1_prec)
-  
   # covariance matrix for component 2
   tau[1:2,1:2,2] ~ dwish(U_2, n_2)
   mu[1:2,2] ~ dmnorm(mu2_mean, mu2_prec)
-  
   # classification
   probdiff ~ dbeta(alpha, beta)
-
+  # posterior predictive
   compOne ~ dmnorm(mu[,1], tau[,,1])
   compTwo~ dmnorm(mu[,2], tau[,,2])
 }
@@ -300,7 +297,6 @@ sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
-imc_chan = "COX4+4L2"
 time = system.time({
   for( chan in imc_chan ){
     for( pat in pts){
