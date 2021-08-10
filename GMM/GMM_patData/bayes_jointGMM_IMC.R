@@ -188,7 +188,7 @@ component_densities = function( ctrl_data, pat_data, pat_posterior,
        main="Component One")
   points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
   contour_one = percentiles(pat_posterior[,"compOne[1]"], pat_posterior[,"compOne[2]"])
-  contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$labels,
+  contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs,
           col='blue', lwd=2, add=TRUE)
   
   plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
@@ -196,7 +196,7 @@ component_densities = function( ctrl_data, pat_data, pat_posterior,
        main="Component Two")
   points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
   contour_one = percentiles(pat_posterior[,"compTwo[1]"], pat_posterior[,"compTwo[2]"])
-  contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$labels, 
+  contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs, 
           col='red', lwd=2, add=TRUE)
   
   title(main=title, line = -1, outer = TRUE)

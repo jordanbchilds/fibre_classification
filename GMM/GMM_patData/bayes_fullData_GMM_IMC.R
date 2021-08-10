@@ -98,8 +98,8 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
   par(op)
 } 
 
-component_densities = function( ctrl_data, pat_data, pat_posterior, 
-                                classifs, title ){
+component_densities = function(ctrl_data, pat_data, pat_posterior, 
+                               classifs, title ){
   x.lim = range(ctrl_data$Y[,1], pat_data$Y[,1])
   y.lim = range(ctrl_data$Y[,2], pat_data$Y[,2])
   par(mfrow=c(1,2))
@@ -215,7 +215,7 @@ priorpost_marginals = function(prior, posterior, data, title){
   par(op)
 }
 
-MCMCplot = function( MCMCoutput, lag=20, title){
+MCMCplot = function(MCMCoutput, lag=20, title){
   col.names = colnames(MCMCoutput[[1]])
   n.chains = length(MCMCoutput)
   par(mfrow=c(3,3), mar = c(5.5,5.5,3,3))
@@ -290,7 +290,6 @@ fulldat = 'IMC.RAW.txt'
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
 mitochan = "VDAC1"
-chan = "NDUFB8"
 # removing unwanted info 
 imcDat = imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
 
@@ -299,10 +298,9 @@ froot = gsub('.RAW.txt', '', fulldat)
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
-pts = "P01"
 
-MCMCUpdates = 100
-MCMCUpdates_Report = 100
+MCMCUpdates = 2000
+MCMCUpdates_Report = 5000
 MCMCUpdates_Thin = 1
 n.chains = 1
 
