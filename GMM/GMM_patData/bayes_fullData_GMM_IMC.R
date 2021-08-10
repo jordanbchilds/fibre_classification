@@ -255,16 +255,14 @@ model {
       Y[pat_index[i]+j-1, 1:2] ~ dmnorm(mu[,comp[pat_index[i]+j-1]], tau[,,comp[pat_index[i]+j-1]])
     }
   }
-
-  # construsting covariance matrix for group 1
+  # componet one
   tau[1:2,1:2,1] ~ dwish(U_1, n_1)
   mu[1:2,1] ~ dmnorm(mu1_mean, mu1_prec)
-  
+  # cimponent two
   tau[1:2,1:2,2] ~ dwish(U_2, n_2)
   mu[1:2,2] ~ dmnorm(mu2_mean, mu2_prec)
-  
+  # classifcation
   for(k in 1:length(N)){ p[k] ~ dbeta(alpha, beta) }
-
   # posterior predictive distribution
   compOne ~ dmnorm(mu[,1], tau[,,1])
   compTwo ~ dmnorm(mu[,2], tau[,,2])
@@ -356,13 +354,13 @@ time = system.time({
       
       ## PRIORS
       mu1_mean = c(1,1.5)
-      mu2_mean = mu1_mean
+      mu2_mean = 2*mu1_mean
       mu1_prec = solve( matrix(c(0.2,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
       mu2_prec = solve( 5*diag(2) )
       U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
-      n_1 = 50
-      U_2 = 3*diag(2)
-      n_2 = 20
+      n_1 = 10
+      U_2 = U_1/5
+      n_2 = 5
       alpha = 1
       beta = 1
       
@@ -480,7 +478,7 @@ time = system.time({
           write.table(as.numeric(classifs),file.path("Output/IMC_allData",paste(outroot, pat, "CLASS.txt", sep='__')),
                       row.names=FALSE,quote=FALSE,col.names=FALSE)
           
-          comp_filePath = file.path("PDF/IMC_allData/components", paste0(outroot,".pdf"))
+          comp_filePath = file.path("PDF/IMC_allData/components", paste0(outroot, pat, ".pdf"))
           pdf(comp_filePath, width=14, height=8.5)
           component_densities(ctrl_data=data_ctrl_lst, pat_data=data_pat_lst, 
                               pat_posterior=posterior, classifs=classifs,

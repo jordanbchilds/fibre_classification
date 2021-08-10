@@ -188,11 +188,12 @@ priorpost_marginals = function( prior, posterior, pat_data=NULL, title ){
 
 component_densities = function( ctrl_data, pat_data, pat_posterior, 
                                 classifs, title ){
-
+  x.lim = range(ctrl_data$Y[,1], pat_data$Y[,1])
+  y.lim = range(ctrl_data$Y[,2], pat_data$Y[,2])
   par(mfrow=c(1,2))
   plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
        xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-       main="Component One")
+       main="Component One", xlim=x.lim, ylim=y.lim)
   points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
   contour_one = percentiles(pat_posterior[,"compOne[1]"], pat_posterior[,"compOne[2]"])
   contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs,
@@ -200,7 +201,7 @@ component_densities = function( ctrl_data, pat_data, pat_posterior,
   
   plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
        xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-       main="Component Two")
+       main="Component Two", xlim=x.lim, ylim=y.lim)
   points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
   contour_one = percentiles(pat_posterior[,"compTwo[1]"], pat_posterior[,"compTwo[2]"])
   contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs, 
