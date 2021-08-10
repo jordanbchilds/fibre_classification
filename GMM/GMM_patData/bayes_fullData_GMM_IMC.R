@@ -98,6 +98,31 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
   par(op)
 } 
 
+component_densities = function( ctrl_data, pat_data, pat_posterior, 
+                                classifs, title ){
+  x.lim = range(ctrl_data$Y[,1], pat_data$Y[,1])
+  y.lim = range(ctrl_data$Y[,2], pat_data$Y[,2])
+  par(mfrow=c(1,2))
+  plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
+       xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
+       main="Component One", xlim=x.lim, ylim=y.lim)
+  points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
+  contour_one = percentiles(pat_posterior[,"compOne[1]"], pat_posterior[,"compOne[2]"])
+  contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs,
+          col='blue', lwd=2, add=TRUE)
+  
+  plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
+       xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
+       main="Component Two", xlim=x.lim, ylim=y.lim)
+  points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
+  contour_one = percentiles(pat_posterior[,"compTwo[1]"], pat_posterior[,"compTwo[2]"])
+  contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs, 
+          col='red', lwd=2, add=TRUE)
+  
+  title(main=title, line = -1, outer = TRUE)
+  
+}
+
 priorpost_marginals = function(prior, posterior, data, title){
   op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
   par(mfrow=c(2,2))
@@ -257,6 +282,7 @@ dir.create(file.path("PNG/IMC_allData"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData/MCMC"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData/classifs"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData/marginals"), showWarnings = FALSE)
+dir.create(file.path("PDF/IMC_allData/components"), showWarnings = FALSE)
 
 
 ## tests for RJAGS
@@ -264,6 +290,7 @@ fulldat = 'IMC.RAW.txt'
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
 mitochan = "VDAC1"
+chan = "NDUFB8"
 # removing unwanted info 
 imcDat = imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
 
@@ -272,6 +299,7 @@ froot = gsub('.RAW.txt', '', fulldat)
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
+pts = "P01"
 
 MCMCUpdates = 100
 MCMCUpdates_Report = 100
@@ -438,11 +466,13 @@ time = system.time({
       
       class_filePath = file.path("PDF/IMC_allData/classifs", paste0(paste(outroot, pat, sep="__"), ".pdf"))
         if( pat=='CTRL'){
+          data_ctrl_lst = list(Y=cbind(Xctrl, Yctrl))
           pdf(class_filePath, width=14,height=8.5)
           priorpost( data=data_pat, prior=prior, posterior=posterior,
                      classifs=classifs, title=paste(froot, pat, chan, sep='__'))
           dev.off()
         } else { 
+          data_pat_lst = list(Y=cbind(data_pat[,c(mitochan, chan)]))
           pdf(class_filePath, width=14,height=8.5)
           priorpost( data=data_pat, prior=prior, posterior=posterior, ctrl=data_ctrl,
                      classifs=classifs, title=paste(froot, pat, chan, sep='__'))
@@ -451,6 +481,13 @@ time = system.time({
           classifs = classifs_all[(pat_ind[i]+1):pat_ind[i+1]]
           write.table(as.numeric(classifs),file.path("Output/IMC_allData",paste(outroot, pat, "CLASS.txt", sep='__')),
                       row.names=FALSE,quote=FALSE,col.names=FALSE)
+          
+          comp_filePath = file.path("PDF/IMC_allData/components", paste0(outroot,".pdf"))
+          pdf(comp_filePath, width=14, height=8.5)
+          component_densities(ctrl_data=data_ctrl_lst, pat_data=data_pat_lst, 
+                              pat_posterior=posterior, classifs=classifs,
+                              title=paste(froot, pat, chan, sep="__"))
+          dev.off()
         }
     }
     mcmc_filePath = file.path("PDF/IMC_allData/MCMC", paste0(outroot,".pdf"))
@@ -463,6 +500,8 @@ time = system.time({
     priorpost_marginals(prior=prior, posterior=posterior, data=data,
                         title=paste(froot, pat, chan, sep='__'))
     dev.off()
+    
+    
   }
 })
 
