@@ -20,6 +20,22 @@ classcols = function(classif){
   return(rgb(rgbvals[,1],rgbvals[,2],rgbvals[,3],rgbvals[,4]))
 }
 
+priorpred = function(output, data){
+  par(mfrow=c(1,2))
+  contourOne = percentiles(output[,"compOne[1]"], output[,"compOne[2]"])
+  contourTwo = percentiles(output[,"compTwo[1]"], output[,"compTwo[2]"])
+  plot(data[,1], data[,2], pch=20, col=myDarkGrey, 
+       xlab=paste0("log(",mitochan,")"), ylab=paste("log(",chan,")"), 
+       main='Component One', xlim=c(0,10), ylim=c(0,10))
+  contour( contourOne$dens, levels=contourOne$levels, labels=contourOne$probs,
+           lwd=2, col="blue", add=TRUE)
+  plot(data[,1], data[,2], pch=20, col=myDarkGrey, 
+       xlab=paste0("log(",mitochan,")"), ylab=paste("log(",chan,")"), 
+       main='Component Two', xlim=c(0,10), ylim=c(0,10))
+  contour( contourTwo$dens, levels=contourTwo$levels, labels=contourTwo$probs,
+           lwd=2, col='red', add=TRUE)
+}
+
 comparedensities=function(priorvec, posteriorvec, xlab="", main="", xlim=-99){
   # output: figure of prior and posterior densities (one figure)
   d1 = density(priorvec)
@@ -33,7 +49,7 @@ comparedensities=function(priorvec, posteriorvec, xlab="", main="", xlim=-99){
   points(density(priorvec),lwd=3,col="black",type="l")
 }
 
-percentiles = function(xdat, ydat, probs=c(0.95)){
+percentiles = function(xdat, ydat, probs=c(0.95, 0.5, 0.1)){
   dens = kde2d(xdat, ydat, n=200); ## estimate the z counts
   dx = diff(dens$x[1:2])
   dy = diff(dens$y[1:2])
@@ -49,6 +65,7 @@ priorpost_pred = function(data, ctrl_posterior, pat_prior){
   # output: plots the prior and posterior regression lines and data
   op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
   plot(data$Yctrl[,1], data$Yctrl[,2], pch=20, col=myDarkGrey, 
+       main=" Control Predictive Posterior",
        xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"))
   contours = percentiles(ctrl_posterior[,"compOne[1]"], ctrl_posterior[,"compOne[2]"])
   contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
@@ -56,7 +73,8 @@ priorpost_pred = function(data, ctrl_posterior, pat_prior){
   xRange = range(data$Yctrl[,1])
   yRange = range(data$Yctrl[,2])
   
-  plot(data$Ypat[,1], data$Ypat[,2], pch=20, col=myDarkGrey, 
+  plot(data$Ypat[,1], data$Ypat[,2], pch=20, col=myYellow, 
+       main="Patient Predictive Prior",
        xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"),
        xlim=xRange, ylim=yRange)
   contours = percentiles(pat_prior[,"compOne[1]"], pat_prior[,"compOne[2]"])
@@ -64,6 +82,37 @@ priorpost_pred = function(data, ctrl_posterior, pat_prior){
   
   par(op)
 } 
+
+postprior_params = function(ctrl_posterior, pat_prior){
+  
+  par(mfrow=c(1,2))
+  plot( density(ctrl_posterior[,"mu[1,1]"]), ylab='', xlab='', 
+        main=expression(mu[11]), lwd=2)
+  lines( density( pat_prior[,"mu[1,1]"]), lwd=2, col='blue')
+  legend('topleft', col=c('black','blue'), lty=1, legend=c("ctrl post", "pat prior"))
+  
+  plot( density(ctrl_posterior[,"mu[2,1]"]), ylab='', xlab='', 
+        main=expression(mu[21]), lwd=2)
+  lines( density( pat_prior[,"mu[2,1]"]), lwd=2, col='blue')
+  legend('topleft', col=c('black','blue'), lty=1, legend=c("ctrl post", "pat prior"))
+  
+  par(mfrow=c(2,2))
+  plot( density(ctrl_posterior[,"tau[1,1,1]"]), ylab='', xlab='',
+        main=expression(tau[11]), lwd=2)
+  lines(density(pat_prior[,"tau[1,1,1]"]), lwd=2, col='blue')
+  legend('topleft', legend=c("ctrl post", "pat prior"), lty=1, col=c('black', 'blue'))
+  
+  plot( density(ctrl_posterior[,"tau[1,2,1]"]), ylab='', xlab='',
+        main=expression(tau[12]), lwd=2)
+  lines(density(pat_prior[,"tau[1,2,1]"]), lwd=2, col='blue')
+  legend('topleft', legend=c("ctrl post", "pat prior"), lty=1, col=c('black', 'blue'))
+  
+  plot( density(ctrl_posterior[,"tau[2,2,1]"]), ylab='', xlab='',
+        main=expression(tau[22]), lwd=2)
+  lines(density(pat_prior[,"tau[2,2,1]"]), lwd=2, col='blue')
+  legend('topleft', legend=c("ctrl post", "pat prior"), lty=1, col=c('black', 'blue'))
+  par(mfrow=c(1,1))
+}
 
 modelstring = "
 model {
@@ -93,13 +142,25 @@ dir.create(file.path("PNG"), showWarnings = FALSE)
 
 dir.create(file.path("Output/Output_patPrior"), showWarnings = FALSE)
 dir.create(file.path("PDF/PDF_patPrior"), showWarnings = FALSE)
+
+dir.create(file.path("PDF/PDF_patPrior/Joint"), showWarnings = FALSE)
+dir.create(file.path("PDF/PDF_patPrior/IMC"), showWarnings = FALSE)
+
+
+dir.create(file.path("PDF/PDF_patPrior/IMC/Predictive"), showWarnings = FALSE)
+dir.create(file.path("PDF/PDF_patPrior/IMC/Marginals"), showWarnings = FALSE)
+
+dir.create(file.path("PDF/PDF_patPrior/Joint/Predictive"), showWarnings = FALSE)
+dir.create(file.path("PDF/PDF_patPrior/Joint/Marginals"), showWarnings = FALSE)
+
+
 dir.create(file.path("PNG/PNG_patPrior"), showWarnings = FALSE)
 
 
 # 12,000 burn-in
 MCMCUpdates = 2000
 # 5,000 posterior draws after burn-in
-MCMCUpdates_Report = 5000
+MCMCUpdates_Report = 10000
 # thin with lag-10- > 5,000 draws from posterior
 MCMCUpdates_Thin = 1
 
@@ -193,8 +254,14 @@ for( chan in imc_chan ){
                   posterior_file,row.names=FALSE,quote=FALSE)
       
     }else{ # if file exists load previous data
-      filePath = file.path( "Output/Output_patPrior", paste("IMC__CTRL",chan, 'POSTERIOR.txt', sep="__"))
+      filePath = file.path( "Output/Output_patPrior", paste("IMC", chan, 'POSTERIOR.txt', sep="__"))
       posterior_ctrl = read.delim(filePath, sep=" ", header=TRUE )
+      colnames(posterior_ctrl) = c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+                                   "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                                   "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                                   "probdiff", "compOne[1]", "compOne[2]", "compTwo[1]", 
+                                   "compTwo[2]")
+      
     }
     
     ###
@@ -234,9 +301,98 @@ for( chan in imc_chan ){
     prior_pat = as.data.frame(output_pat_priorpred[[1]])
     colnames(prior_pat) = colnames(output_pat_priorpred[[1]])
     
-    pdf(file.path("PDF/PDF_patPrior",paste0(outroot,".pdf")),width=14,height=8.5)
+    pdf(file.path("PDF/PDF_patPrior/IMC/Predictive",paste0(outroot,".pdf")),width=14,height=8.5)
     priorpost_pred(data=data, ctrl_posterior=posterior_ctrl, pat_prior=prior_pat)
     dev.off()
+    
+    pdf(file.path("PDF/PDF_patPrior/IMC/Marginals", paste0(outroot, ".pdf")), width=14, height=8.5)
+    postprior_params(ctrl_posterior=posterior_ctrl, pat_prior=prior_pat)
+    dev.off()
 }
+
+ndufb8_output = read.delim("Output/Output_patPrior/IMC__NDUFB8__POSTERIOR.txt", header=TRUE, sep=" ")
+colnames(ndufb8_output) = c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+                     "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                     "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                     "probdiff", "compOne[1]", "compOne[2]", "compTwo[1]", 
+                     "compTwo[2]")
+
+par(mfrow=c(1,1))
+contours_one = percentiles(ndufb8_output[,"compOne[1]"], ndufb8_output[,"compOne[2]"])
+contours_two = percentiles(ndufb8_output[,"compTwo[1]"], ndufb8_output[,"compTwo[2]"])
+contour( contours_one$dens, levels=contours_one$levels, labels=contours_one$probs, col='blue', lwd=2)
+
+#######################################
+######## JOINT MODEL 
+#######################################
+
+
+for(chan in imc_chan){
+  ### control data
+  ctrlDat = imcDat[(imcDat$patient_type=='control')&(imcDat$type=='mean intensity'), ]
+  
+  # get data for controls 
+  Yctrl = log( cbind(ctrlDat$value[ctrlDat$channel==mitochan], ctrlDat$value[ctrlDat$channel==chan])) 
+  Nctrl = nrow(Yctrl)
+  
+  ### priors
+  mu1_mean = c(1,1.5)
+  mu2_mean = 2*mu1_mean
+  mu1_prec = solve( matrix(c(0.2,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE))
+  mu2_prec = solve( 5*diag(2) )
+  
+  U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
+  n_1 = 50
+  U_2 = 3*U_1
+  n_2 = 30
+  
+  alpha = 1
+  beta = 1
+  pi = 1 
+  
+  data_lst = list(mu1_mean=mu1_mean, mu1_prec=mu1_prec, mu2_mean=mu2_mean, 
+                  mu2_prec=mu2_prec, U_1=U_1, n_1=n_1, 
+                  U_2=U_2, n_2=n_2, alpha=alpha, beta=beta, pi=pi)
+  data_lst$Y = NULL
+  data_lst$N = 0
+  
+  model_priorpred = jags.model(textConnection(modelstring), data=data_lst) # no initial vals given -> draw from prior
+  
+  output_priorpred=coda.samples(model=model_priorpred,variable.names=c("mu","tau","z", "probdiff", "compOne", "compTwo"),
+                                     n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
+  
+  priorpred_chan = output_priorpred[[1]]
+  
+  pdf(file.path("PDF/PDF_patPrior/Joint/Predictive", paste(froot, chan, sep="__")), width=14, height=8.5 )
+  priorpred(output=priorpred_chan, data=Yctrl)
+  dev.off()
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

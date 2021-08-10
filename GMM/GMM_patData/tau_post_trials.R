@@ -187,9 +187,9 @@ for( chan in imc_chan ) {
   KS_test22 = KS_test11
   KS_test12 = KS_test11
   
-  # AD_test11 = double(length(df_vec))
-  # AD_test22 = AD_test11
-  # AD_test12 = AD_test11
+  AD_test11 = double(length(df_vec))
+  AD_test22 = AD_test11
+  AD_test12 = AD_test11
   # 
   # CvM_test11 = double(length(df_vec))
   # CvM_test22 = CvM_test11
@@ -202,9 +202,9 @@ for( chan in imc_chan ) {
     KS_test22[i] = ks.test(posterior_ctrl[,'tau[2,2,1]'], wishart[2,2,])$p.value
     KS_test12[i] = ks.test(posterior_ctrl[,'tau[1,2,1]'], wishart[1,2,])$p.value
     
-    # AD_test11[i] = ad_test(posterior_ctrl[,'tau[1,1,1]'], wishart[1,1,])[2]
-    # AD_test12[i] = ad_test(posterior_ctrl[,'tau[1,2,1]'], wishart[1,2,])[2]
-    # AD_test22[i] = ad_test(posterior_ctrl[,'tau[2,2,1]'], wishart[2,2,])[2]
+    AD_test11[i] = ad_test(posterior_ctrl[,'tau[1,1,1]'], wishart[1,1,])[2]
+    AD_test12[i] = ad_test(posterior_ctrl[,'tau[1,2,1]'], wishart[1,2,])[2]
+    AD_test22[i] = ad_test(posterior_ctrl[,'tau[2,2,1]'], wishart[2,2,])[2]
     # 
     # CvM_test11[i] = cvm_test(posterior_ctrl[,'tau[1,1,1]'], wishart[1,1,])[2]
     # CvM_test12[i] = cvm_test(posterior_ctrl[,'tau[1,2,1]'], wishart[1,2,])[2]
@@ -214,21 +214,21 @@ for( chan in imc_chan ) {
   par(mfrow=c(3,1))
   plot(df_vec, KS_test11, type='b', col='black',
        xlab='Degrees of Freedom', ylab='p value', main=paste(chan))
-  # lines(df_vec, AD_test11, type='b', col='blue')
+  lines(df_vec, AD_test11, type='b', col='blue')
   # lines(df_vec, CvM_test11, type='b', col='red')
   
   plot(df_vec, KS_test12, type='b', col='black',
        xlab='Degrees of Freedom', ylab='p value')
-  # lines(df_vec, AD_test12, type='b', col='blue')
+  lines(df_vec, AD_test12, type='b', col='blue')
   # lines(df_vec, CvM_test12, type='b', col='red')
   
   plot(df_vec, KS_test22, type='b', 
        xlab='Degrees of Freedom', ylab='p value')
-  # lines(df_vec, AD_test22, type='b', col='blue')
+  lines(df_vec, AD_test22, type='b', col='blue')
   # lines(df_vec, CvM_test22, type='b', col='red')
 }
 
-d=100
+d= 650
 rWish = rWishart(n=10000, df=d, Sigma=prec_pred/d )
 par(mfrow=c(3,1))
 plot(density(rWish[1,1,]), main=expression(tau[11] ~ ' Density'))
