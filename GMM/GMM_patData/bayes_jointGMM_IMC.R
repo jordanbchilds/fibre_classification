@@ -179,6 +179,31 @@ priorpost_marginals = function(prior, posterior, data=NULL, title){
   par(op)
 }
 
+component_densities = function( ctrl_data, pat_data, pat_posterior, 
+                                classifs, title ){
+  
+  par(mfrow=c(1,2))
+  plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
+       xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
+       main="Component One")
+  points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
+  contour_one = percentiles(pat_posterior[,"compOne[1]"], pat_posterior[,"compOne[2]"])
+  contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$labels,
+          col='blue', lwd=2, add=TRUE)
+  
+  plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
+       xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
+       main="Component Two")
+  points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
+  contour_one = percentiles(pat_posterior[,"compTwo[1]"], pat_posterior[,"compTwo[2]"])
+  contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$labels, 
+          col='red', lwd=2, add=TRUE)
+  
+  title(main=title, line = -1, outer = TRUE)
+  
+}
+
+
 MCMCplot = function( MCMCoutput, lag=20, title ){
   col.names = colnames(MCMCoutput[[1]])
   n.chains = length(MCMCoutput)
@@ -248,6 +273,7 @@ dir.create(file.path("PDF/IMC_joint"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint/MCMC"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint/classifs"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint/marginals"), showWarnings = FALSE)
+dir.create(file.path("PDF/IMC_joint/components"), showWarnings = FALSE)
 
 
 # burn-in, chain length, thinning lag
@@ -261,6 +287,7 @@ fulldat = 'IMC.RAW.txt'
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
 mitochan = "VDAC1"
+imc_chan = "NDUFB8"
 
 # removing unwanted info 
 imcDat = imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
@@ -272,6 +299,7 @@ froot = gsub('.RAW.txt', '', fulldat)
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
+pts = "P01"
 
 time = system.time({
   for( chan in imc_chan ){
@@ -366,6 +394,14 @@ time = system.time({
           pdf(file.path("PDF/IMC_joint/marginals", paste0(paste(outroot, pat ,sep='__'), ".pdf")), width=14, height=8.5)
           priorpost_marginals(prior=prior, posterior=posterior, data=data,
                               title=paste(froot, pat, chan, sep='__'))
+          dev.off()
+          
+          data_ctrl_lst = list(Y=data$Yctrl)
+          data_pat_lst = list(Y=data$Ypat)
+          pdf(file.path("PDF/IMC_joint/components", paste0(paste(outroot, pat, sep="__"), ".pdf")), width=14, height=8.5)
+          component_densities(ctrl_data=data_ctrl_lst, pat_data=data_pat_lst, 
+                              pat_posterior=posterior, classifs=classifs, 
+                              title=paste(froot, pat, chan, sep="__"))
           dev.off()
         }
         write.table(as.numeric(classifs),file.path("Output/IMC_joint",paste0(outroot,"__CLASS.txt")),
