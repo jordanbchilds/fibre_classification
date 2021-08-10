@@ -195,7 +195,7 @@ component_densities = function( ctrl_data, pat_data, pat_posterior,
        main="Component One")
   points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
   contour_one = percentiles(pat_posterior[,"compOne[1]"], pat_posterior[,"compOne[2]"])
-  contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$labels,
+  contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs,
            col='blue', lwd=2, add=TRUE)
   
   plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
@@ -203,7 +203,7 @@ component_densities = function( ctrl_data, pat_data, pat_posterior,
        main="Component Two")
   points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
   contour_one = percentiles(pat_posterior[,"compTwo[1]"], pat_posterior[,"compTwo[2]"])
-  contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$labels, 
+  contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs, 
            col='red', lwd=2, add=TRUE)
   
   title(main=title, line = -1, outer = TRUE)
@@ -289,7 +289,6 @@ fulldat = 'IMC.RAW.txt'
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
 mitochan = "VDAC1"
-imc_chan = c("NDUFB8")
 
 # removing unwanted info 
 imcDat = imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
@@ -299,7 +298,7 @@ froot = gsub('.RAW.txt', '', fulldat)
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
-pts = c("P01")
+
 
 time = system.time({
   for( chan in imc_chan){
@@ -432,32 +431,31 @@ time = system.time({
     
     for(pat in pts){ # loop through patients
       outroot = paste(froot,pat,chan,sep="__")
-      
       patient = imcDat[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"), ] 
       
       posterior_file = file.path("Output/IMC",paste0(outroot,"__POSTERIOR.txt"))
+      
+      Xpat = log(patient$value[patient$channel==mitochan])
+      Ypat = log(patient$value[patient$channel==chan]) 
+      XY_pat = cbind(Xpat, Ypat)
+      
+      # Bayesian inference using JAGS                                                                                                                                                  
+      # Assume a prior centered around the estimate from control data
+      Npat = nrow(XY_pat)
+      
+      data_pat = list(Y=XY_pat, N=Npat, mu1_mean=mu1_mean, mu1_prec=mu1_prec, 
+                      mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
+                      U_1=U_1, U_2=U_2, alpha=alpha, beta=beta, pi=pi)
+      
+      data_pat_priorpred = data_pat
+      data_pat_priorpred$Y = NULL
+      data_pat_priorpred$N = 0
       
       if(!file.exists(posterior_file)){ # regression for mitochondrial disease patients
         # Block off file from analysis
         file.create(posterior_file)
         
         op = par(mfrow=c(2,3) ) 
-        
-        Xpat = log(patient$value[patient$channel==mitochan])
-        Ypat = log(patient$value[patient$channel==chan]) 
-        XY_pat = cbind(Xpat, Ypat)
-        
-        # Bayesian inference using JAGS                                                                                                                                                  
-        # Assume a prior centered around the estimate from control data
-        Npat = nrow(XY_pat)
-        
-        data_pat = list(Y=XY_pat, N=Npat, mu1_mean=mu1_mean, mu1_prec=mu1_prec, 
-                        mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
-                        U_1=U_1, U_2=U_2, alpha=alpha, beta=beta, pi=pi)
-        
-        data_pat_priorpred = data_pat
-        data_pat_priorpred$Y = NULL
-        data_pat_priorpred$N = 0
         
         model_pat=jags.model(textConnection(modelstring), data=data_pat, n.chains=n.chains) 
         
@@ -485,8 +483,16 @@ time = system.time({
         colnames(posterior_pat) = colnames(output_pat[[1]])
         colnames(prior_pat) = colnames(output_pat_priorpred[[1]])
         
+        write.table(as.numeric(classifs_pat),file.path("Output/IMC",paste0(outroot,"__CLASS.txt")),
+                    row.names=FALSE,quote=FALSE,col.names=FALSE)
+        
+        write.table(posterior_pat[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+                                     "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                                     "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                                     "probdiff",  "compOne[1]", "compOne[2]", "compTwo[1]",
+                                     "compTwo[2]")],posterior_file,row.names=FALSE,quote=FALSE)
         pat_title = paste(froot, pat)
-  
+        
         pdf(file.path("PDF/IMC/classifs",paste0(outroot,"__CLASSIF", ".pdf")), width=14,height=8.5)
         priorpost(ctrl_data=data_ctrl, ctrl_prior=prior_ctrl, ctrl_posterior=posterior_ctrl, 
                   pat_prior=prior_pat, pat_posterior=posterior_pat, 
@@ -507,16 +513,10 @@ time = system.time({
                             classifs=classifs_pat, title=pat_title)
         dev.off()
         
-        write.table(as.numeric(classifs_pat),file.path("Output/IMC",paste0(outroot,"__CLASS.txt")),
-                    row.names=FALSE,quote=FALSE,col.names=FALSE)
-        
-        write.table(posterior_pat[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
-                                     "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
-                                     "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                                     "probdiff",  "compOne[1]", "compOne[2]", "compTwo[1]",
-                                     "compTwo[2]")],posterior_file,row.names=FALSE,quote=FALSE)
       }else{ # if file exists load previous data
         class_pat_file = file.path("Output/IMC", paste0(outroot, "__CLASS.txt"))
+        
+        
       }
     }
   }
