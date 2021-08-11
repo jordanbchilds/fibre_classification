@@ -285,12 +285,17 @@ dir.create(file.path("PDF/IMC_allData/classifs"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData/marginals"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData/components"), showWarnings = FALSE)
 
+dir.create(file.path("Information_Criteria"), showWarnings = FALSE)
+dir.create(file.path("Information_Criteria/IMC_allData"), showWarnings = FALSE)
+dir.create(file.path("Information_Criteria/IMC_allData/DIC"), showWarnings = FALSE)
+dir.create(file.path("Information_Criteria/IMC_allData/WAIC"), showWarnings = FALSE)
 
 ## tests for RJAGS
 fulldat = 'IMC.RAW.txt'
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
 mitochan = "VDAC1"
+imc_chan = c("NDUFB8", 'GRIM19')
 # removing unwanted info 
 imcDat = imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
 
@@ -300,13 +305,15 @@ sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
-MCMCUpdates = 2000
-MCMCUpdates_Report = 5000 + MCMCUpdates
+MCMCUpdates = 100
+MCMCUpdates_Report = 100 + MCMCUpdates
 MCMCUpdates_Thin = 1
 n.chains = 2
 
 DIC_df = data.frame(row.names=pts)
-waic_lst = list()
+WAIC_lst = list()
+
+chan = c("NDUFB8")
 
 time = system.time({
   for( chan in imc_chan ){
@@ -383,12 +390,12 @@ time = system.time({
                         model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
                         n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, DIC=TRUE, progress.bar="text")
       
-      model_priorpred_jags = jags(data=data_ctrl_priorpred, parameters.to.save=c("mu","tau","compOne","compTwo"),
+      model_priorpred_jags = jags(data=data_priorpred, parameters.to.save=c("mu","tau","compOne","compTwo"),
                                   model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
                                   n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, progress.bar="text", DIC=FALSE)
       
       DIC_df[,chan] = model_jags$BUGSoutput$DIC
-      WAIC_lst[chan] = waic(model_jags$BUGSoutput$sims.list$loglik)
+      WAIC_lst[[chan]] = waic(model_jags$BUGSoutput$sims.list$loglik)$estimates
       
       output = as.mcmc(model_jags)
       output_priorpred = as.mcmc(model_priorpred_jags)
@@ -429,7 +436,7 @@ time = system.time({
       alpha = 1
       beta = 1
       
-      con_pts = c('con', pts)
+      con_pts = c('control', pts)
       pat_index = double(length(con_pts))
       for(i in 1:length(con_pts)) pat_index[i] = min(which(data_chan[,'patient']==con_pts[i]))
       
@@ -437,6 +444,7 @@ time = system.time({
                             mu1_mean=mu1_mean, mu1_prec=mu1_prec,
                             mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
                             U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
+      
       model_priorpred = jags.model(textConnection(modelstring), data=data_priorpred)
       output_priorpred = coda.samples(model=model_priorpred,
                                       variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo"),
@@ -460,8 +468,8 @@ time = system.time({
     
     # plots for each patient
     for(i in 1:length(N)) {
-      outroot_pat = paste0(outroot, "__", pat)
       pat = ctrl_pts[i]
+      outroot_pat = paste0(outroot, "__", pat)
       data_pat = data_chan[(pat_ind[i]+1):pat_ind[i+1], ]
       classifs = classifs_all[(pat_ind[i]+1):pat_ind[i+1]]
       
@@ -508,5 +516,14 @@ time = system.time({
 
 time_df = data.frame(time=time[3])
 write.table(time_df, file=paste("Time/fullData", imc_chan, sep="__"))
+
+DICpath = file.path("Information_Criteria/DIC/fullData")
+write.table(DIC_df, file=DICpath)
+
+WAICpath = "Information_Criteria/WAIC"
+for(chan_pat in names(WAIC_lst)){ 
+  write.table(WAIC_lst[[chan_pat]], file=file.path(WAICpath, chan_pat))
+}
+
 
 

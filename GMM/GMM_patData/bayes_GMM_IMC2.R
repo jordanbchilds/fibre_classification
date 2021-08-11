@@ -271,7 +271,6 @@ model {
 "
 dir.create(file.path("Output"), showWarnings = FALSE)
 dir.create(file.path("PDF"), showWarnings = FALSE)
-dir.create(file.path("PNG"), showWarnings = FALSE)
 dir.create(file.path('Time'), showWarnings = FALSE)
 
 dir.create(file.path("Output/IMC"), showWarnings = FALSE)
@@ -282,6 +281,11 @@ dir.create(file.path("PDF/IMC/MCMC"), showWarnings=FALSE)
 dir.create(file.path("PDF/IMC/classifs"), showWarnings=FALSE)
 dir.create(file.path("PDF/IMC/marginals"), showWarnings=FALSE)
 dir.create(file.path("PDF/IMC/components"), showWarnings=FALSE)
+
+dir.create(file.path("Information_Criteria"), showWarnings = FALSE)
+dir.create(file.path("Information_Criteria/IMC"), showWarnings = FALSE)
+dir.create(file.path("Information_Criteria/IMC/DIC"), showWarnings = FALSE)
+dir.create(file.path("Information_Criteria/IMC/WAIC"), showWarnings = FALSE)
 
 # burn-in, chain length, thinning lag
 MCMCUpdates = 1000
@@ -533,6 +537,13 @@ time = system.time({
 time_df = data.frame(time=time[3])
 write.table(time_df, file=paste("Time/IMC", imc_chan, sep="__"))
 
+DICpath = file.path("Information_Criteria/DIC/fullData")
+write.table(DIC_df, file=DICpath)
+
+WAICpath = "Information_Criteria/WAIC"
+for(chan_pat in waic_lst){ 
+  write.table(waic_lst[[chan_pat]], file=file.path(WAICpath, chan_pat))
+}
 
 
 

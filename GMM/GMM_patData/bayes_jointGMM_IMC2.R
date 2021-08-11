@@ -275,6 +275,11 @@ dir.create(file.path("PDF/IMC_joint/classifs"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint/marginals"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint/components"), showWarnings = FALSE)
 
+dir.create(file.path("Information_Criteria"), showWarnings=FALSE)
+dir.create(file.path("Inofrmation_Criteria/IMC_joint"), showWarnings = FALSE)
+dir.create(file.path("Information_Criteria/IMC_joint/DIC"), showWarnings = FALSE)
+dir.create(file.path("Information_Criteria/IMC_joint/WAIC"), showWarnings = FALSE)
+
 
 # burn-in, chain length, thinning lag
 MCMCUpdates = 2000
@@ -423,6 +428,13 @@ time = system.time({
 time_df = data.frame(time=time[3])
 write.table(time_df,  file=paste("Time/jointGMM", imc_chan, sep="__") )
 
+DICpath = file.path("Information_Criteria/DIC/fullData")
+write.table(DIC_df, file=DICpath)
+
+WAICpath = "Information_Criteria/WAIC"
+for(chan_pat in WAIC_lst){ 
+  write.table(WAIC_lst[[chan_pat]], file=file.path(WAICpath, chan_pat))
+}
 
 
 
