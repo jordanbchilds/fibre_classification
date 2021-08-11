@@ -361,8 +361,9 @@ time = system.time({
       n_1 = 10
       U_2 = U_1/5
       n_2 = 5
-      alpha = 1
-      beta = 1
+      
+      alpha = 4
+      beta = 2
       
       data = list(Y=Ychan, N=N, pat_index=pat_index,
                   mu1_mean=mu1_mean, mu1_prec=mu1_prec,

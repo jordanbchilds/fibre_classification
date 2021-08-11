@@ -424,8 +424,8 @@ time = system.time({
     mu2_mean = mu1_mean
     mu2_prec = mu1_prec/100
     
-    alpha = 1
-    beta = 1
+    alpha = 4
+    beta = 2
     pi = 1
     
     for(pat in pts){ # loop through patients
