@@ -1,6 +1,6 @@
-
+library(loo)
 library(rjags)
-library(beanplot)
+library(R2jags)
 library(MASS)
 source("../BootStrapping/parseData.R", local = TRUE)
 
@@ -239,11 +239,13 @@ modelstring = "
 model {
   for(i in 1:Nctrl ){ # fit to ctrl data
     Yctrl[i,] ~ dmnorm(mu[,1], tau[,,1] )
+    loglik[i] = logdensity.mnorm(Yctrl[i,], mu[,1], tau[,,1])
   }
   for(j in 1:Npat ){ # fit to patient data
     z[j] ~ dbern(probdiff)
     class[j] =   2 - z[j]
     Ypat[j,] ~ dmnorm(mu[,class[j]], tau[,,class[j]] )
+    loglik[Nctrl+j] = logdensity.mnorm(Ypat[j,], mu[,class[j]], tau[,,class[j]])
   }
   # covariance matrix for component 1
   tau[1:2,1:2,1] ~ dwish(U_1, n_1)
@@ -297,14 +299,19 @@ sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
+DIC_df = data.frame(row.names=pts)
+waic_lst = list()
+
 time = system.time({
   for( chan in imc_chan ){
+    DIC_df[,chan] = NA
     for( pat in pts){
+      
       outroot = paste( froot, pat, chan, sep='__')
       posterior_file = file.path("Output/IMC_joint", paste0(outroot, "__POSTERIOR.txt") )
-      
+    
       if( !file.exists(posterior_file)){
-        
+      
         ## CONTROL DATA
         control = imcDat[(imcDat$patient_type=='control')&(imcDat$type=='mean intensity'), ]
         Xctrl = log(control$value[control$channel==mitochan])
@@ -337,28 +344,23 @@ time = system.time({
                     mu1_mean=mu1_mean, mu1_prec=mu1_prec,
                     mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
                     U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
-        
+  
         data_priorpred = data
         data_priorpred$Yctrl = NULL
         data_priorpred$Ypat = NULL
         data_priorpred$Nctrl = 0
         data_priorpred$Npat = 0 
         
-        model = jags.model(textConnection(modelstring), data=data, n.chains=n.chains) 
+        model_jags = jags(data=data, parameters.to.save=c("mu","tau","z","probdiff","compOne","compTwo","loglik"),
+                          model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
+                          n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, DIC=TRUE, progress.bar="text")
         
-        model_priorpred = jags.model(textConnection(modelstring), data=data_priorpred) 
+        model_priorpred_jags = jags(data=data_ctrl_priorpred, parameters.to.save=c("mu","tau","compOne","compTwo"),
+                                    model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
+                                    n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, DIC=FALSE, progress.bar="text")
         
-        update(model, n.iter=MCMCUpdates)
-        
-        converge = coda.samples(model=model, variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo"),
-                                n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
-        
-        output = coda.samples(model=model, variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo"),
-                              n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
-        
-        output_priorpred = coda.samples(model=model_priorpred,
-                                        variable.names=c("mu", "tau","z","probdiff", "compOne", "compTwo"),
-                                        n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
+        DIC_df[pat,chan] = model_jags$BUGSoutput$DIC
+        WAIC_lst[paste(chan,pat,sep="__")] = waic(model_jags$BUGSoutput$sims.list$loglik)
         
         MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
@@ -374,27 +376,27 @@ time = system.time({
         colnames(prior) = colnames(output_priorpred[[1]])
         
         if( pat=='CTRL'){
-          pdf(file.path("PDF/IMC_joint/classifs", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14,height=8.5)
+          pdf(file.path("PDF/IMC_joint/classifs", paste0(outroot,"__CLASSIF.pdf")), width=14,height=8.5)
           priorpost( data=data$Yctrl, prior=prior, posterior=posterior,
                      classifs=classifs, title=paste(froot, pat, chan, sep='__'))
           dev.off()
-          pdf(file.path("PDF/IMC_joint/marginals", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14, height=8.5)
+          pdf(file.path("PDF/IMC_joint/marginals", paste0(outroot,"__MARG.pdf")), width=14, height=8.5)
           priorpost_marginals(prior=prior, posterior=posterior, 
                               title=paste(froot, pat , chan, sep='__'))
           dev.off()
         } else { 
-          pdf(file.path("PDF/IMC_joint/classifs", paste0(paste(outroot, pat, sep="__"), ".pdf")), width=14,height=8.5)
+          pdf(file.path("PDF/IMC_joint/classifs", paste0(outroot,"__CLASSIF.pdf")), width=14,height=8.5)
           priorpost( data=data$Ypat, prior=prior, posterior=posterior, ctrl=data$Yctrl,
                      classifs=classifs, title=paste(froot, pat, chan, sep='__'))
           dev.off()
-          pdf(file.path("PDF/IMC_joint/marginals", paste0(paste(outroot, pat ,sep='__'), ".pdf")), width=14, height=8.5)
+          pdf(file.path("PDF/IMC_joint/marginals", paste0(outroot,"__MARG.pdf")), width=14, height=8.5)
           priorpost_marginals(prior=prior, posterior=posterior, data=data,
                               title=paste(froot, pat, chan, sep='__'))
           dev.off()
           
           data_ctrl_lst = list(Y=data$Yctrl)
           data_pat_lst = list(Y=data$Ypat)
-          pdf(file.path("PDF/IMC_joint/components", paste0(paste(outroot, pat, sep="__"), ".pdf")), width=14, height=8.5)
+          pdf(file.path("PDF/IMC_joint/components", paste0(outroot,"__COMP.pdf")), width=14, height=8.5)
           component_densities(ctrl_data=data_ctrl_lst, pat_data=data_pat_lst, 
                               pat_posterior=posterior, classifs=classifs, 
                               title=paste(froot, pat, chan, sep="__"))
@@ -403,7 +405,7 @@ time = system.time({
         write.table(as.numeric(classifs),file.path("Output/IMC_joint",paste0(outroot,"__CLASS.txt")),
                     row.names=FALSE,quote=FALSE,col.names=FALSE)
         
-        pdf(file.path("PDF/IMC_joint/MCMC", paste0(paste(outroot, pat, sep='__'), '.pdf')), width=14, height=8.5)
+        pdf(file.path("PDF/IMC_joint/MCMC", paste0(outroot,"__MCMC.pdf")), width=14, height=8.5)
         MCMCplot( MCMCoutput, title=paste(froot, pat, chan, sep='__'))
         dev.off()
         
@@ -420,3 +422,10 @@ time = system.time({
 
 time_df = data.frame(time=time[3])
 write.table(time_df,  file=paste("Time/jointGMM", imc_chan, sep="__") )
+
+
+
+
+
+
+

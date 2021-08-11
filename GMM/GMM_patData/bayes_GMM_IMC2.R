@@ -1,3 +1,7 @@
+# install.packages('R2jags')
+# install.package('loo')
+library(loo)
+library(R2jags)
 library(rjags)
 library(MASS)
 source("../BootStrapping/parseData.R", local = TRUE)
@@ -10,7 +14,7 @@ if( length(args)==0 ){
 } else {
   imc_chan = args
 }
-  
+
 cramp = colorRamp(c(rgb(1,0,0,0.25),rgb(0,0,1,0.25)),alpha=TRUE)
 # rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
 # 0.25 determines how transparent the colour is, 1 being opaque 
@@ -54,7 +58,7 @@ priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Prior')
     # contours = percentiles(ctrl_prior[,"compOne[1]"], ctrl_prior[,"compOne[2]"])
     # contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
-
+    
     plot( ctrl_data$Y[,1], ctrl_data$Y[,2], col=myDarkGrey, pch=20, cex.lab=2, cex.axis=1.5,
           xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), main='Control Posterior')
     contours = percentiles(ctrl_posterior[,"compOne[1]"], ctrl_posterior[,"compOne[2]"])
@@ -117,19 +121,19 @@ priorpost_marginals = function( prior, posterior, pat_data=NULL, title ){
            xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
            main=expression(mu[2]~'Posterior Density') )
   title(main=title, line = -1, outer = TRUE)
-
-
+  
+  
   par(mfrow=c(2,3))
   ## tau_1
   # prior
   contour( kde2d( prior[,'tau[1,1,1]'], prior[,'tau[2,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(tau[111]), ylab=expression(tau[221]), nlevels=5,
            main=expression(tau[1]~'Prior Density') )
-
+  
   contour( kde2d( prior[,'tau[1,1,1]'], prior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(tau[111]), ylab=expression(tau[121]), nlevels=5,
            main=expression(tau[1]~'Prior Density') )
-
+  
   contour( kde2d( prior[,'tau[2,2,1]'], prior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(tau[221]), ylab=expression(tau[121]), nlevels=5,
            main=expression(tau[1]~'Prior Density') )
@@ -138,26 +142,26 @@ priorpost_marginals = function( prior, posterior, pat_data=NULL, title ){
   contour( kde2d( posterior[,'tau[1,1,1]'], posterior[,'tau[2,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(tau[111]), ylab=expression(tau[221]), nlevels=5,
            main=expression(tau[1]~'Posterior Density') )
-
+  
   contour( kde2d( posterior[,'tau[1,1,1]'], posterior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(tau[111]), ylab=expression(tau[121]), nlevels=5,
            main=expression(tau[1]~'Posterior Density') )
-
+  
   contour( kde2d( posterior[,'tau[2,2,1]'], posterior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(tau[221]), ylab=expression(tau[121]), nlevels=5,
            main=expression(tau[1]~'Posterior Density') )
   title(main=title, line = -1, outer = TRUE)
-
+  
   ## tau_2
   # prior
   contour( kde2d( prior[,'tau[1,1,2]'], prior[,'tau[2,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(tau[112]), ylab=expression(tau[222]), nlevels=5,
            main=expression(tau[2]~'Prior Density') )
-
+  
   contour( kde2d( prior[,'tau[1,1,2]'], prior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(tau[112]), ylab=expression(tau[122]), nlevels=5,
            main=expression(tau[2]~'Prior Density') )
-
+  
   contour( kde2d( prior[,'tau[2,2,2]'], prior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(tau[222]), ylab=expression(tau[122]), nlevels=5,
            main=expression(tau[2]~'Prior Density') )
@@ -166,16 +170,16 @@ priorpost_marginals = function( prior, posterior, pat_data=NULL, title ){
   contour( kde2d( posterior[,'tau[1,1,2]'], posterior[,'tau[2,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(tau[112]), ylab=expression(tau[222]), nlevels=5,
            main=expression(tau[2]~'Posterior Density') )
-
+  
   contour( kde2d( posterior[,'tau[1,1,2]'], posterior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(tau[112]), ylab=expression(tau[122]), nlevels=5,
            main=expression(tau[2]~'Posterior Density') )
-
+  
   contour( kde2d( posterior[,'tau[2,2,2]'], posterior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(tau[222]), ylab=expression(tau[122]), nlevels=5,
            main=expression(tau[2]~'Posterior Density') )
   title(main=title, line = -1, outer = TRUE)
-
+  
   if( !is.null(pat_data) ){
     par(mfrow=c(1,2))
     plot( density(posterior[,'probdiff']), cex.lab=2, cex.axis=1.5, xlim=c(0,1),
@@ -197,7 +201,7 @@ component_densities = function( ctrl_data, pat_data, pat_posterior,
   points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
   contour_one = percentiles(pat_posterior[,"compOne[1]"], pat_posterior[,"compOne[2]"])
   contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs,
-           col='blue', lwd=2, add=TRUE)
+          col='blue', lwd=2, add=TRUE)
   
   plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
        xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
@@ -205,7 +209,7 @@ component_densities = function( ctrl_data, pat_data, pat_posterior,
   points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
   contour_one = percentiles(pat_posterior[,"compTwo[1]"], pat_posterior[,"compTwo[2]"])
   contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs, 
-           col='red', lwd=2, add=TRUE)
+          col='red', lwd=2, add=TRUE)
   
   title(main=title, line = -1, outer = TRUE)
   
@@ -247,7 +251,7 @@ model {
     z[i] ~ dbern(probdiff)
     class[i] =  2 - z[i]
     Y[i,1:2] ~ dmnorm(mu[,class[i]], tau[,,class[i]] )
-    logLik[i] <- logdensity.mnorm(Y[i,], mu[,class[i]], tau[,,class[i]] )
+    loglik[i] = logdensity.mnorm(Y[i,], mu[,class[i]], tau[,,class[i]] )
   }
   
   # construsting covariance matrix for group 1
@@ -280,10 +284,10 @@ dir.create(file.path("PDF/IMC/marginals"), showWarnings=FALSE)
 dir.create(file.path("PDF/IMC/components"), showWarnings=FALSE)
 
 # burn-in, chain length, thinning lag
-MCMCUpdates = 2000
-MCMCUpdates_Report = 5000
+MCMCUpdates = 1000
+MCMCUpdates_Report = 1000 + MCMCUpdates
 MCMCUpdates_Thin = 1
-n.chains = 1
+n.chains = 2
 
 fulldat = 'IMC.RAW.txt'
 
@@ -300,9 +304,14 @@ sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
+DIC_df= data.frame(row.names=pts)
+WAIC_lst = list()
 
 time = system.time({
-  for( chan in imc_chan){
+  for(chan in imc_chan){
+    
+    DIC_df[,chan] = NA
+    
     outroot_ctrl = paste(froot, chan, "CTRL", sep='__')
     posterior_ctrl_file = file.path("Output/IMC",paste0(outroot_ctrl,"__POSTERIOR.txt"))
     
@@ -341,32 +350,30 @@ time = system.time({
       data_ctrl_priorpred = data_ctrl # same parameters used for prior prediction RJAGS code
       data_ctrl_priorpred$Y = NULL # removes for prior prediction RJAGS 
       data_ctrl_priorpred$N = 0 # N: number of observed control points, removes for prior prediction
+
+      ctrl_jags = jags(data=data_ctrl, parameters.to.save=c("mu","tau","z","probdiff", "compOne", "compTwo"),
+                      model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
+                      n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, DIC=TRUE, progress.bar="text")
       
-      # run the JAGS model for prior prediction and control parameter inference
-      model_ctrl=jags.model(textConnection(modelstring), data=data_ctrl) # no initial vals given -> draw from prior
+      ctrl_priorpred_jags = jags(data=data_ctrl_priorpred, parameters.to.save=c("mu","tau","compOne","compTwo"),
+                                 model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
+                                 n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, progress.bar="text", DIC=FALSE)
       
-      model_ctrl_priorpred=jags.model(textConnection(modelstring), data=data_ctrl_priorpred) # no initial vals given -> draw from prior
-      
-      update(model_ctrl, n.iter=MCMCUpdates)
-      
-      output_ctrl=coda.samples(model=model_ctrl,variable.names=c("mu","tau","z","probdiff", "compOne", "compTwo", "logLik"),
-                               n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
-      
-      output_ctrl_priorpred=coda.samples(model=model_ctrl_priorpred,variable.names=c("mu","tau","z", "probdiff", "compOne", "compTwo", "logLik"),
-                                         n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
+      output_ctrl = as.mcmc(ctrl_jags)
+      output_ctrl_priorpred = as.mcmc(ctrl_priorpred_jags)
       
       posterior_ctrl = as.data.frame(output_ctrl[[1]])
       prior_ctrl = as.data.frame(output_ctrl_priorpred[[1]])
       
       colnames(posterior_ctrl) = colnames(output_ctrl[[1]])
       colnames(prior_ctrl) = colnames(output_ctrl_priorpred[[1]])
-   
+      
       MCMCoutput = output_ctrl[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
-                          "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
-                          "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                          "probdiff", "compOne[1]", "compOne[2]", "compTwo[1]",
-                          "compTwo[2]")]
-  
+                                  "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                                  "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                                  "probdiff", "compOne[1]", "compOne[2]", "compTwo[1]",
+                                  "compTwo[2]")]
+      
       classifs_ctrl = colMeans(posterior_ctrl[, grepl('z', colnames(posterior_ctrl))])
       
       # prior and posterior prediction for control data
@@ -404,6 +411,7 @@ time = system.time({
     ###
     ### prior specification for patient data
     ###
+    
     
     # define the expected value of the patient prior (prec_pred) be the mean of the control
     # posterior
@@ -454,26 +462,26 @@ time = system.time({
         # Block off file from analysis
         file.create(posterior_file)
         
-        op = par(mfrow=c(2,3) ) 
+        pat_jags = jags(data=data_pat, parameters.to.save=c("mu","tau","z","probdiff","compOne","compTwo", "loglik"),
+                        model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
+                        n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, DIC=TRUE, progress.bar="text")
         
-        model_pat=jags.model(textConnection(modelstring), data=data_pat, n.chains=n.chains) 
         
-        converge_pat = coda.samples(model=model_pat, variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo", "logLik"),
-                                    n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
-        output_pat = coda.samples(model=model_pat, variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo", "logLik"),
-                                  n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
+        pat_priorpred_jags = jags(data=data_ctrl_priorpred, parameters.to.save=c("mu","tau","compOne","compTwo"),
+                                   model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
+                                   n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, DIC=FALSE, progress.bar="text")
         
-        model_pat_priorpred=jags.model(textConnection(modelstring), data=data_pat_priorpred) 
-        update(model_pat,n.iter=MCMCUpdates)
-        output_pat_priorpred = coda.samples(model=model_pat_priorpred,
-                                            variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo", "logLik"),
-                                            n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
+        DIC_df[pat,chan] = pat_jags$BUGSoutput$DIC
+        WAIC_list[paste(chan,pat,sep="__")] = waic(pat_jags$BUGSoutput$sims.list$loglik)
+        
+        output_pat = as.mcmc(pat_jags)
+        output_pat_priorpred = as.mcmc(pat_priorpred_jags)
         
         MCMCoutput = output_pat[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
-                           "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
-                           "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                           "probdiff",  "compOne[1]", "compOne[2]", "compTwo[1]",
-                           "compTwo[2]")] 
+                                   "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                                   "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                                   "probdiff",  "compOne[1]", "compOne[2]", "compTwo[1]",
+                                   "compTwo[2]")] 
         
         prior_pat = as.data.frame(output_pat_priorpred[[1]])
         posterior_pat = as.data.frame(output_pat[[1]])
@@ -519,7 +527,7 @@ time = system.time({
       }
     }
   }
-
+  
 })
 
 time_df = data.frame(time=time[3])

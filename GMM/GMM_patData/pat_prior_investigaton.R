@@ -20,20 +20,53 @@ classcols = function(classif){
   return(rgb(rgbvals[,1],rgbvals[,2],rgbvals[,3],rgbvals[,4]))
 }
 
-priorpred = function(output, data){
+priorpred = function(output, data_ctrl, data_pat){
   par(mfrow=c(1,2))
   contourOne = percentiles(output[,"compOne[1]"], output[,"compOne[2]"])
   contourTwo = percentiles(output[,"compTwo[1]"], output[,"compTwo[2]"])
-  plot(data[,1], data[,2], pch=20, col=myDarkGrey, 
+  plot(data_ctrl[,1], data_ctrl[,2], pch=20, col=myDarkGrey, 
        xlab=paste0("log(",mitochan,")"), ylab=paste("log(",chan,")"), 
        main='Component One', xlim=c(0,10), ylim=c(0,10))
+  points(data_pat[,1], data_pat[,2], pch=20, col=myYellow)
   contour( contourOne$dens, levels=contourOne$levels, labels=contourOne$probs,
            lwd=2, col="blue", add=TRUE)
-  plot(data[,1], data[,2], pch=20, col=myDarkGrey, 
+  
+  plot(data_ctrl[,1], data_ctrl[,2], pch=20, col=myDarkGrey, 
        xlab=paste0("log(",mitochan,")"), ylab=paste("log(",chan,")"), 
        main='Component Two', xlim=c(0,10), ylim=c(0,10))
+  points(data_pat[,1], data_pat[,2], pch=20, col=myYellow)
   contour( contourTwo$dens, levels=contourTwo$levels, labels=contourTwo$probs,
            lwd=2, col='red', add=TRUE)
+}
+
+prior_marg = function(output){
+  
+  par(mfrow=c(2,2))
+  plot( density(output[,"mu[1,1]"]), lwd=2, 
+        xlab='', ylab='', main=expression(mu[11]))
+  plot( density(output[,"mu[2,1]"]), lwd=2, 
+        xlab='', ylab='', main=expression(mu[21]))
+  plot( density(output[,'mu[1,2]']), lwd=2, 
+        xlab='', ylab='', main=expression(mu[12]))
+  plot(density(output[,'mu[2,2]']), lwd=2, 
+       xlab='', ylab='', expression(mu[22]))
+  
+  par(mfrow=c(2,2))
+  plot( density(output[,'tau[1,1,1]']), lwd=2, 
+        xlab='', ylab='', main=expression(tau[111]))
+  plot( density(output[,'tau[1,2,1]']), lwd=2,
+        xlab='', ylab='', main=expression(tau[121]))
+  plot( density(output[,'tau[2,2,1]']), lwd=2, 
+        xlab='', ylab='', main=expression(tau[221]))
+  
+  par(mfrow=c(2,2))
+  plot( density(output[,'tau[1,1,2]']), lwd=2, 
+        xlab='', ylab='', main=expression(tau[112]))
+  plot( density(output[,'tau[1,2,2]']), lwd=2,
+        xlab='', ylab='', main=expression(tau[122]))
+  plot( density(output[,'tau[2,2,2]']), lwd=2, 
+        xlab='', ylab='', main=expression(tau[222]))
+  
 }
 
 comparedensities=function(priorvec, posteriorvec, xlab="", main="", xlim=-99){
@@ -326,14 +359,8 @@ contour( contours_one$dens, levels=contours_one$levels, labels=contours_one$prob
 ######## JOINT MODEL 
 #######################################
 
-
+## prior predictive 
 for(chan in imc_chan){
-  ### control data
-  ctrlDat = imcDat[(imcDat$patient_type=='control')&(imcDat$type=='mean intensity'), ]
-  
-  # get data for controls 
-  Yctrl = log( cbind(ctrlDat$value[ctrlDat$channel==mitochan], ctrlDat$value[ctrlDat$channel==chan])) 
-  Nctrl = nrow(Yctrl)
   
   ### priors
   mu1_mean = c(1,1.5)
@@ -342,9 +369,9 @@ for(chan in imc_chan){
   mu2_prec = solve( 5*diag(2) )
   
   U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
-  n_1 = 50
-  U_2 = 3*U_1
-  n_2 = 30
+  n_1 = 10
+  U_2 = U_1/5
+  n_2 = 5
   
   alpha = 1
   beta = 1
@@ -356,17 +383,32 @@ for(chan in imc_chan){
   data_lst$Y = NULL
   data_lst$N = 0
   
-  model_priorpred = jags.model(textConnection(modelstring), data=data_lst) # no initial vals given -> draw from prior
-  
-  output_priorpred=coda.samples(model=model_priorpred,variable.names=c("mu","tau","z", "probdiff", "compOne", "compTwo"),
-                                     n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
-  
-  priorpred_chan = output_priorpred[[1]]
-  
-  pdf(file.path("PDF/PDF_patPrior/Joint/Predictive", paste(froot, chan, sep="__")), width=14, height=8.5 )
-  priorpred(output=priorpred_chan, data=Yctrl)
-  dev.off()
+  for(pat in pts){
+    ### control data
+    ctrlDat = imcDat[(imcDat$patient_type=='control')&(imcDat$type=='mean intensity'), ]
+    
+    # get data for controls 
+    Yctrl = log( cbind(ctrlDat$value[ctrlDat$channel==mitochan], ctrlDat$value[ctrlDat$channel==chan])) 
+    Nctrl = nrow(Yctrl)
+    
+    patDat = imcDat[(imcDat$patient_id==pat)&(imcDat$type=='mean intensity'),]
+    Ypat = log( cbind( patDat$value[patDat$channel==mitochan], patDat$value[patDat$channel==chan]))
 
+    model_priorpred = jags.model(textConnection(modelstring), data=data_lst) # no initial vals given -> draw from prior
+    
+    output_priorpred=coda.samples(model=model_priorpred,variable.names=c("mu","tau","z", "probdiff", "compOne", "compTwo"),
+                                       n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
+    
+    priorpred_chan = output_priorpred[[1]]
+    
+    pdf(file.path("PDF/PDF_patPrior/Joint/Predictive", paste0(paste(froot, chan, sep="__"),".pdf")), width=14, height=8.5 )
+    priorpred(output=priorpred_chan, data_ctrl=Yctrl, data_pat=Ypat)
+    dev.off()
+    
+    pdf(file.path("PDF/PDF_patPrior/Joint/Marginals", paste0(paste(froot, chan, sep="__"),".pdf" )), width=14, height=8.5)
+    prior_marg( priorpred_chan )
+    dev.off()
+  }
 }
 
 

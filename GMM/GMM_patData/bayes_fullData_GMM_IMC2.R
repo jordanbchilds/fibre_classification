@@ -1,4 +1,6 @@
+library(loo)
 library(rjags)
+library(R2jags)
 library(MASS)
 source("../BootStrapping/parseData.R", local = TRUE)
 
@@ -94,7 +96,7 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
     # 
     # title(main=title, line = -1, outer = TRUE)
   }
-
+  
   par(op)
 } 
 
@@ -203,14 +205,14 @@ priorpost_marginals = function(prior, posterior, data, title){
            xlab=expression(tau[222]), ylab=expression(tau[122]), nlevels=5,
            main=expression(tau[2]~'Posterior Density') )
   title(main=title, line = -1, outer = TRUE)
-
+  
   par(mfrow=c(2,5))
   for( i in 1:length(pts)){
-  pdiff = paste0('probdiff[',i+1,']')
-  plot( density(posterior[,pdiff]), cex.lab=2, cex.axis=1.5, xlim=c(0,1),
-        xlab=pdiff, ylab='density', lwd=2, col='red', main=paste(pts[i],pdiff,'Density'))
-  lines( density(rbeta(5000, data$alpha, data$beta)), lwd=2, col='green')
-  title(main=title, line = -1, outer = TRUE)
+    pdiff = paste0('probdiff[',i+1,']')
+    plot( density(posterior[,pdiff]), cex.lab=2, cex.axis=1.5, xlim=c(0,1),
+          xlab=pdiff, ylab='density', lwd=2, col='red', main=paste(pts[i],pdiff,'Density'))
+    lines( density(rbeta(5000, data$alpha, data$beta)), lwd=2, col='green')
+    title(main=title, line = -1, outer = TRUE)
   }
   par(op)
 }
@@ -230,7 +232,7 @@ MCMCplot = function(MCMCoutput, lag=20, title){
   } else {
     for( param in col.names){
       plot( autocorr(MCMCoutput[[1]][,param], lags=0:lag), type='h', 
-      xlab='Index', ylab='' )
+            xlab='Index', ylab='' )
       for(j in 2:n.chains) lines( autocorr(MCMCoutput[[j]][,param], lags=0:20), type='h', col=j)
       
       plot(1:nrow(MCMCoutput[[1]]), MCMCoutput[[1]][,param], main=param, type='l',
@@ -253,6 +255,8 @@ model {
       z[ pat_index[i]+j-1 ] ~ dbern( probdiff[i] )
       comp[pat_index[i]+j-1] = 2 - z[pat_index[i]+j-1]
       Y[pat_index[i]+j-1, 1:2] ~ dmnorm(mu[,comp[pat_index[i]+j-1]], tau[,,comp[pat_index[i]+j-1]])
+      
+      loglik[pat_index[i]+j-1] = logdensity.mnorm(Y[pat_index[i]+j-1,], mu[,comp[pat_index[i]+j-1]], tau[,,comp[pat_index[i]+j-1]])
     }
   }
   # componet one
@@ -270,7 +274,6 @@ model {
 "
 dir.create(file.path("Output"), showWarnings = FALSE)
 dir.create(file.path("PDF"), showWarnings = FALSE)
-dir.create(file.path("PNG"), showWarnings = FALSE)
 dir.create(file.path("Time"), showWarnings = FALSE)
 
 dir.create(file.path("Output/IMC_allData"), showWarnings = FALSE)
@@ -298,32 +301,35 @@ crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
 MCMCUpdates = 2000
-MCMCUpdates_Report = 5000
+MCMCUpdates_Report = 5000 + MCMCUpdates
 MCMCUpdates_Thin = 1
-n.chains = 1
+n.chains = 2
+
+DIC_df = data.frame(row.names=pts)
+waic_lst = list()
 
 time = system.time({
   for( chan in imc_chan ){
     outroot = paste(froot, chan, sep='__')
     posterior_file = file.path("Output/IMC_allData", paste0(outroot, "__POSTERIOR.txt") )
-      # dataset with only the current protein and VDAC1
+    # dataset with only the current protein and VDAC1
     data_chan = imcDat[(imcDat$channel==chan)|(imcDat$channel==mitochan),]
     # control data for chan
     control = imcDat[(imcDat$patient_type=='control')&(imcDat$type=='mean intensity'), ]
     Xctrl = log(control$value[control$channel==mitochan])
     Yctrl = log(control$value[control$channel==chan])
     Nctrl = length(Yctrl)
-      
+    
     Xchan = Xctrl
     Ychan = Yctrl
     patient_id = rep('control', Nctrl)
-      
+    
     data_ctrl = data.frame(Xctrl, Yctrl,  rep('control', Nctrl))
     colnames(data_ctrl) = c(mitochan, chan, 'patient')
-      
+    
     N = double(10) # store the number of observations per patient 
     N[1] = Nctrl
-      
+    
     for( j in 1:length(pts) ){
       # all the patient data for chan
       patient = imcDat[(imcDat$patient_id==pts[j])&(imcDat$type=="mean intensity"), ] 
@@ -335,7 +341,7 @@ time = system.time({
       Xchan = c(Xchan, Xpat)
       Ychan = c(Ychan, Ypat)
       patient_id = c(patient_id, rep(paste(pts[j]), Npat) )
-  
+      
       N[j+1] = Npat
     }
     
@@ -344,9 +350,9 @@ time = system.time({
     
     if( !file.exists(posterior_file) ){
       # make data frame from data matrix
-  
+      
       Ychan = data_chan[,c(mitochan, chan)]
-    
+      
       # row index for each change in patient
       con_pts = c('control', pts)
       pat_index = double(length(con_pts))
@@ -372,23 +378,21 @@ time = system.time({
       data_priorpred = data
       data_priorpred$Y = NULL
       data_priorpred$N = 0
-    
-      model = jags.model(textConnection(modelstring), data=data, n.chains=n.chains)
-    
-      model_priorpred = jags.model(textConnection(modelstring), data=data_priorpred)
-    
-      update(model, n.iter=MCMCUpdates)
-    
-      converge = coda.samples(model=model, variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo"),
-                              n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
-    
-      output = coda.samples(model=model, variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo"),
-                            n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
-    
-      output_priorpred = coda.samples(model=model_priorpred,
-                                      variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo"),
-                                      n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
-    
+      
+      model_jags = jags(data=data, parameters.to.save=c("mu","tau","z","probdiff","compOne","compTwo","loglik"),
+                        model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
+                        n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, DIC=TRUE, progress.bar="text")
+      
+      model_priorpred_jags = jags(data=data_ctrl_priorpred, parameters.to.save=c("mu","tau","compOne","compTwo"),
+                                  model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
+                                  n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, progress.bar="text", DIC=FALSE)
+      
+      DIC_df[,chan] = model_jags$BUGSoutput$DIC
+      WAIC_lst[chan] = waic(model_jags$BUGSoutput$sims.list$loglik)
+      
+      output = as.mcmc(model_jags)
+      output_priorpred = as.mcmc(model_priorpred_jags)
+      
       MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                              "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                              "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
@@ -396,10 +400,10 @@ time = system.time({
                              "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
                              "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
                              "compTwo[1]", "compTwo[2]")]
-    
+      
       posterior = as.data.frame(output[[1]])
       prior = as.data.frame(output_priorpred[[1]])
-    
+      
       classifs_all = colMeans( posterior[, grepl('z', colnames(posterior))] )
       colnames(posterior) = colnames(output[[1]])
       colnames(prior) = colnames(output_priorpred[[1]])
@@ -430,9 +434,9 @@ time = system.time({
       for(i in 1:length(con_pts)) pat_index[i] = min(which(data_chan[,'patient']==con_pts[i]))
       
       data_priorpred = list(Y=NULL, N=0, pat_index=pat_index,
-                  mu1_mean=mu1_mean, mu1_prec=mu1_prec,
-                  mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
-                  U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
+                            mu1_mean=mu1_mean, mu1_prec=mu1_prec,
+                            mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
+                            U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
       model_priorpred = jags.model(textConnection(modelstring), data=data_priorpred)
       output_priorpred = coda.samples(model=model_priorpred,
                                       variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo"),
@@ -462,30 +466,30 @@ time = system.time({
       classifs = classifs_all[(pat_ind[i]+1):pat_ind[i+1]]
       
       class_filePath = file.path("PDF/IMC_allData/classifs", paste0(outroot_pat, "__CLASSIF.pdf"))
-        if( pat=='CTRL'){
-          data_ctrl_lst = list(Y=cbind(Xctrl, Yctrl))
-          pdf(class_filePath, width=14,height=8.5)
-          priorpost( data=data_pat, prior=prior, posterior=posterior,
-                     classifs=classifs, title=paste(froot, pat, chan, sep='__'))
-          dev.off()
-        } else { 
-          data_pat_lst = list(Y=cbind(data_pat[,c(mitochan, chan)]))
-          pdf(class_filePath, width=14,height=8.5)
-          priorpost( data=data_pat, prior=prior, posterior=posterior, ctrl=data_ctrl,
-                     classifs=classifs, title=paste(froot, pat, chan, sep='__'))
-          dev.off()
-          
-          classifs = classifs_all[(pat_ind[i]+1):pat_ind[i+1]]
-          write.table(as.numeric(classifs),file.path("Output/IMC_allData",paste0(outroot_pat, "__CLASS.txt")),
-                      row.names=FALSE,quote=FALSE,col.names=FALSE)
-          
-          comp_filePath = file.path("PDF/IMC_allData/components", paste0(outroot_pat, "__COMPS.pdf"))
-          pdf(comp_filePath, width=14, height=8.5)
-          component_densities(ctrl_data=data_ctrl_lst, pat_data=data_pat_lst, 
-                              pat_posterior=posterior, classifs=classifs,
-                              title=paste(froot, pat, chan, sep="__"))
-          dev.off()
-        }
+      if( pat=='CTRL'){
+        data_ctrl_lst = list(Y=cbind(Xctrl, Yctrl))
+        pdf(class_filePath, width=14,height=8.5)
+        priorpost( data=data_pat, prior=prior, posterior=posterior,
+                   classifs=classifs, title=paste(froot, pat, chan, sep='__'))
+        dev.off()
+      } else { 
+        data_pat_lst = list(Y=cbind(data_pat[,c(mitochan, chan)]))
+        pdf(class_filePath, width=14,height=8.5)
+        priorpost( data=data_pat, prior=prior, posterior=posterior, ctrl=data_ctrl,
+                   classifs=classifs, title=paste(froot, pat, chan, sep='__'))
+        dev.off()
+        
+        classifs = classifs_all[(pat_ind[i]+1):pat_ind[i+1]]
+        write.table(as.numeric(classifs),file.path("Output/IMC_allData",paste0(outroot_pat, "__CLASS.txt")),
+                    row.names=FALSE,quote=FALSE,col.names=FALSE)
+        
+        comp_filePath = file.path("PDF/IMC_allData/components", paste0(outroot_pat, "__COMPS.pdf"))
+        pdf(comp_filePath, width=14, height=8.5)
+        component_densities(ctrl_data=data_ctrl_lst, pat_data=data_pat_lst, 
+                            pat_posterior=posterior, classifs=classifs,
+                            title=paste(froot, pat, chan, sep="__"))
+        dev.off()
+      }
     }
     mcmc_filePath = file.path("PDF/IMC_allData/MCMC", paste0(outroot, "__MCMC.pdf"))
     pdf(mcmc_filePath, width=14,height=8.5)
