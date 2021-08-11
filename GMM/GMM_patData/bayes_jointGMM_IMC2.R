@@ -1,3 +1,5 @@
+install.packages("loo")
+install.packages("R2jags")
 library(loo)
 library(rjags)
 library(R2jags)

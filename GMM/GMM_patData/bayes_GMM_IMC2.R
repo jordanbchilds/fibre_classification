@@ -1,5 +1,5 @@
-# install.packages('R2jags')
-# install.package('loo')
+install.packages("loo")
+install.packages("R2jags")
 library(loo)
 library(R2jags)
 library(rjags)
