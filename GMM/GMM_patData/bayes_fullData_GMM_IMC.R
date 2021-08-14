@@ -270,7 +270,7 @@ model {
 "
 dir.create(file.path("Output"), showWarnings = FALSE)
 dir.create(file.path("PDF"), showWarnings = FALSE)
-dir.create(file.path("PNG"), showWarnings = FALSE)
+# dir.create(file.path("PNG"), showWarnings = FALSE)
 dir.create(file.path("Time"), showWarnings = FALSE)
 
 dir.create(file.path("Output/IMC_allData"), showWarnings = FALSE)
@@ -297,8 +297,8 @@ sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
-MCMCUpdates = 2000
-MCMCUpdates_Report = 5000
+MCMCUpdates = 100
+MCMCUpdates_Report = 100
 MCMCUpdates_Thin = 1
 n.chains = 1
 
@@ -457,8 +457,8 @@ time = system.time({
     
     # plots for each patient
     for(i in 1:length(N)) {
-      outroot_pat = paste0(outroot, "__", pat)
       pat = ctrl_pts[i]
+      outroot_pat = paste0(outroot, "__", pat)
       data_pat = data_chan[(pat_ind[i]+1):pat_ind[i+1], ]
       classifs = classifs_all[(pat_ind[i]+1):pat_ind[i+1]]
       

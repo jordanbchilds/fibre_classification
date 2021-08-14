@@ -1,5 +1,3 @@
-install.packages("loo")
-install.packages("R2jags")
 library(loo)
 library(rjags)
 library(R2jags)
@@ -206,7 +204,6 @@ component_densities = function( ctrl_data, pat_data, pat_posterior,
   
 }
 
-
 MCMCplot = function( MCMCoutput, lag=20, title ){
   col.names = colnames(MCMCoutput[[1]])
   n.chains = length(MCMCoutput)
@@ -284,9 +281,9 @@ dir.create(file.path("Information_Criteria/IMC_joint/WAIC"), showWarnings = FALS
 
 
 # burn-in, chain length, thinning lag
-MCMCUpdates = 2000
-MCMCUpdates_Report = 5000
-MCMCUpdates_Thin = 1
+MCMCBurnin = 2000
+MCMCUpdates = 5000 + MCMCBurnin
+MCMC_Thin = 1
 n.chains = 1
 
 fulldat = 'IMC.RAW.txt'
@@ -300,14 +297,12 @@ imcDat = imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
 
 froot = gsub('.RAW.txt', '', fulldat)
 
-# getting the ranges of the axis
-
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
 DIC_df = data.frame(row.names=pts)
-waic_lst = list()
+WAIC_lst = list()
 
 time = system.time({
   for( chan in imc_chan ){
@@ -358,22 +353,25 @@ time = system.time({
         data_priorpred$Nctrl = 0
         data_priorpred$Npat = 0 
         
-        model_jags = jags(data=data, parameters.to.save=c("mu","tau","z","probdiff","compOne","compTwo","loglik"),
-                          model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
-                          n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, DIC=TRUE, progress.bar="text")
+        model = jags(data=data, parameters.to.save=c("mu","tau","z","probdiff","compOne","compTwo","loglik"),
+                          model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates, 
+                          n.thin=MCMC_Thin, n.burnin=MCMCBurnin, DIC=TRUE, progress.bar="text")
         
-        model_priorpred_jags = jags(data=data_ctrl_priorpred, parameters.to.save=c("mu","tau","compOne","compTwo"),
-                                    model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
-                                    n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, DIC=FALSE, progress.bar="text")
+        model_priorpred = jags(data=data_ctrl_priorpred, parameters.to.save=c("mu","tau","compOne","compTwo"),
+                                    model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates, 
+                                    n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=FALSE, progress.bar="text")
         
-        DIC_df[pat,chan] = model_jags$BUGSoutput$DIC
-        WAIC_lst[paste(chan,pat,sep="__")] = waic(model_jags$BUGSoutput$sims.list$loglik)
+        DIC_df[pat,chan] = model$BUGSoutput$DIC
+        WAIC_lst[paste(chan,pat,sep="__")] = waic(model$BUGSoutput$sims.list$loglik)
         
         MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                                "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
                                "probdiff", "compOne[1]", "compOne[2]", "compTwo[1]",
                                "compTwo[2]")]
+        
+        output = as.mcmc(model)
+        output_priorpred = as.mcmc(model_priorpred)
         
         posterior = as.data.frame(output[[1]])
         prior = as.data.frame(output_priorpred[[1]])
