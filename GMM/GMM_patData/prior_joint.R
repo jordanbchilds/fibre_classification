@@ -1,5 +1,4 @@
 library(rjags)
-library(ggplot2)
 library(MASS)
 source("../BootStrapping/parseData.R", local = TRUE)
 
@@ -64,9 +63,8 @@ model {
   probdiff ~ dbeta(alpha, beta)
   
   # posterior distribution
-  z_syn ~ dbern(probdiff)
-  class_syn = z_syn + 1
-  Y_syn ~ dmnorm(mu[,class_syn], tau[,,class_syn])
+  compOne ~ dmnorm( mu[,1], tau[,,1] )
+  compTwo ~ dmnorm( mu[,2], tau[,,2] )
 }
 "
 
@@ -96,21 +94,12 @@ imc_data = read.delim( file.path("../BootStrapping/IMC.RAW.txt"), stringsAsFacto
 
 
 # removing unwanted info 
-imc_chan = c('SDHA','OSCP', 'VDAC1', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
-imc_data_1.0 = imc_data[imc_data$channel %in% imc_chan, ]
-
-imcDat=imc_data_1.0
-
+imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
 mitochan = "VDAC1"
 
-froot = gsub('.RAW.txt', '', fulldat)
+imcDat = imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
 
-# getting the ranges of the axis
-imc_lims = list()
-for(ch in imc_chan){ 
-  imc_lims[[ch]] = quantile(log(imcDat$value[imcDat$channel==ch]),
-                            c(0.001,0.999), na.rm=TRUE)
-}
+froot = gsub('.RAW.txt', '', fulldat)
 
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
@@ -119,7 +108,7 @@ pts = c('P01')
 
 # seperating the control patients 
 # for( chan in imc_chan[-which(imc_chan == 'VDAC1')]){
-for( chan in imc_chan[-which(imc_chan == mitochan)]){
+for( chan in imc_chan){
     outroot = paste( froot, chan, sep='__')
     posterior_file = file.path("Output/Output_jointPrior", paste0(outroot, "__POSTERIOR.txt") )
     if( !file.exists(posterior_file)){
@@ -130,10 +119,10 @@ for( chan in imc_chan[-which(imc_chan == mitochan)]){
       XY_ctrl = cbind( Xctrl, Yctrl )
       
       ## PRIORS
-      mu1_mean = c(1,1.5)
-      mu2_mean = 1.5*mu1_mean
+      mu1_mean = colMeans(XY_ctrl)
+      mu2_mean = mu1_mean
       mu1_prec = solve( matrix(c(0.2,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
-      mu2_prec = solve( 5*diag(2) )
+      mu2_prec = solve( 4*diag(2) )
       
       U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
       n_1 = 50
@@ -151,16 +140,16 @@ for( chan in imc_chan[-which(imc_chan == mitochan)]){
       
       update(model, n.iter=MCMCUpdates)
       
-      converge = coda.samples(model=model, variable.names=c("mu","tau","Y_syn","z","probdiff"),
+      converge = coda.samples(model=model, variable.names=c("mu","tau","z","compOne","compTwo"),
                               n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
       
-      output = coda.samples(model=model, variable.names=c("mu", "tau","Y_syn","z","probdiff"),
+      output = coda.samples(model=model, variable.names=c("mu","tau","z","compOne","compTwo"),
                             n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
     
       plot(output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                      "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                      "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                     "probdiff", "Y_syn[1]", "Y_syn[2]")] )
+                     "compOne[1]","compOne[1]","compTwo[1]","compTwo[2]")] )
       
       prior = as.data.frame(output[[1]])
 
@@ -175,7 +164,7 @@ for( chan in imc_chan[-which(imc_chan == mitochan)]){
       write.table(prior[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                                "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                               "probdiff", "Y_syn[1]", "Y_syn[2]")],
+                               "compOne[1]","compOne[2]","compTwo[1]","compTwo[2]")],
                   posterior_file, row.names=FALSE, quote=FALSE)
     }else{ # if file exists load previous data
       class_pat_file = file.path("Output/Output_jointPrior", paste0(outroot, "__CLASS.txt"))

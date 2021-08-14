@@ -1,5 +1,3 @@
-install.packages("loo")
-install.packages("R2jags")
 library(loo)
 library(rjags)
 library(R2jags)
@@ -297,7 +295,6 @@ fulldat = 'IMC.RAW.txt'
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
 mitochan = "VDAC1"
-imc_chan = c("NDUFB8", 'GRIM19')
 # removing unwanted info 
 imcDat = imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
 
@@ -307,9 +304,9 @@ sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
-MCMCUpdates = 100
-MCMCUpdates_Report = 100 + MCMCUpdates
-MCMCUpdates_Thin = 1
+MCMCBurnin = 2000
+MCMCUpdate = 5000 + MCMCBurnin
+MCMCThin = 1
 n.chains = 2
 
 DIC_df = data.frame(row.names=pts)
@@ -389,12 +386,12 @@ time = system.time({
       data_priorpred$N = 0
       
       model_jags = jags(data=data, parameters.to.save=c("mu","tau","z","probdiff","compOne","compTwo","loglik"),
-                        model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
-                        n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, DIC=TRUE, progress.bar="text")
+                        model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
+                        n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=TRUE, progress.bar="text")
       
       model_priorpred_jags = jags(data=data_priorpred, parameters.to.save=c("mu","tau","compOne","compTwo"),
-                                  model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
-                                  n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, progress.bar="text", DIC=FALSE)
+                                  model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates, 
+                                  n.thin=MCMCThin, n.burnin=MCMCBurnin, progress.bar="text", DIC=FALSE)
       
       DIC_df[,chan] = model_jags$BUGSoutput$DIC
       WAIC_lst[[chan]] = waic(model_jags$BUGSoutput$sims.list$loglik)$estimates
@@ -429,7 +426,7 @@ time = system.time({
     } else {
       mu1_mean = c(1,1.5)
       mu2_mean = mu1_mean
-      mu1_prec = solve( matrix(c(0.2,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
+      mu1_prec = solve( matrix(c(0.1,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
       mu2_prec = solve( 5*diag(2) )
       U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
       n_1 = 50
@@ -519,10 +516,10 @@ time = system.time({
 time_df = data.frame(time=time[3])
 write.table(time_df, file=paste("Time/fullData", imc_chan, sep="__"))
 
-DICpath = file.path("Information_Criteria/DIC/fullData")
+DICpath = file.path("Information_Criteria/IMC_allData/DIC")
 write.table(DIC_df, file=DICpath)
 
-WAICpath = "Information_Criteria/WAIC"
+WAICpath = "Information_Criteria/IMC_allData/WAIC"
 for(chan_pat in names(WAIC_lst)){ 
   write.table(WAIC_lst[[chan_pat]], file=file.path(WAICpath, chan_pat))
 }

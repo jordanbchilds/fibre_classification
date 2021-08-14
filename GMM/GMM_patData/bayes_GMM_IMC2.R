@@ -1,5 +1,3 @@
-install.packages("loo")
-install.packages("R2jags")
 library(loo)
 library(R2jags)
 library(rjags)
@@ -288,9 +286,9 @@ dir.create(file.path("Information_Criteria/IMC/DIC"), showWarnings = FALSE)
 dir.create(file.path("Information_Criteria/IMC/WAIC"), showWarnings = FALSE)
 
 # burn-in, chain length, thinning lag
-MCMCUpdates = 1000
-MCMCUpdates_Report = 1000 + MCMCUpdates
-MCMCUpdates_Thin = 1
+MCMCBurnin = 1000
+MCMCUpdate = 1000 + MCMCUpdates
+MCMCThin = 1
 n.chains = 2
 
 fulldat = 'IMC.RAW.txt'
@@ -356,12 +354,12 @@ time = system.time({
       data_ctrl_priorpred$N = 0 # N: number of observed control points, removes for prior prediction
 
       ctrl_jags = jags(data=data_ctrl, parameters.to.save=c("mu","tau","z","probdiff", "compOne", "compTwo"),
-                      model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
-                      n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, DIC=TRUE, progress.bar="text")
+                      model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
+                      n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=TRUE, progress.bar="text")
       
       ctrl_priorpred_jags = jags(data=data_ctrl_priorpred, parameters.to.save=c("mu","tau","compOne","compTwo"),
-                                 model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
-                                 n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, progress.bar="text", DIC=FALSE)
+                                 model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
+                                 n.thin=MCMCThin, n.burnin=MCMCBurnin, progress.bar="text", DIC=FALSE)
       
       output_ctrl = as.mcmc(ctrl_jags)
       output_ctrl_priorpred = as.mcmc(ctrl_priorpred_jags)
@@ -434,7 +432,7 @@ time = system.time({
     mu1_prec = solve( var( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])*10 )
     
     mu2_mean = mu1_mean
-    mu2_prec = mu1_prec/100
+    mu2_prec = solve( 2*diag(2) )
     
     alpha = 1
     beta = 1

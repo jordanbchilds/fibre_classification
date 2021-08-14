@@ -1,5 +1,3 @@
-install.packages("loo")
-install.packages("R2jags")
 library(loo)
 library(rjags)
 library(R2jags)
@@ -265,12 +263,10 @@ model {
 
 dir.create(file.path("Output"), showWarnings = FALSE)
 dir.create(file.path("PDF"), showWarnings = FALSE)
-# dir.create(file.path("PNG"), showWarnings = FALSE)
 dir.create(file.path("Time"), showWarnings = FALSE)
 
 dir.create(file.path("Output/IMC_joint"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint"), showWarnings = FALSE)
-# dir.create(file.path("PNG/IMC_joint"), showWarnings = FALSE)
 
 dir.create(file.path("PDF/IMC_joint/MCMC"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint/classifs"), showWarnings = FALSE)
@@ -284,9 +280,9 @@ dir.create(file.path("Information_Criteria/IMC_joint/WAIC"), showWarnings = FALS
 
 
 # burn-in, chain length, thinning lag
-MCMCUpdates = 2000
-MCMCUpdates_Report = 5000
-MCMCUpdates_Thin = 1
+MCMCBurnin = 500
+MCMCUpdate = 500 + MCMCBurnin
+MCMCThin = 1
 n.chains = 1
 
 fulldat = 'IMC.RAW.txt'
@@ -335,8 +331,8 @@ time = system.time({
         
         ## PRIORS
         mu1_mean = c(1,1.5)
-        mu2_mean = 2*mu1_mean
-        mu1_prec = solve( matrix(c(0.2,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
+        mu2_mean = mu1_mean
+        mu1_prec = solve( matrix(c(0.1,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
         mu2_prec = solve( 5*diag(2) )
         
         U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
@@ -359,12 +355,12 @@ time = system.time({
         data_priorpred$Npat = 0 
         
         model_jags = jags(data=data, parameters.to.save=c("mu","tau","z","probdiff","compOne","compTwo","loglik"),
-                          model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
-                          n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, DIC=TRUE, progress.bar="text")
+                          model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates, 
+                          n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=TRUE, progress.bar="text")
         
         model_priorpred_jags = jags(data=data_ctrl_priorpred, parameters.to.save=c("mu","tau","compOne","compTwo"),
-                                    model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates_Report, 
-                                    n.thin=MCMCUpdates_Thin, n.burnin=MCMCUpdates, DIC=FALSE, progress.bar="text")
+                                    model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates, 
+                                    n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=FALSE, progress.bar="text")
         
         DIC_df[pat,chan] = model_jags$BUGSoutput$DIC
         WAIC_lst[paste(chan,pat,sep="__")] = waic(model_jags$BUGSoutput$sims.list$loglik)
@@ -430,10 +426,10 @@ time = system.time({
 time_df = data.frame(time=time[3])
 write.table(time_df,  file=paste("Time/jointGMM", imc_chan, sep="__") )
 
-DICpath = file.path("Information_Criteria/DIC/fullData")
+DICpath = file.path("Information_Criteria/IMC_joint/DIC")
 write.table(DIC_df, file=DICpath)
 
-WAICpath = "Information_Criteria/WAIC"
+WAICpath = "Information_Criteria/IMC_joint/WAIC"
 for(chan_pat in WAIC_lst){ 
   write.table(WAIC_lst[[chan_pat]], file=file.path(WAICpath, chan_pat))
 }
