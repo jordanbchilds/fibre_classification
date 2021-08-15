@@ -219,6 +219,7 @@ priorpost_marginals = function(prior, posterior, data, title){
 MCMCplot = function(MCMCoutput, lag=20, title){
   col.names = colnames(MCMCoutput[[1]])
   n.chains = length(MCMCoutput)
+  
   par(mfrow=c(3,3), mar = c(5.5,5.5,3,3))
   if( n.chains==1 ){
     for(param in col.names){
@@ -292,8 +293,7 @@ dir.create(file.path("PDF/IMC_allData2/components"), showWarnings = FALSE)
 
 dir.create(file.path("Information_Criteria"), showWarnings = FALSE)
 dir.create(file.path("Information_Criteria/IMC_allData2"), showWarnings = FALSE)
-dir.create(file.path("Information_Criteria/IMC_allData2"), showWarnings = FALSE)
-dir.create(file.path("Information_Criteria/IMC_allData2"), showWarnings = FALSE)
+dir.create(file.path("Information_Criteria/IMC_allData2/WAIC"), showWarnings = FALSE)
 
 ## tests for RJAGS
 fulldat = 'IMC.RAW.txt'
@@ -309,14 +309,13 @@ sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
-MCMCBurnin = 100
-MCMCUpdate = 100 + MCMCBurnin
+MCMCBurnin = 2000
+MCMCUpdate = 5000 + MCMCBurnin
 MCMCThin = 1
 n.chains = 3
 
 DIC_df = data.frame(row.names=pts)
 WAIC_lst = list()
-
 
 time = system.time({
   for( chan in imc_chan ){
