@@ -275,7 +275,7 @@ dir.create(file.path("Time"), showWarnings = FALSE)
 
 dir.create(file.path("Output/IMC_allData"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData"), showWarnings = FALSE)
-dir.create(file.path("PNG/IMC_allData"), showWarnings = FALSE)
+# dir.create(file.path("PNG/IMC_allData"), showWarnings = FALSE)
 
 dir.create(file.path("PDF/IMC_allData/MCMC"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData/classifs"), showWarnings = FALSE)
