@@ -333,8 +333,6 @@ MCMCUpdates_Report = 5000
 MCMCUpdates_Thin = 1
 n.chains = 3
 
-imc_chan = c("GRIM19")
-
 time = system.time({
   for( chan in imc_chan ){
     outroot = paste(froot, chan, sep='__')
