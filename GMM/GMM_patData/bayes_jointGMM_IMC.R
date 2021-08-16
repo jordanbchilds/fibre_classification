@@ -316,15 +316,15 @@ time = system.time({
         Npat = nrow(XY_pat)
         
         ## PRIORS
-        mu1_mean = c(1,1.5)
-        mu2_mean = 2*mu1_mean
-        mu1_prec = solve( matrix(c(0.2,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
-        mu2_prec = solve( 5*diag(2) )
+        mu1_mean = c(mean(Xctrl), mean(Yctrl))
+        mu2_mean = mu1_mean
+        mu1_prec = solve( matrix(c(0.3,0.3,0.3,0.5), ncol=2, nrow=2, byrow=TRUE) )
+        mu2_prec = solve( 2*diag(2) )
         
-        U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
-        n_1 = 10
-        U_2 = U_1/5
-        n_2 = 5
+        n_1 = 50
+        U_1 = matrix( c(0.4,0.4,0.4,0.5), ncol=2, nrow=2, byrow=TRUE)/n_1
+        n_2 = 20
+        U_2 = 2*diag(2)/n_1
         
         alpha = 1
         beta = 1

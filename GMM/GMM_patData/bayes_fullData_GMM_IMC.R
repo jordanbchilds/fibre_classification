@@ -386,17 +386,19 @@ time = system.time({
       for(i in 1:length(ctrl_pts)) pat_index[i] = min(which(data_chan[,'patient']==ctrl_pts[i]))
       
       ## PRIORS
-      mu1_mean = c(1,1.5)
-      mu2_mean = 2*mu1_mean
-      mu1_prec = solve( matrix(c(0.2,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
-      mu2_prec = solve( 5*diag(2) )
-      U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
-      n_1 = 10
-      U_2 = U_1/5
-      n_2 = 5
+      mu1_mean = c(mean(Xctrl), mean(Yctrl))
+      mu2_mean = mu1_mean
+      mu1_prec = solve( matrix(c(0.3,0.3,0.3,0.5), ncol=2, nrow=2, byrow=TRUE) )
+      mu2_prec = solve( 2*diag(2) )
       
-      alpha = 4
-      beta = 2
+      n_1 = 50
+      U_1 = matrix( c(0.4,0.4,0.4,0.5), ncol=2, nrow=2, byrow=TRUE)/n_1
+      n_2 = 20
+      U_2 = 2*diag(2)/n_2
+
+      
+      alpha = 1
+      beta = 1
       
       data = list(Y=Ychan, N=N, pat_index=pat_index,
                   mu1_mean=mu1_mean, mu1_prec=mu1_prec,
@@ -448,14 +450,17 @@ time = system.time({
                   file=posterior_file, row.names=FALSE, quote=FALSE)
       
     } else {
-      mu1_mean = c(1,1.5)
+      ## PRIORS
+      mu1_mean = c(mean(Xctrl), mean(Yctrl))
       mu2_mean = mu1_mean
-      mu1_prec = solve( matrix(c(0.2,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
-      mu2_prec = solve( 5*diag(2) )
-      U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
+      mu1_prec = solve( matrix(c(0.3,0.3,0.3,0.5), ncol=2, nrow=2, byrow=TRUE) )
+      mu2_prec = solve( 2*diag(2) )
+      
       n_1 = 50
-      U_2 = 3*diag(2)
+      U_1 = matrix( c(0.4,0.4,0.4,0.5), ncol=2, nrow=2, byrow=TRUE)/n_1
       n_2 = 20
+      U_2 = 2*diag(2)/n_2
+      
       alpha = 1
       beta = 1
       
