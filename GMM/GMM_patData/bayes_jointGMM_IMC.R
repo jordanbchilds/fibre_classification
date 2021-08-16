@@ -370,7 +370,7 @@ time = system.time({
         colnames(prior) = colnames(output_priorpred[[1]])
         
         if( pat=='CTRL'){
-          pdf(file.path("PDF/IMC_joint/classifs", paste0(outroot ".pdf")), width=14,height=8.5)
+          pdf(file.path("PDF/IMC_joint/classifs", paste0(outroot, ".pdf")), width=14,height=8.5)
           priorpost( data=data$Yctrl, prior=prior, posterior=posterior,
                      classifs=classifs, title=paste(froot, chan, pat, sep='__'))
           dev.off()
