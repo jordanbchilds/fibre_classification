@@ -204,7 +204,6 @@ component_densities = function( ctrl_data, pat_data, pat_posterior,
   
 }
 
-
 MCMCplot = function( MCMCoutput, lag=20, title ){
   col.names = colnames(MCMCoutput[[1]])
   n.chains = length(MCMCoutput)
@@ -261,18 +260,15 @@ model {
 
 dir.create(file.path("Output"), showWarnings = FALSE)
 dir.create(file.path("PDF"), showWarnings = FALSE)
-# dir.create(file.path("PNG"), showWarnings = FALSE)
 dir.create(file.path("Time"), showWarnings = FALSE)
 
 dir.create(file.path("Output/IMC_joint"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint"), showWarnings = FALSE)
-# dir.create(file.path("PNG/IMC_joint"), showWarnings = FALSE)
 
 dir.create(file.path("PDF/IMC_joint/MCMC"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint/classifs"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint/marginals"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint/components"), showWarnings = FALSE)
-
 
 # burn-in, chain length, thinning lag
 MCMCUpdates = 2000
@@ -300,7 +296,7 @@ pts = grep("P", sbj, value = TRUE)
 time = system.time({
   for( chan in imc_chan ){
     for( pat in pts){
-      outroot = paste( froot, pat, chan, sep='__')
+      outroot = paste( froot, chan, pat, sep='__')
       posterior_file = file.path("Output/IMC_joint", paste0(outroot, "__POSTERIOR.txt") )
       
       if( !file.exists(posterior_file)){
@@ -374,37 +370,37 @@ time = system.time({
         colnames(prior) = colnames(output_priorpred[[1]])
         
         if( pat=='CTRL'){
-          pdf(file.path("PDF/IMC_joint/classifs", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14,height=8.5)
+          pdf(file.path("PDF/IMC_joint/classifs", paste0(outroot ".pdf")), width=14,height=8.5)
           priorpost( data=data$Yctrl, prior=prior, posterior=posterior,
-                     classifs=classifs, title=paste(froot, pat, chan, sep='__'))
+                     classifs=classifs, title=paste(froot, chan, pat, sep='__'))
           dev.off()
-          pdf(file.path("PDF/IMC_joint/marginals", paste0(paste(outroot, pat, sep='__'), ".pdf")), width=14, height=8.5)
+          pdf(file.path("PDF/IMC_joint/marginals", paste0(outroot, ".pdf")), width=14, height=8.5)
           priorpost_marginals(prior=prior, posterior=posterior, 
-                              title=paste(froot, pat , chan, sep='__'))
+                              title=paste(froot, chan, pat, sep='__'))
           dev.off()
         } else { 
-          pdf(file.path("PDF/IMC_joint/classifs", paste0(paste(outroot, pat, sep="__"), ".pdf")), width=14,height=8.5)
+          pdf(file.path("PDF/IMC_joint/classifs", paste0(outroot, ".pdf")), width=14,height=8.5)
           priorpost( data=data$Ypat, prior=prior, posterior=posterior, ctrl=data$Yctrl,
                      classifs=classifs, title=paste(froot, pat, chan, sep='__'))
           dev.off()
-          pdf(file.path("PDF/IMC_joint/marginals", paste0(paste(outroot, pat ,sep='__'), ".pdf")), width=14, height=8.5)
+          pdf(file.path("PDF/IMC_joint/marginals", paste0(outroot, ".pdf")), width=14, height=8.5)
           priorpost_marginals(prior=prior, posterior=posterior, data=data,
-                              title=paste(froot, pat, chan, sep='__'))
+                              title=paste(froot, chan, pat, sep='__'))
           dev.off()
           
           data_ctrl_lst = list(Y=data$Yctrl)
           data_pat_lst = list(Y=data$Ypat)
-          pdf(file.path("PDF/IMC_joint/components", paste0(paste(outroot, pat, sep="__"), ".pdf")), width=14, height=8.5)
+          pdf(file.path("PDF/IMC_joint/components", paste0(outroot, ".pdf")), width=14, height=8.5)
           component_densities(ctrl_data=data_ctrl_lst, pat_data=data_pat_lst, 
                               pat_posterior=posterior, classifs=classifs, 
-                              title=paste(froot, pat, chan, sep="__"))
+                              title=paste(froot, chan, pat, sep="__"))
           dev.off()
         }
         write.table(as.numeric(classifs),file.path("Output/IMC_joint",paste0(outroot,"__CLASS.txt")),
                     row.names=FALSE,quote=FALSE,col.names=FALSE)
         
-        pdf(file.path("PDF/IMC_joint/MCMC", paste0(paste(outroot, pat, sep='__'), '.pdf')), width=14, height=8.5)
-        MCMCplot( MCMCoutput, title=paste(froot, pat, chan, sep='__'))
+        pdf(file.path("PDF/IMC_joint/MCMC", paste0(outroot, '.pdf')), width=14, height=8.5)
+        MCMCplot( MCMCoutput, title=paste(froot, chan, pat, sep='__'))
         dev.off()
         
         write.table(posterior[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
