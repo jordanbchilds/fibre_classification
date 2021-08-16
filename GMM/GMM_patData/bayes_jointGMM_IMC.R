@@ -278,7 +278,7 @@ dir.create(file.path("PDF/IMC_joint/components"), showWarnings = FALSE)
 MCMCUpdates = 2000
 MCMCUpdates_Report = 5000
 MCMCUpdates_Thin = 1
-n.chains = 1
+n.chains = 3
 
 fulldat = 'IMC.RAW.txt'
 

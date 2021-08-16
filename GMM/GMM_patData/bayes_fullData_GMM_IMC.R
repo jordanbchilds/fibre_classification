@@ -297,10 +297,10 @@ sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
-MCMCUpdates = 100
-MCMCUpdates_Report = 100
+MCMCUpdates = 2000
+MCMCUpdates_Report = 5000
 MCMCUpdates_Thin = 1
-n.chains = 1
+n.chains = 3
 
 time = system.time({
   for( chan in imc_chan ){
