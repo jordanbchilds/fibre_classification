@@ -148,9 +148,6 @@ comp_dens_allData = function(data, Nctrl, posterior, classifs, title){
   densTwo = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[1]"])
   contour( densTwo$dens, levels=densTwo$levels, labels=densTwo$probs, add=TRUE, 
            col="black", lwd=3)
-  
-  
-  
 }
 
 priorpost_marginals = function(prior, posterior, data, title){
