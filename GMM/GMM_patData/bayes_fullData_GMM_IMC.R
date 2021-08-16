@@ -16,7 +16,7 @@ cramp = colorRamp(c(rgb(1,0,0,0.25),rgb(0,0,1,0.25)),alpha=TRUE)
 # 0.25 determines how transparent the colour is, 1 being opaque 
 # cramp is a function which generates colours on a scale between two specifies colours
 
-myDarkGrey = rgb(169,169,159, max=255, alpha=20)
+myDarkGrey = rgb(169,169,159, max=255, alpha=40)
 myGreen = rgb(0,255,0,max=255,alpha=50)
 myYellow = rgb(225,200,50,max=255, alpha=50)
 myBlue = cramp(1)
@@ -53,13 +53,13 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
     plot(data[,1], data[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
          xlim=x.lim, ylim=y.lim)
-    contours = percentiles(prior[,"compOne[1]"], prior[,"compOne[2]"])
+    contours = percentiles(prior[,"predOne[1]"], prior[,"predOne[2]"])
     contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     
     plot(data[,1], data[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
          xlim=x.lim, ylim=y.lim)
-    contours = percentiles(posterior[,"compOne[1]"], posterior[,"compOne[2]"])
+    contours = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
     contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     
     title(main=title, line = -1, outer = TRUE)
@@ -71,14 +71,14 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
          xlim=x.lim, ylim=y.lim)
     points( data[,1], data[,2], col=myYellow, pch=20)
-    contours = percentiles(prior[,"compOne[1]"], prior[,"compOne[2]"])
+    contours = percentiles(prior[,"predOne[1]"], prior[,"predOne[2]"])
     contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     
     plot(ctrl[,1], ctrl[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
          xlim=x.lim, ylim=y.lim)
     points( data[,1], data[,2], col=classcols(classifs), pch=20)
-    contours = percentiles(posterior[,"compOne[1]"], posterior[,"compOne[2]"])
+    contours = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
     contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     title(main=title, line = -1, outer = TRUE)
     
@@ -87,9 +87,9 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
     #      xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
     #      xlim=x.lim, ylim=y.lim)
     # points( data[,1], data[,2], col=classcols(classifs), pch=20)
-    # contours = percetniles(prior[,"compOne[1]"], prior[,"compOne[2]"])
+    # contours = percetniles(prior[,"predOne[1]"], prior[,"predOne[2]"])
     # contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
-    # contours = percentiles(posterior[,"compOne[1]"], posterior[,"compOne[2]"])
+    # contours = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
     # contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2)
     # 
     # title(main=title, line = -1, outer = TRUE)
@@ -107,7 +107,7 @@ component_densities = function(ctrl_data, pat_data, pat_posterior,
        xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
        main="Component One", xlim=x.lim, ylim=y.lim)
   points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
-  contour_one = percentiles(pat_posterior[,"compOne[1]"], pat_posterior[,"compOne[2]"])
+  contour_one = percentiles(pat_posterior[,"predOne[1]"], pat_posterior[,"predOne[2]"])
   contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs,
           col='blue', lwd=2, add=TRUE)
   
@@ -115,11 +115,41 @@ component_densities = function(ctrl_data, pat_data, pat_posterior,
        xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
        main="Component Two", xlim=x.lim, ylim=y.lim)
   points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
-  contour_one = percentiles(pat_posterior[,"compTwo[1]"], pat_posterior[,"compTwo[2]"])
+  contour_one = percentiles(pat_posterior[,"predTwo[1]"], pat_posterior[,"predTwo[2]"])
   contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs, 
           col='red', lwd=2, add=TRUE)
   
   title(main=title, line = -1, outer = TRUE)
+  
+}
+
+comp_dens_allData = function(data, Nctrl, posterior, classifs, title){
+  
+  x.lim = range(data[,1])
+  y.lim = range(data[,2])
+  
+  ctrl_data = data[1:Nctrl,]
+  pat_data = data[(Nctrl+1):nrow(data),]
+  pat_classifs = classifs[(Nctrl+1):nrow(data)]
+  
+  par(mfrow=c(1,2))
+  plot(ctrl_data[,1], ctrl_data[,2], col=myDarkGrey, pch=20,
+       xlab=paste0('log(',mitochan,')'), ylab=paste0("log(",chan,")"),
+       main="Component One", xlim=x.lim, ylim=y.lim)
+  points(pat_data[,1], pat_data[,2], pch=20, col=classcols(pat_classifs))
+  densOne = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[1]"])
+  contour( densOne$dens, levels=densOne$levels, labels=densOne$probs, add=TRUE,
+           col="black", lwd=3)
+  
+  plot(ctrl_data[,1], ctrl_data[,2], col=myDarkGrey, pch=20,
+       xlab=paste0('log(',mitochan,')'), ylab=paste0("log(",chan,")"),
+       main="Component Two", xlim=x.lim, ylim=y.lim)
+  points(pat_data[,1], pat_data[,2], pch=20, col=classcols(pat_classifs))
+  densTwo = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[1]"])
+  contour( densTwo$dens, levels=densTwo$levels, labels=densTwo$probs, add=TRUE, 
+           col="black", lwd=3)
+  
+  
   
 }
 
@@ -264,8 +294,8 @@ model {
   # classifcation
   for(k in 1:length(N)){ p[k] ~ dbeta(alpha, beta) }
   # posterior predictive distribution
-  compOne ~ dmnorm(mu[,1], tau[,,1])
-  compTwo ~ dmnorm(mu[,2], tau[,,2])
+  predOne ~ dmnorm(mu[,1], tau[,,1])
+  predTwo ~ dmnorm(mu[,2], tau[,,2])
 }
 "
 dir.create(file.path("Output"), showWarnings = FALSE)
@@ -281,7 +311,8 @@ dir.create(file.path("PDF/IMC_allData/MCMC"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData/classifs"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData/marginals"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData/components"), showWarnings = FALSE)
-
+dir.create(file.path("PDF/IMC_allData/components/pat_singular"), showWarnings = FALSE)
+dir.create(file.path("PDF/IMC_allData/components/pat_joined"), showWarnings = FALSE)
 
 ## tests for RJAGS
 fulldat = 'IMC.RAW.txt'
@@ -297,10 +328,12 @@ sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
-MCMCUpdates = 2000
-MCMCUpdates_Report = 5000
+MCMCUpdates = 100
+MCMCUpdates_Report = 100
 MCMCUpdates_Thin = 1
-n.chains = 3
+n.chains = 1
+
+imc_chan = c("GRIM19")
 
 time = system.time({
   for( chan in imc_chan ){
@@ -316,9 +349,9 @@ time = system.time({
       
     Xchan = Xctrl
     Ychan = Yctrl
-    patient_id = rep('control', Nctrl)
+    patient_id = rep('ctrl', Nctrl)
       
-    data_ctrl = data.frame(Xctrl, Yctrl,  rep('control', Nctrl))
+    data_ctrl = data.frame(Xctrl, Yctrl,  rep('ctrl', Nctrl))
     colnames(data_ctrl) = c(mitochan, chan, 'patient')
       
     N = double(10) # store the number of observations per patient 
@@ -348,9 +381,9 @@ time = system.time({
       Ychan = data_chan[,c(mitochan, chan)]
     
       # row index for each change in patient
-      con_pts = c('control', pts)
-      pat_index = double(length(con_pts))
-      for(i in 1:length(con_pts)) pat_index[i] = min(which(data_chan[,'patient']==con_pts[i]))
+      ctrl_pts = c("ctrl", pts)
+      pat_index = double(length(ctrl_pts))
+      for(i in 1:length(ctrl_pts)) pat_index[i] = min(which(data_chan[,'patient']==ctrl_pts[i]))
       
       ## PRIORS
       mu1_mean = c(1,1.5)
@@ -380,14 +413,14 @@ time = system.time({
     
       update(model, n.iter=MCMCUpdates)
     
-      converge = coda.samples(model=model, variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo"),
+      converge = coda.samples(model=model, variable.names=c("mu", "tau", "z", "probdiff", "predOne", "predTwo"),
                               n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
     
-      output = coda.samples(model=model, variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo"),
+      output = coda.samples(model=model, variable.names=c("mu", "tau", "z", "probdiff", "predOne", "predTwo"),
                             n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
     
       output_priorpred = coda.samples(model=model_priorpred,
-                                      variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo"),
+                                      variable.names=c("mu", "tau", "z", "probdiff", "predOne", "predTwo"),
                                       n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
     
       MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
@@ -395,8 +428,8 @@ time = system.time({
                              "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
                              "probdiff[2]","probdiff[3]","probdiff[4]",
                              "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
-                             "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
-                             "compTwo[1]", "compTwo[2]")]
+                             "probdiff[9]","probdiff[10]","predOne[1]", "predOne[2]", 
+                             "predTwo[1]", "predTwo[2]")]
     
       posterior = as.data.frame(output[[1]])
       prior = as.data.frame(output_priorpred[[1]])
@@ -410,8 +443,8 @@ time = system.time({
                                "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
                                "probdiff[2]","probdiff[3]","probdiff[4]",
                                "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
-                               "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
-                               "compTwo[1]", "compTwo[2]")],
+                               "probdiff[9]","probdiff[10]","predOne[1]", "predOne[2]", 
+                               "predTwo[1]", "predTwo[2]")],
                   file=posterior_file, row.names=FALSE, quote=FALSE)
       
     } else {
@@ -426,9 +459,9 @@ time = system.time({
       alpha = 1
       beta = 1
       
-      con_pts = c('con', pts)
-      pat_index = double(length(con_pts))
-      for(i in 1:length(con_pts)) pat_index[i] = min(which(data_chan[,'patient']==con_pts[i]))
+      ctrl_pts = c("ctrl", pts)
+      pat_index = double(length(ctrl_pts))
+      for(i in 1:length(ctrl_pts)) pat_index[i] = min(which(data_chan[,'patient']==ctrl_pts[i]))
       
       data_priorpred = list(Y=NULL, N=0, pat_index=pat_index,
                   mu1_mean=mu1_mean, mu1_prec=mu1_prec,
@@ -436,7 +469,7 @@ time = system.time({
                   U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
       model_priorpred = jags.model(textConnection(modelstring), data=data_priorpred)
       output_priorpred = coda.samples(model=model_priorpred,
-                                      variable.names=c("mu", "tau", "z", "probdiff", "compOne", "compTwo"),
+                                      variable.names=c("mu", "tau", "z", "probdiff", "predOne", "predTwo"),
                                       n.iter=MCMCUpdates_Report, thin=MCMCUpdates_Thin)
       prior = as.data.frame(output_priorpred[[1]])
       colnames(prior) = colnames(output_priorpred[[1]])
@@ -447,13 +480,12 @@ time = system.time({
                               "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
                               "probdiff[2]","probdiff[3]","probdiff[4]",
                               "probdiff[5]","probdiff[6]","probdiff[7]","probdiff[8]",
-                              "probdiff[9]","probdiff[10]","compOne[1]", "compOne[2]", 
-                              "compTwo[1]", "compTwo[2]")
+                              "probdiff[9]","probdiff[10]","predOne[1]", "predOne[2]", 
+                              "predTwo[1]", "predTwo[2]")
     }
     
     pat_ind = c(0,N)
     pat_ind = cumsum(pat_ind)
-    ctrl_pts = c('CTRL', pts)
     
     # plots for each patient
     for(i in 1:length(N)) {
@@ -463,7 +495,7 @@ time = system.time({
       classifs = classifs_all[(pat_ind[i]+1):pat_ind[i+1]]
       
       class_filePath = file.path("PDF/IMC_allData/classifs", paste0(outroot_pat, "__CLASSIF.pdf"))
-        if( pat=='CTRL'){
+        if( pat=='ctrl'){
           data_ctrl_lst = list(Y=cbind(Xctrl, Yctrl))
           pdf(class_filePath, width=14,height=8.5)
           priorpost( data=data_pat, prior=prior, posterior=posterior,
@@ -480,7 +512,7 @@ time = system.time({
           write.table(as.numeric(classifs),file.path("Output/IMC_allData",paste0(outroot_pat, "__CLASS.txt")),
                       row.names=FALSE,quote=FALSE,col.names=FALSE)
           
-          comp_filePath = file.path("PDF/IMC_allData/components", paste0(outroot_pat, "__COMPS.pdf"))
+          comp_filePath = file.path("PDF/IMC_allData/components/pat_singular", paste0(outroot_pat, "__COMPS.pdf"))
           pdf(comp_filePath, width=14, height=8.5)
           component_densities(ctrl_data=data_ctrl_lst, pat_data=data_pat_lst, 
                               pat_posterior=posterior, classifs=classifs,
@@ -497,6 +529,12 @@ time = system.time({
     pdf(marg_filePath, width=14, height=8.5)
     priorpost_marginals(prior=prior, posterior=posterior, data=data,
                         title=paste(froot, pat, chan, sep='__'))
+    dev.off()
+    
+    comp_alldata_path = file.path("PDF/IMC_allData/components/pat_joined", paste0(outroot, "__COMP.pdf"))
+    pdf(comp_alldata_path, width=14, height=8.5)
+    comp_dens_allData(data=data_chan, Nctrl=Nctrl, posterior=posterior,
+                      classifs=classifs_all, title=paste(froot, chan, sep='__'))
     dev.off()
     
     
