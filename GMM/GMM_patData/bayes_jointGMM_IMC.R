@@ -326,8 +326,8 @@ time = system.time({
         n_2 = 20
         U_2 = 2*diag(2)/n_1
         
-        alpha = 1
-        beta = 1
+        alpha = 5
+        beta = 2
         
         data = list(Yctrl=XY_ctrl, Nctrl=Nctrl, Ypat=XY_pat, Npat=Npat,
                     mu1_mean=mu1_mean, mu1_prec=mu1_prec,

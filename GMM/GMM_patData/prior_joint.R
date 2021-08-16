@@ -128,13 +128,14 @@ for( chan in imc_chan){
       ## PRIORS
       mu1_mean = colMeans(XY_ctrl)
       mu2_mean = mu1_mean
-      mu1_prec = solve( matrix(c(0.2,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
-      mu2_prec = solve( 5*diag(2) )
+      mu1_prec = solve( matrix(c(0.3,0.3,0.3,0.5), ncol=2, nrow=2, byrow=TRUE) )
+      mu2_prec = solve( 2*diag(2) )
       
-      U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
       n_1 = 50
-      U_2 = 3*diag(2)
-      n_2 = 10
+      U_1 = matrix( c(0.4,0.4,0.4,0.5), ncol=2, nrow=2, byrow=TRUE)/n_1
+      n_2 = 20
+      U_2 = 2*diag(2)/n_2
+
       
       alpha = 1
       beta = 1
@@ -167,7 +168,7 @@ for( chan in imc_chan){
 
 
 par(mfrow=c(1,3))
-ttWish = rWishart(n=10000, df=n_1, Sigma=U_1)
+ttWish = rWishart(n=10000, df=n_1, Sigma=solve(U_1) )
 plot( density(ttWish[1,1,]), xlab='', ylab='', main=expression(tau[11]) )
 plot( density(ttWish[1,2,]), xlab='', ylab='', main=expression(tau[12]) )
 plot( density(ttWish[2,2,]), xlab='', ylab='', main=expression(tau[22]) )
@@ -178,7 +179,17 @@ plot( seq(-1,4,length.out=1000), seq(-1,4,length.out=1000), xlab='', ylab='',
       lwd=2, type='l', col='red', xlim=c(0,4), ylim=c(0,4))
 contour(kde2d(ttNorm[,1], ttNorm[,2], n=100), nlevels=5, add=TRUE)
 
-
+par(mfrow=c(1,2))
+plot(XY_ctrl[,1], XY_ctrl[,2], pch=20, col=myDarkGrey,
+     xlab="log(VDAC1)", ylab="log([protein])")
+densOne = percentiles( prior[,"compOne[1]"], prior[,"compOne[2]"])
+contour( densOne$dens, levels=densOne$levels, labels=densOne$probs,
+         col="blue", add=TRUE)
+plot(XY_ctrl[,1], XY_ctrl[,2], pch=20, col=myDarkGrey,
+     xlab="log(VDAC1)", ylab="log([protein])")
+densTwo = percentiles(prior[,"compTwo[1]"],prior[,"compTwo[2]"] )
+contour( densTwo$dens, levels=densTwo$levels, labels=densTwo$probs, 
+         col="red", add=TRUE)
 
 
 
