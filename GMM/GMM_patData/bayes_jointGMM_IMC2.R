@@ -17,7 +17,7 @@ cramp = colorRamp(c(rgb(1,0,0,0.2),rgb(0,0,1,0.20)), alpha=TRUE)
 # 0.25 determines how transparent the colour is, 1 being opaque 
 # cramp is a function which generates colours on a scale between two specifies colours
 
-myDarkGrey = rgb(169,169,159, max=255, alpha=100)
+myDarkGrey = rgb(169,169,159, max=255, alpha=50)
 myGreen = rgb(25,90,0,max=255,alpha=50)
 myYellow = rgb(225,200,50,max=255, alpha=50)
 myBlue = cramp(1)
@@ -276,16 +276,16 @@ dir.create(file.path("PDF/IMC_joint2/marginals"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint2/components"), showWarnings = FALSE)
 
 dir.create(file.path("Information_Criteria"), showWarnings=FALSE)
-dir.create(file.path("Inofrmation_Criteria/IMC_joint2"), showWarnings = FALSE)
+dir.create(file.path("Information_Criteria/IMC_joint2"), showWarnings = FALSE)
 dir.create(file.path("Information_Criteria/IMC_joint2/DIC"), showWarnings = FALSE)
 dir.create(file.path("Information_Criteria/IMC_joint2/WAIC"), showWarnings = FALSE)
 
 
 # burn-in, chain length, thinning lag
-MCMCBurnin = 500
-MCMCUpdate = 500 + MCMCBurnin
+MCMCBurnin = 2000
+MCMCUpdate = 5000 + MCMCBurnin
 MCMCThin = 1
-n.chains = 2
+n.chains = 3
 
 fulldat = 'IMC.RAW.txt'
 
@@ -332,18 +332,19 @@ time = system.time({
         Npat = nrow(XY_pat)
         
         ## PRIORS
-        mu1_mean = c(1,1.5)
-        mu2_mean = mu1_mean
-        mu1_prec = solve( matrix(c(0.1,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
-        mu2_prec = solve( 5*diag(2) )
+        mu1_mean = c(mean(Xctrl), mean(Yctrl))
+        mu2_mean = c(2,2)
+        mu1_prec = solve( matrix(c(0.3,0.3,0.3,0.5), ncol=2, nrow=2, byrow=TRUE) )
+        mu2_prec = solve( diag(2) )
         
-        U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
-        n_1 = 10
-        U_2 = U_1/5
+        n_1 = 50
+        U_1 = matrix( c(0.4,0.4,0.4,0.5), ncol=2, nrow=2, byrow=TRUE)/n_1
         n_2 = 5
+        U_2 = 10*diag(2)/n_1
         
-        alpha = 1
-        beta = 1
+        alpha = 5
+        beta = 2
+        
         
         data = list(Yctrl=XY_ctrl, Nctrl=Nctrl, Ypat=XY_pat, Npat=Npat,
                     mu1_mean=mu1_mean, mu1_prec=mu1_prec,

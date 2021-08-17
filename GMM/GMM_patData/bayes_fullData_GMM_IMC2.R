@@ -99,24 +99,27 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
   par(op)
 } 
 
-component_densities = function(ctrl_data, pat_data, pat_posterior, 
+component_densities = function(data, Nctrl, posterior, 
                                classifs, title ){
-  x.lim = range(ctrl_data$Y[,1], pat_data$Y[,1])
-  y.lim = range(ctrl_data$Y[,2], pat_data$Y[,2])
+  x.lim = range(data[,1])
+  y.lim = range(data[,2])
+  
+  pat_ind = (Nctrl+1):nrow(data)
+  
   par(mfrow=c(1,2))
-  plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
+  plot(data[1:Nctrl,1], data[1:Nctrl,2], pch=20, col=myDarkGrey,
        xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
        main="component One", xlim=x.lim, ylim=y.lim)
-  points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
-  contour_one = percentiles(pat_posterior[,"predOne[1]"], pat_posterior[,"predOne[2]"])
+  points( data[pat_ind,1], data[pat_ind,2], pch=20, col=classcols(classifs[pat_ind]))
+  contour_one = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
   contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs,
           col='blue', lwd=2, add=TRUE)
   
-  plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
+  plot(data[1:Nctrl,1], data[1:Nctrl,2], pch=20, col=myDarkGrey,
        xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
        main="component Two", xlim=x.lim, ylim=y.lim)
-  points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
-  contour_one = percentiles(pat_posterior[,"predTwo[1]"], pat_posterior[,"predTwo[2]"])
+  points( data[pat_ind,1],data[pat_ind,2], pch=20, col=classcols(classifs[pat_ind]))
+  contour_one = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[2]"])
   contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs, 
           col='red', lwd=2, add=TRUE)
   
@@ -359,7 +362,6 @@ time = system.time({
     
     if( !file.exists(posterior_file) ){
       # make data frame from data matrix
-      
       Ychan = data_chan[,c(mitochan, chan)]
       
       ctrl_pts = c("ctrl", pts)
@@ -368,14 +370,16 @@ time = system.time({
       for(i in 1:length(ctrl_pts)) pat_index[i] = min(which(data_chan[,'patient']==ctrl_pts[i]))
       
       ## PRIORS
-      mu1_mean = c(1,1.5)
-      mu2_mean = mu1_mean
-      mu1_prec = solve( matrix(c(0.1,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE) )
-      mu2_prec = solve( 5*diag(2) )
-      U_1 = matrix( c(10,7,7,10), ncol=2, nrow=2, byrow=TRUE)
+      mu1_mean = c(mean(Xctrl), mean(Yctrl))
+      mu2_mean = c(2,2)
+      mu1_prec = solve( matrix(c(0.3,0.3,0.3,0.5), ncol=2, nrow=2, byrow=TRUE) )
+      mu2_prec = solve( diag(2) )
+      
       n_1 = 50
-      U_2 = U_1/5
+      U_1 = matrix( c(0.4,0.4,0.4,0.5), ncol=2, nrow=2, byrow=TRUE)/n_1
       n_2 = 5
+      U_2 = 10*diag(2)/n_1
+      
       alpha = 1
       beta = 1
       
@@ -413,6 +417,7 @@ time = system.time({
       prior = as.data.frame(output_priorpred[[1]])
       
       classifs_all = colMeans( posterior[, grepl('z', colnames(posterior))] )
+      classifs_probs = classifs_all - 1
       colnames(posterior) = colnames(output[[1]])
       colnames(prior) = colnames(output_priorpred[[1]])
       
@@ -425,7 +430,7 @@ time = system.time({
                   file=posterior_file, row.names=FALSE, quote=FALSE)
       
     } else {
-      stop("Posterior file exists")
+      
     }
     
     pat_ind = c(0,N)
@@ -453,15 +458,16 @@ time = system.time({
         
         write.table(as.numeric(classifs),file.path("Output/IMC_allData2",paste0(outroot_pat, "__CLASS.txt")),
                     row.names=FALSE,quote=FALSE,col.names=FALSE)
-        
-        comp_filePath = file.path("PDF/IMC_allData2/components", paste0(outroot_pat, "__COMPS.pdf"))
-        pdf(comp_filePath, width=14, height=8.5)
-        component_densities(ctrl_data=data_ctrl_lst, pat_data=data_pat_lst, 
-                            pat_posterior=posterior, classifs=classifs,
-                            title=paste(froot, pat, chan, sep="__"))
-        dev.off()
       }
     }
+    
+    comp_filePath = file.path("PDF/IMC_allData2/components", paste0(outroot_pat, "__COMPS.pdf"))
+    pdf(comp_filePath, width=14, height=8.5)
+    component_densities(data=data_chan, Nctrl=Nctrl,
+                        posterior=posterior, classifs=classifs_probs,
+                        title=paste(froot, chan, sep="__"))
+    dev.off()
+    
     mcmc_filePath = file.path("PDF/IMC_allData2/MCMC", paste0(outroot, "__MCMC.pdf"))
     pdf(mcmc_filePath, width=14,height=8.5)
     MCMCplot(MCMCoutput, title=paste(froot, chan, sep='__'))
@@ -472,8 +478,6 @@ time = system.time({
     priorpost_marginals(prior=prior, posterior=posterior, data=data,
                         title=paste(froot, pat, chan, sep='__'))
     dev.off()
-    
-    
   }
 })
 

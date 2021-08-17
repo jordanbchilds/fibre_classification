@@ -287,7 +287,7 @@ dir.create(file.path("Information_Criteria/IMC2/WAIC"), showWarnings = FALSE)
 MCMCBurnin = 2000
 MCMCUpdate = 5000 + MCMCBurnin
 MCMCThin = 1
-n.chains = 2
+n.chains = 3
 
 fulldat = 'IMC.RAW.txt'
 
