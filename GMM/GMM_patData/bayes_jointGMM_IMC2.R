@@ -238,13 +238,13 @@ modelstring = "
 model {
   # fit to ctrl data
   for(i in 1:Nctrl ){ 
-    Yctrl[i,] ~ dmnorm(mu[,1], tau[,,1] )
+    Yctrl[i,] ~ dmnorm( mu[,1], tau[,,1] )
     loglik[i] = logdensity.mnorm(Yctrl[i,], mu[,1], tau[,,1])
   }
   # fit to patient data
   for(j in 1:Npat ){ # fit to patient data
     z[j] ~ dbern(probdiff)
-    class[j] =   2 - z[j]
+    class[j] = 2 - z[j]
     Ypat[j,] ~ dmnorm(mu[,class[j]], tau[,,class[j]] )
     loglik[Nctrl+j] = logdensity.mnorm(Ypat[j,], mu[,class[j]], tau[,,class[j]])
   }
@@ -259,7 +259,7 @@ model {
   
   # predictive distribution
   predOne ~ dmnorm(mu[,1], tau[,,1])
-  predTwo~ dmnorm(mu[,2], tau[,,2])
+  predTwo ~ dmnorm(mu[,2], tau[,,2])
 }
 "
 
@@ -304,6 +304,8 @@ sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
+imc_chan = c("NDUFB8")
+
 DIC_df = data.frame(row.names=pts)
 WAIC_lst = list()
 
@@ -335,16 +337,15 @@ time = system.time({
         mu1_mean = c(mean(Xctrl), mean(Yctrl))
         mu2_mean = c(2,2)
         mu1_prec = solve( matrix(c(0.3,0.3,0.3,0.5), ncol=2, nrow=2, byrow=TRUE) )
-        mu2_prec = solve( diag(2) )
+        mu2_prec = 10*diag(2) 
         
         n_1 = 50
         U_1 = matrix( c(0.4,0.4,0.4,0.5), ncol=2, nrow=2, byrow=TRUE)/n_1
         n_2 = 5
-        U_2 = 10*diag(2)/n_1
+        U_2 = 10*diag(2)
         
-        alpha = 5
-        beta = 2
-        
+        alpha = 1
+        beta = 1
         
         data = list(Yctrl=XY_ctrl, Nctrl=Nctrl, Ypat=XY_pat, Npat=Npat,
                     mu1_mean=mu1_mean, mu1_prec=mu1_prec,
