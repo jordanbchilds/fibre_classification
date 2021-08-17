@@ -99,32 +99,56 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
   par(op)
 } 
 
-component_densities = function(data, Nctrl, posterior, 
+component_densities = function(ctrl_data, pat_data, pat_posterior, 
                                classifs, title ){
-  x.lim = range(data[,1])
-  y.lim = range(data[,2])
-  
-  pat_ind = (Nctrl+1):nrow(data)
-  
+  x.lim = range(ctrl_data$Y[,1], pat_data$Y[,1])
+  y.lim = range(ctrl_data$Y[,2], pat_data$Y[,2])
   par(mfrow=c(1,2))
-  plot(data[1:Nctrl,1], data[1:Nctrl,2], pch=20, col=myDarkGrey,
+  plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
        xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-       main="component One", xlim=x.lim, ylim=y.lim)
-  points( data[pat_ind,1], data[pat_ind,2], pch=20, col=classcols(classifs[pat_ind]))
-  contour_one = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
+       main="Component One", xlim=x.lim, ylim=y.lim)
+  points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
+  contour_one = percentiles(pat_posterior[,"predOne[1]"], pat_posterior[,"predOne[2]"])
   contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs,
           col='blue', lwd=2, add=TRUE)
   
-  plot(data[1:Nctrl,1], data[1:Nctrl,2], pch=20, col=myDarkGrey,
+  plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
        xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-       main="component Two", xlim=x.lim, ylim=y.lim)
-  points( data[pat_ind,1],data[pat_ind,2], pch=20, col=classcols(classifs[pat_ind]))
-  contour_one = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[2]"])
+       main="Component Two", xlim=x.lim, ylim=y.lim)
+  points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
+  contour_one = percentiles(pat_posterior[,"predTwo[1]"], pat_posterior[,"predTwo[2]"])
   contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs, 
           col='red', lwd=2, add=TRUE)
   
   title(main=title, line = -1, outer = TRUE)
   
+}
+
+comp_dens_allData = function(data, Nctrl, posterior, classifs, title){
+  
+  x.lim = range(data[,1])
+  y.lim = range(data[,2])
+  
+  ctrl_data = data[1:Nctrl,]
+  pat_data = data[(Nctrl+1):nrow(data),]
+  pat_classifs = classifs[(Nctrl+1):nrow(data)]
+  
+  par(mfrow=c(1,2))
+  plot(ctrl_data[,1], ctrl_data[,2], col=myDarkGrey, pch=20,
+       xlab=paste0('log(',mitochan,')'), ylab=paste0("log(",chan,")"),
+       main="Component One", xlim=x.lim, ylim=y.lim)
+  points(pat_data[,1], pat_data[,2], pch=20, col=classcols(pat_classifs))
+  densOne = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[1]"])
+  contour( densOne$dens, levels=densOne$levels, labels=densOne$probs, add=TRUE,
+           col="black", lwd=3)
+  
+  plot(ctrl_data[,1], ctrl_data[,2], col=myDarkGrey, pch=20,
+       xlab=paste0('log(',mitochan,')'), ylab=paste0("log(",chan,")"),
+       main="Component Two", xlim=x.lim, ylim=y.lim)
+  points(pat_data[,1], pat_data[,2], pch=20, col=classcols(pat_classifs))
+  densTwo = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[1]"])
+  contour( densTwo$dens, levels=densTwo$levels, labels=densTwo$probs, add=TRUE, 
+           col="black", lwd=3)
 }
 
 priorpost_marginals = function(prior, posterior, data, title){
@@ -210,43 +234,13 @@ priorpost_marginals = function(prior, posterior, data, title){
   
   par(mfrow=c(2,5))
   for( i in 1:length(pts)){
-    pdiff = paste0('pi[',i+1,']')
+    pdiff = paste0('probdiff[',i+1,']')
     plot( density(posterior[,pdiff]), cex.lab=2, cex.axis=1.5, xlim=c(0,1),
           xlab=pdiff, ylab='density', lwd=2, col='red', main=paste(pts[i],pdiff,'Density'))
     lines( density(rbeta(5000, data$alpha, data$beta)), lwd=2, col='green')
     title(main=title, line = -1, outer = TRUE)
   }
   par(op)
-}
-
-MCMCplot = function(MCMCoutput, lag=20, title){
-  col.names = colnames(MCMCoutput[[1]])
-  n.chains = length(MCMCoutput)
-  
-  par(mfrow=c(3,3), mar = c(5.5,5.5,3,3))
-  if( n.chains==1 ){
-    for(param in col.names){
-      plot( 0:lag, autocorr(MCMCoutput[[1]][,param], lags=0:lag), 
-            type='h', ylim=c(-1,1), xlab='Index', ylab='')
-      plot( 1:nrow(MCMCoutput[[1]]), MCMCoutput[[1]][,param], main=param, type='l',
-            ylab='', xlab='Iteration')
-      plot(density(MCMCoutput[[1]][,param] ), main='', xlab='')
-    }
-  } else {
-    for( param in col.names){
-      plot( autocorr(MCMCoutput[[1]][,param], lags=0:lag), type='h', 
-            xlab='Index', ylab='' )
-      for(j in 2:n.chains) lines( autocorr(MCMCoutput[[j]][,param], lags=0:20), type='h', col=j)
-      
-      plot(1:nrow(MCMCoutput[[1]]), MCMCoutput[[1]][,param], main=param, type='l',
-           ylab='', xlab='Iteration')
-      for(j in 2:n.chains) lines(MCMCoutput[[j]][,param], type='l', col=j)
-      
-      plot(density(MCMCoutput[[1]][,param]) )
-      for(j in 2:n.chains) lines(density(MCMCoutput[[j]][,param]), col=j )
-    }
-  }
-  title(main=title, line = -1, outer = TRUE)
 }
 
 modelstring = "
@@ -293,6 +287,8 @@ dir.create(file.path("PDF/IMC_allData2/MCMC"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData2/classifs"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData2/marginals"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData2/components"), showWarnings = FALSE)
+dir.create(file.path("PDF/IMC_allData2/components/pat_singular"), showWarnings = FALSE)
+dir.create(file.path("PDF/IMC_allData2/components/pat_joined"), showWarnings = FALSE)
 
 dir.create(file.path("Information_Criteria"), showWarnings = FALSE)
 dir.create(file.path("Information_Criteria/IMC_allData2"), showWarnings = FALSE)
@@ -458,15 +454,15 @@ time = system.time({
         
         write.table(as.numeric(classifs),file.path("Output/IMC_allData2",paste0(outroot_pat, "__CLASS.txt")),
                     row.names=FALSE,quote=FALSE,col.names=FALSE)
+        
+        comp_filePath = file.path("PDF/IMC_allData2/components/pat_singular", paste0(outroot_pat, "__COMPS.pdf"))
+        pdf(comp_filePath, width=14, height=8.5)
+        component_densities(data=data_chan, Nctrl=Nctrl,
+                            posterior=posterior, classifs=classifs_probs,
+                            title=paste(froot, chan, sep="__"))
+        dev.off()
       }
     }
-    
-    comp_filePath = file.path("PDF/IMC_allData2/components", paste0(outroot_pat, "__COMPS.pdf"))
-    pdf(comp_filePath, width=14, height=8.5)
-    component_densities(data=data_chan, Nctrl=Nctrl,
-                        posterior=posterior, classifs=classifs_probs,
-                        title=paste(froot, chan, sep="__"))
-    dev.off()
     
     mcmc_filePath = file.path("PDF/IMC_allData2/MCMC", paste0(outroot, "__MCMC.pdf"))
     pdf(mcmc_filePath, width=14,height=8.5)
@@ -477,6 +473,11 @@ time = system.time({
     pdf(marg_filePath, width=14, height=8.5)
     priorpost_marginals(prior=prior, posterior=posterior, data=data,
                         title=paste(froot, pat, chan, sep='__'))
+    dev.off()
+    comp_alldata_path = file.path("PDF/IMC_allData/components/pat_joined", paste0(outroot, "__COMP.pdf"))
+    pdf(comp_alldata_path, width=14, height=8.5)
+    comp_dens_allData(data=data_chan, Nctrl=Nctrl, posterior=posterior,
+                      classifs=classifs_all, title=paste(froot, chan, sep='__'))
     dev.off()
   }
 })
