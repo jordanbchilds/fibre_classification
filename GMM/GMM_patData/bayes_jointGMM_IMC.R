@@ -1,6 +1,5 @@
 
 library(rjags)
-library(beanplot)
 library(MASS)
 source("../BootStrapping/parseData.R", local = TRUE)
 
@@ -317,14 +316,14 @@ time = system.time({
         
         ## PRIORS
         mu1_mean = c(mean(Xctrl), mean(Yctrl))
-        mu2_mean = mu1_mean
+        mu2_mean = c(2,2)
         mu1_prec = solve( matrix(c(0.3,0.3,0.3,0.5), ncol=2, nrow=2, byrow=TRUE) )
-        mu2_prec = solve( 2*diag(2) )
+        mu2_prec = solve( diag(2) )
         
         n_1 = 50
         U_1 = matrix( c(0.4,0.4,0.4,0.5), ncol=2, nrow=2, byrow=TRUE)/n_1
-        n_2 = 20
-        U_2 = 2*diag(2)/n_1
+        n_2 = 5
+        U_2 = 10*diag(2)/n_1
         
         alpha = 5
         beta = 2
@@ -416,3 +415,11 @@ time = system.time({
 
 time_df = data.frame(time=time[3])
 write.table(time_df,  file=paste("Time/jointGMM", imc_chan, sep="__") )
+
+
+
+
+
+
+
+
