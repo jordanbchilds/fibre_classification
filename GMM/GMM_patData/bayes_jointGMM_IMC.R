@@ -317,13 +317,14 @@ time = system.time({
         ## PRIORS
         mu1_mean = c(mean(Xctrl), mean(Yctrl))
         mu2_mean = c(2,2)
-        mu1_prec = solve( matrix(c(0.5,0.15,0.15,0.5), ncol=2, nrow=2, byrow=TRUE) )
-        mu2_prec = 10*diag(2) 
+        mu1_prec = solve( matrix(c(0.3,0.2,0.2,0.5), nrow=2, ncol=2, byrow=TRUE))
+        mu2_prec = solve( 2*diag(2) )
         
-        n_1 = 5
+        n_1 = 10
         U_1 = matrix( c(0.1,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE)/n_1
         n_2 = 5
-        U_2 = 10*diag(2)
+        U_2 = 10*diag(2)/n_2
+        
         
         alpha = 1
         beta = 1
