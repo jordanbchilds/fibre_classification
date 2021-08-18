@@ -19,8 +19,8 @@ cramp = colorRamp(c(rgb(1,0,0,0.25),rgb(0,0,1,0.25)),alpha=TRUE)
 myDarkGrey = rgb(169,169,159, max=255, alpha=40)
 myGreen = rgb(0,255,0,max=255,alpha=50)
 myYellow = rgb(225,200,50,max=255, alpha=50)
-myBlue = cramp(1)
-myRed = cramp(0)
+myBlue = rgb(0,0,225, max=255, alpha=20)
+myRed = rgb(255,0,0, max=255, alpha=20)
 
 classcols = function(classif){
   # A function using the cramp specified colours to generate rgb colour names
@@ -137,7 +137,7 @@ comp_dens_allData = function(data, Nctrl, posterior, classifs, title){
        xlab=paste0('log(',mitochan,')'), ylab=paste0("log(",chan,")"),
        main="Component One", xlim=x.lim, ylim=y.lim)
   points(pat_data[,1], pat_data[,2], pch=20, col=classcols(pat_classifs))
-  densOne = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[1]"])
+  densOne = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
   contour( densOne$dens, levels=densOne$levels, labels=densOne$probs, add=TRUE,
            col="black", lwd=3)
   
@@ -145,7 +145,7 @@ comp_dens_allData = function(data, Nctrl, posterior, classifs, title){
        xlab=paste0('log(',mitochan,')'), ylab=paste0("log(",chan,")"),
        main="Component Two", xlim=x.lim, ylim=y.lim)
   points(pat_data[,1], pat_data[,2], pch=20, col=classcols(pat_classifs))
-  densTwo = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[1]"])
+  densTwo = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[2]"])
   contour( densTwo$dens, levels=densTwo$levels, labels=densTwo$probs, add=TRUE, 
            col="black", lwd=3)
 }
@@ -328,7 +328,7 @@ pts = grep("P", sbj, value = TRUE)
 MCMCUpdates = 2000
 MCMCUpdates_Report = 5000
 MCMCUpdates_Thin = 1
-n.chains = 3
+n.chains = 3 
 
 time = system.time({
   for( chan in imc_chan ){
