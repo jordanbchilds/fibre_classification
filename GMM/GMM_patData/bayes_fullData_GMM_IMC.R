@@ -383,7 +383,7 @@ time = system.time({
       ## PRIORS
       mu1_mean = c(mean(Xctrl), mean(Yctrl))
       mu2_mean = c(2,2)
-      mu1_prec = olve( matrix(c(0.3,0.2,0.2,0.5), nrow=2, ncol=2, byrow=TRUE))
+      mu1_prec = solve( matrix(c(0.3,0.2,0.2,0.5), nrow=2, ncol=2, byrow=TRUE))
       mu2_prec = solve( 2*diag(2) )
       
       n_1 = 10
