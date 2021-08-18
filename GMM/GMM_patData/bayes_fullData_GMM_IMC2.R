@@ -12,7 +12,7 @@ if (length(args)==0) {
   imc_chan = args
 }
 
-cramp = colorRamp(c(rgb(1,0,0,0.25),rgb(0,0,1,0.25)),alpha=TRUE)
+cramp = colorRamp(c(rgb(0,0,1,0.25),rgb(1,0,0,0.25)),alpha=TRUE)
 # rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
 # 0.25 determines how transparent the colour is, 1 being opaque 
 # cramp is a function which generates colours on a scale between two specifies colours
@@ -138,7 +138,7 @@ comp_dens_allData = function(data, Nctrl, posterior, classifs, title){
        xlab=paste0('log(',mitochan,')'), ylab=paste0("log(",chan,")"),
        main="Component One", xlim=x.lim, ylim=y.lim)
   points(pat_data[,1], pat_data[,2], pch=20, col=classcols(pat_classifs))
-  densOne = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[1]"])
+  densOne = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
   contour( densOne$dens, levels=densOne$levels, labels=densOne$probs, add=TRUE,
            col="black", lwd=3)
   
@@ -146,7 +146,7 @@ comp_dens_allData = function(data, Nctrl, posterior, classifs, title){
        xlab=paste0('log(',mitochan,')'), ylab=paste0("log(",chan,")"),
        main="Component Two", xlim=x.lim, ylim=y.lim)
   points(pat_data[,1], pat_data[,2], pch=20, col=classcols(pat_classifs))
-  densTwo = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[1]"])
+  densTwo = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[2]"])
   contour( densTwo$dens, levels=densTwo$levels, labels=densTwo$probs, add=TRUE, 
            col="black", lwd=3)
 }
@@ -537,18 +537,5 @@ WAICpath = "Information_Criteria/IMC_allData2/WAIC"
 for(chan_pat in names(WAIC_lst)){ 
   write.table(WAIC_lst[[chan_pat]], file=file.path(WAICpath, chan_pat))
 }
-
-
-tt = colnames(posterior[,grep("z", colnames(posterior))])
-tt.split = strsplit(tt, split="")
-tt.vec = double(length(tt.split))
-for(i in 1:length(tt.split)){
-  rr = tt.split[[i]][ !tt.split[[i]] %in% c("z","[","]") ]
-  tt.vec[i] = as.numeric(paste(rr, collapse=""))
-}
-names(tt.vec) = tt 
-tt.vec = sort(tt.vec)
-
-
 
 
