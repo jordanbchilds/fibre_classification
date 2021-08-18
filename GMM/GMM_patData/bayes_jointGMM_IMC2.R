@@ -305,7 +305,6 @@ pts = grep("P", sbj, value = TRUE)
 DIC_df = data.frame(row.names=pts)
 WAIC_lst = list()
 
-
 time = system.time({
   for( chan in imc_chan ){
     DIC_df[,chan] = NA
