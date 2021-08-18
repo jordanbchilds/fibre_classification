@@ -277,7 +277,6 @@ dir.create(file.path("PDF/IMC_joint2/components"), showWarnings = FALSE)
 
 dir.create(file.path("Information_Criteria"), showWarnings=FALSE)
 dir.create(file.path("Information_Criteria/IMC_joint2"), showWarnings = FALSE)
-dir.create(file.path("Information_Criteria/IMC_joint2/DIC"), showWarnings = FALSE)
 dir.create(file.path("Information_Criteria/IMC_joint2/WAIC"), showWarnings = FALSE)
 
 # burn-in, chain length, thinning lag
@@ -305,6 +304,7 @@ pts = grep("P", sbj, value = TRUE)
 
 DIC_df = data.frame(row.names=pts)
 WAIC_lst = list()
+
 
 time = system.time({
   for( chan in imc_chan ){
@@ -442,14 +442,16 @@ time = system.time({
 time_df = data.frame(time=time[3])
 write.table(time_df,  file=paste("Time/IMC_joint2", imc_chan, sep="__") )
 
-DICpath = file.path("Information_Criteria/IMC_joint2/DIC")
-write.table(DIC_df, file=DICpath)
+DICpath = file.path("Information_Criteria/IMC_joint2/DIC.txt")
+write.table(DIC_df, file=DICpath, 
+            row.names=FALSE,quote=FALSE,col.names=FALSE)
 
 WAICpath = "Information_Criteria/IMC_joint2/WAIC"
-for(chan_pat in WAIC_lst){ 
-  write.table(WAIC_lst[[chan_pat]], file=file.path(WAICpath, chan_pat))
+chan_pat = names(WAIC_lst)
+for(i in 1:length(WAIC_lst)){ 
+  write.table(WAIC_lst[[i]][[1]], 
+              file=file.path(WAICpath, paste0(chan_pat[i], ".txt") ))
 }
-
 
 
 

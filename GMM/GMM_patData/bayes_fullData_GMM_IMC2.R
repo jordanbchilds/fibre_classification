@@ -530,12 +530,14 @@ time = system.time({
 time_df = data.frame(time=time[3])
 write.table(time_df, file=paste("Time/fullData2", imc_chan, sep="__"))
 
-DICpath = file.path("Information_Criteria/IMC_allData2/DIC")
+DICpath = file.path("Information_Criteria/IMC_allData2/DIC.txt")
 write.table(DIC_df, file=DICpath)
 
-WAICpath = "Information_Criteria/IMC_allData2/WAIC"
-for(chan_pat in names(WAIC_lst)){ 
-  write.table(WAIC_lst[[chan_pat]], file=file.path(WAICpath, chan_pat))
+WAICpath = "Information_Criteria/IMC_joint2/WAIC"
+chan_pat = names(WAIC_lst)
+for(i in 1:length(WAIC_lst)){ 
+  write.table(WAIC_lst[[i]][[1]], 
+              file=file.path(WAICpath, paste0(chan_pat[i], ".txt") ))
 }
 
 
