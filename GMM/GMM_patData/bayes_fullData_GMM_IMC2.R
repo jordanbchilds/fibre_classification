@@ -233,14 +233,44 @@ priorpost_marginals = function(prior, posterior, data, title){
   title(main=title, line = -1, outer = TRUE)
   
   par(mfrow=c(2,5))
-  for( i in 1:length(pts)){
-    pdiff = paste0('probdiff[',i+1,']')
+  for(i in 1:length(pts)){
+    pdiff = paste0( "pi[",i+1,"]" )
     plot( density(posterior[,pdiff]), cex.lab=2, cex.axis=1.5, xlim=c(0,1),
-          xlab=pdiff, ylab='density', lwd=2, col='red', main=paste(pts[i],pdiff,'Density'))
+          xlab=pdiff, ylab='density', lwd=2, col='red', main=paste(pts[i], pdiff, 'Density'))
     lines( density(rbeta(5000, data$alpha, data$beta)), lwd=2, col='green')
     title(main=title, line = -1, outer = TRUE)
   }
   par(op)
+}
+
+MCMCplot = function( MCMCoutput, lag=20, title ){
+  col.names = colnames(MCMCoutput[[1]])
+  n.chains = length(MCMCoutput)
+  
+  par(mfrow=c(3,3), mar = c(5.5,5.5,3,3))
+  if( n.chains==1 ){
+    for(param in col.names){
+      plot( 0:lag, autocorr(MCMCoutput[[1]][,param], lags=0:lag), 
+            type='h', ylim=c(-1,1), xlab='Index', ylab='')
+      plot( 1:nrow(MCMCoutput[[1]]), MCMCoutput[[1]][,param], main=param, type='l',
+            ylab='', xlab='Iteration')
+      plot(density(MCMCoutput[[1]][,param] ), main='', xlab='')
+    }
+  } else {
+    for( param in col.names){
+      plot( autocorr(MCMCoutput[[1]][,param], lags=0:lag), type='h', 
+            xlab='Index', ylab='' )
+      for(j in 2:n.chains) lines( autocorr(MCMCoutput[[j]][,param], lags=0:20), type='h', col=j)
+      
+      plot(1:nrow(MCMCoutput[[1]]), MCMCoutput[[1]][,param], main=param, type='l',
+           ylab='', xlab='Iteration')
+      for(j in 2:n.chains) lines(MCMCoutput[[j]][,param], type='l', col=j)
+      
+      plot(density(MCMCoutput[[1]][,param]) )
+      for(j in 2:n.chains) lines(density(MCMCoutput[[j]][,param]), col=j )
+    }
+  }
+  title(main=title, line = -1, outer = TRUE)
 }
 
 modelstring = "
@@ -277,11 +307,12 @@ model {
 "
 dir.create(file.path("Output"), showWarnings = FALSE)
 dir.create(file.path("PDF"), showWarnings = FALSE)
+# dir.create(file.path("PNG"), showWarnings = FALSE)
 dir.create(file.path("Time"), showWarnings = FALSE)
 
 dir.create(file.path("Output/IMC_allData2"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData2"), showWarnings = FALSE)
-dir.create(file.path("PNG/IMC_allData2"), showWarnings = FALSE)
+# dir.create(file.path("PNG/IMC_allData"), showWarnings = FALSE)
 
 dir.create(file.path("PDF/IMC_allData2/MCMC"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData2/classifs"), showWarnings = FALSE)
@@ -290,7 +321,7 @@ dir.create(file.path("PDF/IMC_allData2/components"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData2/components/pat_singular"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData2/components/pat_joined"), showWarnings = FALSE)
 
-dir.create(file.path("Information_Criteria"), showWarnings = FALSE)
+dir.create(file.path("Information_Criteria"), showWarnings=FALSE)
 dir.create(file.path("Information_Criteria/IMC_allData2"), showWarnings = FALSE)
 dir.create(file.path("Information_Criteria/IMC_allData2/WAIC"), showWarnings = FALSE)
 
@@ -327,6 +358,7 @@ time = system.time({
     Xctrl = log(control$value[control$channel==mitochan])
     Yctrl = log(control$value[control$channel==chan])
     Nctrl = length(Yctrl)
+    data_ctrl_lst = list(Y=cbind(Xctrl, Yctrl))
     
     Xchan = Xctrl
     Ychan = Yctrl
@@ -412,8 +444,21 @@ time = system.time({
       posterior = as.data.frame(output[[1]])
       prior = as.data.frame(output_priorpred[[1]])
       
-      classifs_all = colMeans( posterior[, grepl('z', colnames(posterior))] )
+      tt = colnames(posterior[,grep("z", colnames(posterior))])
+      tt.split = strsplit(tt, split="")
+      tt.vec = double(length(tt.split))
+      for(i in 1:length(tt.split)){
+        rr = tt.split[[i]][ !tt.split[[i]] %in% c("z","[","]") ]
+        tt.vec[i] = as.numeric(paste(rr, collapse=""))
+      }
+      names(tt.vec) = tt 
+      tt.vec = sort(tt.vec)
+      
+      class_posterior = posterior[, names(tt.vec)]
+      
+      classifs_all = colMeans( class_posterior )
       classifs_probs = classifs_all - 1
+      
       colnames(posterior) = colnames(output[[1]])
       colnames(prior) = colnames(output_priorpred[[1]])
       
@@ -436,11 +481,10 @@ time = system.time({
       pat = ctrl_pts[i]
       outroot_pat = paste0(outroot, "__", pat)
       data_pat = data_chan[(pat_ind[i]+1):pat_ind[i+1], ]
-      classifs = classifs_all[(pat_ind[i]+1):pat_ind[i+1]] - 1
+      classifs = classifs_probs[(pat_ind[i]+1):pat_ind[i+1]] 
       
       class_filePath = file.path("PDF/IMC_allData2/classifs", paste0(outroot_pat, "__CLASSIF.pdf"))
       if( pat=='ctrl'){
-        data_ctrl_lst = list(Y=cbind(Xctrl, Yctrl))
         pdf(class_filePath, width=14,height=8.5)
         priorpost( data=data_pat, prior=prior, posterior=posterior,
                    classifs=classifs, title=paste(froot, pat, chan, sep='__'))
@@ -457,8 +501,8 @@ time = system.time({
         
         comp_filePath = file.path("PDF/IMC_allData2/components/pat_singular", paste0(outroot_pat, "__COMPS.pdf"))
         pdf(comp_filePath, width=14, height=8.5)
-        component_densities(data=data_chan, Nctrl=Nctrl,
-                            posterior=posterior, classifs=classifs_probs,
+        component_densities(ctrl_data=data_ctrl_lst, pat_data=data_pat_lst,
+                            pat_posterior=posterior, classifs=classifs_probs,
                             title=paste(froot, chan, sep="__"))
         dev.off()
       }
@@ -474,10 +518,11 @@ time = system.time({
     priorpost_marginals(prior=prior, posterior=posterior, data=data,
                         title=paste(froot, pat, chan, sep='__'))
     dev.off()
-    comp_alldata_path = file.path("PDF/IMC_allData/components/pat_joined", paste0(outroot, "__COMP.pdf"))
+    
+    comp_alldata_path = file.path("PDF/IMC_allData2/components/pat_joined", paste0(outroot, "__COMP.pdf"))
     pdf(comp_alldata_path, width=14, height=8.5)
     comp_dens_allData(data=data_chan, Nctrl=Nctrl, posterior=posterior,
-                      classifs=classifs_all, title=paste(froot, chan, sep='__'))
+                      classifs=classifs_probs, title=paste(froot, chan, sep='__'))
     dev.off()
   }
 })
@@ -492,6 +537,18 @@ WAICpath = "Information_Criteria/IMC_allData2/WAIC"
 for(chan_pat in names(WAIC_lst)){ 
   write.table(WAIC_lst[[chan_pat]], file=file.path(WAICpath, chan_pat))
 }
+
+
+tt = colnames(posterior[,grep("z", colnames(posterior))])
+tt.split = strsplit(tt, split="")
+tt.vec = double(length(tt.split))
+for(i in 1:length(tt.split)){
+  rr = tt.split[[i]][ !tt.split[[i]] %in% c("z","[","]") ]
+  tt.vec[i] = as.numeric(paste(rr, collapse=""))
+}
+names(tt.vec) = tt 
+tt.vec = sort(tt.vec)
+
 
 
 
