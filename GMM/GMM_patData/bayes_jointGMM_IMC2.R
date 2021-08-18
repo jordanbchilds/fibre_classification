@@ -280,7 +280,6 @@ dir.create(file.path("Information_Criteria/IMC_joint2"), showWarnings = FALSE)
 dir.create(file.path("Information_Criteria/IMC_joint2/DIC"), showWarnings = FALSE)
 dir.create(file.path("Information_Criteria/IMC_joint2/WAIC"), showWarnings = FALSE)
 
-
 # burn-in, chain length, thinning lag
 MCMCBurnin = 2000
 MCMCUpdate = 5000 + MCMCBurnin
@@ -304,8 +303,6 @@ sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
-imc_chan = c("NDUFB8")
-
 DIC_df = data.frame(row.names=pts)
 WAIC_lst = list()
 
@@ -314,7 +311,7 @@ time = system.time({
     DIC_df[,chan] = NA
     for( pat in pts){
       
-      outroot = paste( froot, pat, chan, sep='__')
+      outroot = paste( froot, chan, pat, sep='__')
       posterior_file = file.path("Output/IMC_joint2", paste0(outroot, "__POSTERIOR.txt") )
     
       if( !file.exists(posterior_file)){
@@ -337,12 +334,12 @@ time = system.time({
         mu1_mean = c(mean(Xctrl), mean(Yctrl))
         mu2_mean = c(2,2)
         mu1_prec = solve( matrix(c(0.3,0.3,0.3,0.5), ncol=2, nrow=2, byrow=TRUE) )
-        mu2_prec = 10*diag(2) 
+        mu2_prec = solve( diag(2) )
         
         n_1 = 50
         U_1 = matrix( c(0.4,0.4,0.4,0.5), ncol=2, nrow=2, byrow=TRUE)/n_1
         n_2 = 5
-        U_2 = 10*diag(2)
+        U_2 = 10*diag(2)/n_1
         
         alpha = 1
         beta = 1
@@ -367,7 +364,7 @@ time = system.time({
                                     n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=FALSE, progress.bar="text")
         
         DIC_df[pat,chan] = model_jags$BUGSoutput$DIC
-        WAIC_lst[paste(chan,pat,sep="__")] = waic(model_jags$BUGSoutput$sims.list$loglik)
+        WAIC_lst[[paste(chan,pat,sep="__")]] = waic(model_jags$BUGSoutput$sims.list$loglik)
         
         output = as.mcmc(model_jags)
         output_priorpred = as.mcmc(model_priorpred_jags)
@@ -381,27 +378,39 @@ time = system.time({
         posterior = as.data.frame(output[[1]])
         prior = as.data.frame(output_priorpred[[1]])
         
-        classifs = colMeans( posterior[, grepl('z', colnames(posterior))] )
+        tt = colnames(posterior[,grep("z", colnames(posterior))])
+        tt.split = strsplit(tt, split="")
+        tt.vec = double(length(tt.split))
+        for(i in 1:length(tt.split)){
+          rr = tt.split[[i]][ !tt.split[[i]] %in% c("z","[","]") ]
+          tt.vec[i] = as.numeric(paste(rr, collapse=""))
+        }
+        names(tt.vec) = tt 
+        tt.vec = sort(tt.vec)
+        
+        class_posterior = posterior[, names(tt.vec)]  
+        classifs = colMeans(class_posterior)
+        
         colnames(posterior) = colnames(output[[1]])
         colnames(prior) = colnames(output_priorpred[[1]])
         
         if( pat=='CTRL'){
           pdf(file.path("PDF/IMC_joint2/classifs", paste0(outroot,"__CLASSIF.pdf")), width=14,height=8.5)
           priorpost( data=data$Yctrl, prior=prior, posterior=posterior,
-                     classifs=classifs, title=paste(froot, pat, chan, sep='__'))
+                     classifs=classifs, title=paste(froot, chan, pat, sep='__'))
           dev.off()
           pdf(file.path("PDF/IMC_joint2/marginals", paste0(outroot,"__MARG.pdf")), width=14, height=8.5)
           priorpost_marginals(prior=prior, posterior=posterior, 
-                              title=paste(froot, pat , chan, sep='__'))
+                              title=paste(froot, chan, pat, sep='__'))
           dev.off()
         } else { 
           pdf(file.path("PDF/IMC_joint2/classifs", paste0(outroot,"__CLASSIF.pdf")), width=14,height=8.5)
           priorpost( data=data$Ypat, prior=prior, posterior=posterior, ctrl=data$Yctrl,
-                     classifs=classifs, title=paste(froot, pat, chan, sep='__'))
+                     classifs=classifs, title=paste(froot, chan, pat, sep='__'))
           dev.off()
           pdf(file.path("PDF/IMC_joint2/marginals", paste0(outroot,"__MARG.pdf")), width=14, height=8.5)
           priorpost_marginals(prior=prior, posterior=posterior, data=data,
-                              title=paste(froot, pat, chan, sep='__'))
+                              title=paste(froot, chan, pat, sep='__'))
           dev.off()
           
           data_ctrl_lst = list(Y=data$Yctrl)
@@ -409,14 +418,14 @@ time = system.time({
           pdf(file.path("PDF/IMC_joint2/components", paste0(outroot,"__COMP.pdf")), width=14, height=8.5)
           component_densities(ctrl_data=data_ctrl_lst, pat_data=data_pat_lst, 
                               pat_posterior=posterior, classifs=classifs, 
-                              title=paste(froot, pat, chan, sep="__"))
+                              title=paste(froot, chan, pat, sep="__"))
           dev.off()
         }
         write.table(as.numeric(classifs),file.path("Output/IMC_joint2",paste0(outroot,"__CLASS.txt")),
                     row.names=FALSE,quote=FALSE,col.names=FALSE)
         
         pdf(file.path("PDF/IMC_joint2/MCMC", paste0(outroot,"__MCMC.pdf")), width=14, height=8.5)
-        MCMCplot( MCMCoutput, title=paste(froot, pat, chan, sep='__'))
+        MCMCplot( MCMCoutput, title=paste(froot, chan, pat, sep='__'))
         dev.off()
         
         write.table(posterior[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
