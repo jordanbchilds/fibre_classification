@@ -304,13 +304,10 @@ for( chan in imc_chan ){
     prec_pred = matrix( colMeans(posterior_ctrl[,c('tau[1,1,1]', 'tau[1,2,1]', 'tau[2,1,1]','tau[2,2,1]')]),
                         nrow=2, ncol=2, byrow=TRUE )
     
-    prec_pred_inv = solve( prec_pred )
     n_1 = 560 # degrees of freedom
-    
-    # define prior parameter
-    U_1 = prec_pred_inv*n_1
+    U_1 = solve( prec_pred )/n_1
     n_2 = 10
-    U_2 = solve( matrix( c(2,0,0,2), nrow=2, ncol=2, byrow=TRUE) )*n_2
+    U_2 = solve( matrix( c(2,0,0,2), nrow=2, ncol=2, byrow=TRUE) )/n_2
     
     mu1_mean = colMeans( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])
     mu1_prec = solve( var( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])*10 )

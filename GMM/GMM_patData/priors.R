@@ -1,6 +1,4 @@
-
 library(rjags)
-library(beanplot)
 library(MASS)
 source("../BootStrapping/parseData.R", local = TRUE)
 
@@ -22,6 +20,18 @@ classcols = function(classif){
   # output: rgb colour name
   rgbvals = cramp(classif)/255.0
   return(rgb(rgbvals[,1],rgbvals[,2],rgbvals[,3],rgbvals[,4]))
+}
+
+percentiles = function(xdat, ydat, probs=c(0.95, 0.5, 0.1)){
+  dens = kde2d(xdat, ydat, n=200); ## estimate the z counts
+  dx = diff(dens$x[1:2])
+  dy = diff(dens$y[1:2])
+  sz = sort(dens$z)
+  c1 = cumsum(sz) * dx * dy
+  levs = sapply(probs, function(x) {
+    approx(c1, sz, xout = 1 - x)$y
+  })
+  return( list(dens=dens, levels=levs, probs=probs))
 }
 
 priorpost = function(ctrl_data, ctrl_prior, ctrl_posterior, 
@@ -202,19 +212,16 @@ for( chan in c('NDUFB8')){
   prec_pred = matrix( colMeans(posterior_ctrl[,c('tau[1,1,1]', 'tau[1,2,1]', 'tau[2,1,1]','tau[2,2,1]')]),
                       nrow=2, ncol=2, byrow=TRUE )
   
-  prec_pred_inv = solve( prec_pred )
-  n_1 = 2 # degrees of freedom
-  
-  # define prior parameter
-  U_1 = prec_pred_inv*n_1
-  n_2 = 2
-  U_2 = solve( matrix( c(5,0,0,5), nrow=2, ncol=2, byrow=TRUE) )*n_2
+  n_1 = 560 # degrees of freedom
+  U_1 = solve( prec_pred )/n_1
+  n_2 = 10
+  U_2 = solve( 2*diag(2) )/n_2
   
   mu1_mean = colMeans( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])
-  mu1_prec = solve( var( posterior_ctrl[,c('mu[1,1]','mu[2,1]')]) )
+  mu1_prec = solve( 10*var( posterior_ctrl[,c("mu[1,1]","mu[2,1]")] ) )
   
   mu2_mean = mu1_mean
-  mu2_prec = solve( matrix(c(4,0,0,4), nrow=2, ncol=2, byrow=TRUE))
+  mu2_prec = solve( 2*diag(2) )
   
   alpha = 1
   beta = 1
@@ -296,3 +303,21 @@ plot( density( prior_pat[,'tau[2,2,2]']), col='green', main=expression(T[2]), xl
 lines( density( posterior_ctrl[,'tau[2,2,2]']), col='blue')
 legend('topright', legend=c('ctrl post', 'pat prior'), col=c('blue', 'green'), lty=1)
 par(mfrow=c(1,1))
+
+
+
+par(mfrow=c(1,2))
+plot(Xctrl, Yctrl, pch=20, col=myDarkGrey, xlim=c(0,4), ylim=c(0,4),
+     xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"),
+     main='Component One')
+perc.1 = percentiles( prior_pat[,"compOne[1]"], prior_pat[,"compOne[2]"])
+contour( perc.1$dens, levels=perc.1$levels, labels=perc.1$probs, add=TRUE,
+         col="blue")
+plot(Xctrl, Yctrl, pch=20, col=myDarkGrey, xlim=c(0,4), ylim=c(0,4),
+     xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"),
+     main='Component One')
+perc.2 = percentiles( prior_pat[,"compTwo[1]"], prior_pat[,"compTwo[2]"])
+contour( perc.2$dens, levels=perc.2$levels, labels=perc.2$probs, add=TRUE,
+         col="red")
+
+
