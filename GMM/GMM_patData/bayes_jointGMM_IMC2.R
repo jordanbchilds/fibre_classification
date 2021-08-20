@@ -344,7 +344,7 @@ time = system.time({
         beta = 1
         
         data = list(Yctrl=XY_ctrl, Nctrl=Nctrl, Ypat=XY_pat, Npat=Npat,
-                    mu1_mean=mu1_mean, mu1_prec=mu1_prec,
+                    mu1_mean=2*mu1_mean, mu1_prec=mu1_prec,
                     mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
                     U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
   
