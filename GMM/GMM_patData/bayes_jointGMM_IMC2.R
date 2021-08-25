@@ -333,9 +333,9 @@ time = system.time({
         
         ## PRIORS
         mu1_mean = 2*c(mean(Xctrl), mean(Yctrl))
-        mu2_mean = c(1,2)
+        mu2_mean = c(3,2)
         mu1_prec = solve( matrix(c(0.7,0.7,0.7,0.8), ncol=2, nrow=2, byrow=TRUE) )
-        mu2_prec = 50*diag(2) 
+        mu2_prec = 100*diag(2) 
         
         n_1 = 20
         U_1 = matrix( c(0.4,0.4,0.4,0.5), ncol=2, nrow=2, byrow=TRUE)/n_1
