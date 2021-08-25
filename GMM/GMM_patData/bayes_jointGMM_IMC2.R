@@ -280,10 +280,10 @@ dir.create(file.path("Information_Criteria/IMC_joint2"), showWarnings = FALSE)
 dir.create(file.path("Information_Criteria/IMC_joint2/WAIC"), showWarnings = FALSE)
 
 # burn-in, chain length, thinning lag
-MCMCBurnin = 2000
-MCMCUpdate = 5000 + MCMCBurnin
+MCMCBurnin = 1000
+MCMCUpdate = 3000 + MCMCBurnin
 MCMCThin = 1
-n.chains = 3
+n.chains = 1
 
 fulldat = 'IMC.RAW.txt'
 
@@ -304,6 +304,8 @@ pts = grep("P", sbj, value = TRUE)
 
 DIC_df = data.frame(row.names=pts)
 WAIC_lst = list()
+
+imc_chan=c("MTCO1")
 
 time = system.time({
   for( chan in imc_chan ){
@@ -330,14 +332,14 @@ time = system.time({
         Npat = nrow(XY_pat)
         
         ## PRIORS
-        mu1_mean = c(mean(Xctrl), mean(Yctrl))
-        mu2_mean = c(2,2)
-        mu1_prec = solve( matrix(c(1,1,1,1.1), ncol=2, nrow=2, byrow=TRUE) )
-        mu2_prec = 0.25*diag(2) 
+        mu1_mean = 2*c(mean(Xctrl), mean(Yctrl))
+        mu2_mean = c(1,2)
+        mu1_prec = solve( matrix(c(0.7,0.7,0.7,0.8), ncol=2, nrow=2, byrow=TRUE) )
+        mu2_prec = 50*diag(2) 
         
-        n_1 = 10
+        n_1 = 20
         U_1 = matrix( c(0.4,0.4,0.4,0.5), ncol=2, nrow=2, byrow=TRUE)/n_1
-        n_2 = 4
+        n_2 = 2
         U_2 = 10*diag(2)/4
         
         alpha = 1
@@ -362,8 +364,8 @@ time = system.time({
                                     model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
                                     n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=FALSE, progress.bar="text")
         
-        DIC_df[pat,chan] = model_jags$BUGSoutput$DIC
-        WAIC_lst[[paste(chan,pat,sep="__")]] = waic(model_jags$BUGSoutput$sims.list$loglik)
+        # DIC_df[pat,chan] = model_jags$BUGSoutput$DIC
+        # WAIC_lst[[paste(chan,pat,sep="__")]] = waic(model_jags$BUGSoutput$sims.list$loglik)
         
         output = as.mcmc(model_jags)
         output_priorpred = as.mcmc(model_priorpred_jags)
