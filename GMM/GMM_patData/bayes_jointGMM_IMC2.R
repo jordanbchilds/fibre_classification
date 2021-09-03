@@ -280,10 +280,10 @@ dir.create(file.path("Information_Criteria/IMC_joint2"), showWarnings = FALSE)
 dir.create(file.path("Information_Criteria/IMC_joint2/WAIC"), showWarnings = FALSE)
 
 # burn-in, chain length, thinning lag
-MCMCBurnin = 1000
+MCMCBurnin = 2000
 MCMCUpdate = 3000 + MCMCBurnin
 MCMCThin = 1
-n.chains = 1
+n.chains = 2
 
 fulldat = 'IMC.RAW.txt'
 
@@ -304,8 +304,6 @@ pts = grep("P", sbj, value = TRUE)
 
 DIC_df = data.frame(row.names=pts)
 WAIC_lst = list()
-
-imc_chan=c("MTCO1")
 
 time = system.time({
   for( chan in imc_chan ){
