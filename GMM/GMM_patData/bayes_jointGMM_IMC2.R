@@ -157,7 +157,7 @@ component_densities = function( ctrl_data, pat_data, posterior, prior,
   
   plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
        xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-       main="Component One", xlim=c(-1,4), ylim=c(-1,4))
+       main="Component One", xlim=c(-1,6), ylim=c(-1,6))
   points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=myYellow)
   prior_one = percentiles(prior[,"predOne[1]"], prior[,"predOne[2]"])
   contour(prior_one$dens, levels=prior_one$levels, labels=prior_one$probs,
@@ -165,7 +165,7 @@ component_densities = function( ctrl_data, pat_data, posterior, prior,
   
   plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
        xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-       main="Component Two", xlim=c(-1,4), ylim=c(-1,4))
+       main="Component Two", xlim=c(-1,6), ylim=c(-1,6))
   points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=myYellow)
   prior_two = percentiles(prior[,"predTwo[1]"], prior[,"predTwo[2]"])
   contour(prior_two$dens, levels=prior_two$levels, labels=prior_two$probs, 
@@ -173,7 +173,7 @@ component_densities = function( ctrl_data, pat_data, posterior, prior,
   
   plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
        xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-       main="Component One", xlim=c(-1,4), ylim=c(-1,4))
+       main="Component One", xlim=c(-1,6), ylim=c(-1,6))
   points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
   post_one = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
   contour(post_one$dens, levels=post_one$levels, labels=post_one$probs,
@@ -181,7 +181,7 @@ component_densities = function( ctrl_data, pat_data, posterior, prior,
   
   plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
        xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-       main="Component Two", xlim=c(-1,4), ylim=c(-1,4))
+       main="Component Two", xlim=c(-1,6), ylim=c(-1,6))
   points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
   post_two = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[2]"])
   contour(post_two$dens, levels=post_two$levels, labels=post_two$probs, 
@@ -320,7 +320,7 @@ time = system.time({
         
         ## PRIORS
         mu1_mean = 2*c(mean(Xctrl), mean(Yctrl))
-        mu2_mean = c(3,2)
+        mu2_mean = c(0,5)
         mu1_prec = solve( matrix(c(0.79,0.79,0.79,0.8), ncol=2, nrow=2, byrow=TRUE) )
         mu2_prec = 500*diag(2) 
         
@@ -403,7 +403,7 @@ time = system.time({
           
           data_ctrl_lst = list(Y=data$Yctrl)
           data_pat_lst = list(Y=data$Ypat)
-          pdf(file.path("PDF/IMC_joint2/components", paste0(outroot,"__COMP.pdf")), width=14, height=8.5)
+          pdf(file.path("PDF/IMC_joint2/components", paste0(outroot,"__COMP.pdf")), width=10, height=8.5)
           component_densities(ctrl_data=data_ctrl_lst, pat_data=data_pat_lst, 
                               posterior=posterior, prior=prior, classifs=classifs, 
                               title=paste(froot, chan, pat, sep="__"))
