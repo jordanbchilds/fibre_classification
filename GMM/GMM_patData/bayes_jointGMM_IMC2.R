@@ -210,7 +210,7 @@ component_densities = function( ctrl_data, pat_data, posterior, prior,
   
   plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
        xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-       main="Component Two", xlim=x.lim, ylim=y.lim)
+       main="Component Two", xlim=c(-1,4), ylim=)
   points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
   post_two = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[2]"])
   contour(post_two$dens, levels=post_two$levels, labels=post_two$probs, 
