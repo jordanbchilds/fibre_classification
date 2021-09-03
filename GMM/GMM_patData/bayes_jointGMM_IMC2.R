@@ -197,7 +197,7 @@ component_densities = function( ctrl_data, pat_data, posterior, prior,
        main="Component Two", xlim=c(-1,4), ylim=c(-1,4))
   points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=myYellow)
   prior_two = percentiles(prior[,"predTwo[1]"], prior[,"predTwo[2]"])
-  contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs, 
+  contour(prior_two$dens, levels=prior_two$levels, labels=prior_two$probs, 
           col='red', lwd=2, add=TRUE)
   
   plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
