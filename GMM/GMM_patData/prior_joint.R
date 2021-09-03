@@ -1,6 +1,5 @@
 library(rjags)
 library(R2jags)
-library(ggplot2)
 library(MASS)
 source("../BootStrapping/parseData.R", local = TRUE)
 
@@ -63,6 +62,59 @@ priorpost_den = function(ctrl_data, prior, title){
   par(op)
 } 
 
+plot_marg = function(comp){
+  xlim11 = range(prior.0[,paste0("tau[1,1,",comp,"]")], prior.1[,paste0("tau[1,1,",comp,"]")] )
+  xlim12 = range(prior.0[,paste0("tau[1,2,",comp,"]")], prior.1[,paste0("tau[1,2,",comp,"]")] )
+  xlim22 = range(prior.0[,paste0("tau[2,2,",comp,"]")], prior.1[,paste0("tau[2,2,",comp,"]")] )
+  
+  par(mfrow=c(1,3))
+  plot( density( prior.0[,paste0("tau[1,1,",comp,"]")] ), xlim=xlim11,
+        xlab='', ylab='', main=expression(tau[11]) )
+  lines( density( prior.1[,paste0("tau[1,1,",comp,"]")] ), col="blue")
+  plot( density( prior.0[,paste0("tau[1,2,",comp,"]")] ), xlim=xlim12,
+        xlab='', ylab='', main=expression(tau[12]) )
+  lines( density( prior.1[,paste0("tau[1,2,",comp,"]")] ), col="blue")
+  plot( density( prior.0[,paste0("tau[2,2,",comp,"]")] ), xlim=xlim22,
+        xlab='', ylab='', main=expression(tau[22]) )
+  lines( density( prior.1[,paste0("tau[2,2,",comp,"]")] ), col="blue")
+  title(main=expression(T[1]), line=-1, outer=TRUE)
+  
+  par(mfrow=c(1,2))
+  plot( density( prior.0[,paste0("mu[1,",comp,"]")] ), xlab='', ylab='', main=expression(mu[1]) )
+  lines( density( prior.1[,paste0("mu[1,",comp,"]")] ), col="blue")
+  plot( density( prior.0[,paste0("mu[2,",comp,"]")] ), xlab='', ylab='', main=expression(mu[2]) )
+  lines( density( prior.1[,paste0("mu[2,",comp,"]")] ), col="blue")
+  title(main=expression(mu[1]), line=-1, outer=TRUE)
+  
+  par(mfrow=c(1,2))
+  plot(XY_ctrl[,1], XY_ctrl[,2], pch=20, col=myDarkGrey,
+       xlab="log(VDAC1)", ylab="log([protein])", xlim=c(-1,4), ylim=c(-1,4))
+  perc.0 = percentiles(prior.0[,paste0("mu[1,",comp,"]")], prior.0[,paste0("mu[2,",comp,"]")], probs=c(0.95))
+  contour(perc.0$dens, levels=perc.0$levels, labels=perc.0$probs,
+          add=TRUE)
+  plot(XY_ctrl[,1], XY_ctrl[,2], pch=20, col=myDarkGrey,
+       xlab="log(VDAC1)", ylab="log([protein])", xlim=c(-1,4), ylim=c(-1,4))
+  perc.1 = percentiles(prior.1[,paste0("mu[1,",comp,"]")], prior.1[,paste0("mu[2,",comp,"]")], probs=c(0.95))
+  contour(perc.1$dens, levels=perc.1$levels, labels=perc.1$probs, col="blue",
+          add=TRUE)
+  title(main=expression(mu[1]), line=-1,  outer=TRUE)
+  
+  comp = ifelse(comp==1, "compOne", "compTwo")
+  par(mfrow=c(1,2))
+  plot(XY_ctrl[,1], XY_ctrl[,2], pch=20, col=myDarkGrey,
+       xlab="log(VDAC1)", ylab="log([protein])", xlim=c(-5,10), ylim=c(-5,10))
+  dens.0 = percentiles( prior.0[,paste0(comp,"[1]")], prior.0[,paste0(comp,"[2]")], probs=c(0.95))
+  contour( dens.0$dens, levels=dens.0$levels, labels=dens.0$probs, add=TRUE)
+  
+  plot(XY_ctrl[,1], XY_ctrl[,2], pch=20, col=myDarkGrey,
+       xlab="log(VDAC1)", ylab="log([protein])", xlim=c(-5,10), ylim=c(-5,10))
+  dens.1 = percentiles( prior.1[,paste0(comp,"[1]")], prior.1[,paste0(comp,"[2]")], probs=c(0.95))
+  contour( dens.1$dens, levels=dens.1$levels, labels=dens.1$probs, 
+           col="blue", add=TRUE)
+  title(main="Predictive Posterior", line=-1, outer=TRUE)
+  
+}
+
 modelstring = "
 model {
   # construsting covariance matrix for group 1
@@ -107,14 +159,14 @@ imc_data = read.delim( file.path("../BootStrapping/IMC.RAW.txt"), stringsAsFacto
 imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
 mitochan = "VDAC1"
 
-imcDat = imc_data[imc_data$channel %in% c(imc_chan, mitchan) ]
+imcDat = imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
 
 froot = gsub('.RAW.txt', '', fulldat)
 
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = c('P01')
-imc_chan="COX4+4L2"
+imc_chan = c("MTCO1")
 
 for( chan in imc_chan){
     outroot = paste( froot, chan, sep='__')
@@ -126,70 +178,107 @@ for( chan in imc_chan){
     XY_ctrl = cbind( Xctrl, Yctrl )
       
       ## PRIORS
-      mu1_mean = colMeans(XY_ctrl)
-      mu2_mean = mu1_mean
-      mu1_prec = solve( matrix(c(0.3,0.3,0.3,0.5), ncol=2, nrow=2, byrow=TRUE) )
-      mu2_prec = solve( 2*diag(2) )
+      mu1_mean = 2*colMeans(XY_ctrl)
+      mu2_mean = c(1,2)
+      mu1_prec = solve( matrix( c(1,1,1,1.1), ncol=2, nrow=2, byrow=TRUE) )
+      mu2_prec = 0.1*diag(2)
       
-      n_1 = 50
-      U_1 = matrix( c(0.4,0.4,0.4,0.5), ncol=2, nrow=2, byrow=TRUE)/n_1
-      n_2 = 20
-      U_2 = 2*diag(2)/n_2
+      n_1 = 10
+      U_1 = matrix( c(0.5,0.5,0.5,1), ncol=2, nrow=2, byrow=TRUE)/n_1
+      n_2 = 4
+      U_2 = 10*diag(2)/n_2
 
       
       alpha = 1
       beta = 1
       
-      data_priorpred = list(mu1_mean=mu1_mean, mu1_prec=mu1_prec,
-                       mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
+      data_prior.0 = list(mu1_mean=mu1_mean, mu1_prec=mu1_prec,
+                       mu2_mean=mu1_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
                        U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
       
-      model_priorpred = jags(data=data_priorpred, parameters.to.save=c("mu","tau","compOne","compTwo"),
+      data_prior.1 = list(mu1_mean=mu1_mean, mu1_prec=solve(matrix(c(0.7,0.7,0.7,0.8), ncol=2,nrow=2)), 
+                          mu2_mean=mu1_mean, mu2_prec=100*diag(2), 
+                          n_1=20, n_2=2, U_1=U_1*10/20, U_2=10*diag(2)/2,
+                          alpha=alpha, beta=beta)
+      
+      model_priorpred.0 = jags(data=data_prior.0, parameters.to.save=c("mu","tau","compOne","compTwo"),
                                   model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates, 
                                   n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=FALSE, progress.bar="text")
       
-      output = as.mcmc(model_priorpred)
+      model_priorpred.1 = jags(data=data_prior.1, parameters.to.save=c("mu","tau","compOne","compTwo"),
+                             model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdates, 
+                             n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=FALSE, progress.bar="text")
       
-      prior = as.data.frame(output[[1]])
+      output.0 = as.mcmc(model_priorpred.0)
+      output.1 = as.mcmc(model_priorpred.1)
+      
+      prior.0 = as.data.frame(output.0[[1]])
+      prior.1 = as.data.frame(output.1[[1]])
 
-      colnames(prior) = colnames(output[[1]])
+      colnames(prior.0) = colnames(output.0[[1]])
+      colnames(prior.1) = colnames(output.1[[1]])
       
       #predpsumm_pat=summary(output_pat_priorpred)
       pdf(file.path("PDF/PDF_jointPrior",paste0(chan,"__PRIOR.pdf")), width=14,height=8.5)
-      dens_plot(ctrl_data=XY_ctrl, prior=prior, title=paste0(chan, "__PRIOR")   )
+      dens_plot(ctrl_data=XY_ctrl, prior=prior.1, title=paste0(chan, "__PRIOR")   )
       dev.off()
       
-      write.table(prior[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+      write.table(prior.1[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                                "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
                                "compOne[1]", "compOne[1]","compTwo[1]","compTwo[2]")],
                   posterior_file, row.names=FALSE, quote=FALSE)
 }
 
+plot_marg(2)
 
+plot(XY_ctrl[,1], XY_ctrl[,2], pch=20, col=myDarkGrey,
+     xlab="log(VDAC1)", ylab="log(MTCO1)")
+tt = percentiles( prior.1[,"compTwo[1]"], prior.1[,"compTwo[2]"], probs=c(0.1))
+contour(tt$dens, levels=tt$levels, labels=tt$probs, nlevels=5)
+
+dens = kde2d(prior.1[,"compTwo[1]"], prior.1[,"compTwo[2]"], n=100); ## estimate the z counts
+dx = diff(dens$x[1:2])
+dy = diff(dens$y[1:2])
+sz = sort(dens$z)
+c1 = cumsum(sz) * dx * dy
+levs = sapply(c(0.1), function(x) {
+  approx(c1, sz, xout = 1 - x)$y
+})
+
+
+#### testing BUGS Wishart specification
+wishart.string="
+model{
+  tau ~ dwish(V, df)
+}"
+
+V = matrix(c(10,0,0,10), ncol=2, nrow=2, byrow=TRUE)
+df = 10
+data_wish = list(V=V, df=df)
+
+model_wish= jags(data=data_wish, parameters.to.save=c("tau"),
+                       model.file=textConnection(wishart.string), n.chains=1, n.iter=10000, 
+                       n.thin=1, n.burnin=0, DIC=FALSE, progress.bar="text")
+
+output_wish = as.mcmc(model_wish)
+BUGSwishart = as.data.frame(output_wish[[1]])
+colnames(BUGSwishart) = colnames(output_wish[[1]])
+
+Rwishart = rWishart(n=10000, df=df, Sigma=solve(V) )
 par(mfrow=c(1,3))
-ttWish = rWishart(n=10000, df=n_1, Sigma=solve(U_1) )
-plot( density(ttWish[1,1,]), xlab='', ylab='', main=expression(tau[11]) )
-plot( density(ttWish[1,2,]), xlab='', ylab='', main=expression(tau[12]) )
-plot( density(ttWish[2,2,]), xlab='', ylab='', main=expression(tau[22]) )
+plot( density(BUGSwishart[,"tau[1,1]"]), lwd=2, xlab='', ylab='', 
+      main=expression(tau[11]))
+lines( density(Rwishart[1,1,]), col="blue", lwd=2)
+plot( density(BUGSwishart[,"tau[1,2]"]), lwd=2, xlab='', ylab='', 
+      main=expression(tau[12]))
+lines( density(Rwishart[1,2,]), col="blue", lwd=2)
+plot( density(BUGSwishart[,"tau[2,2]"]), lwd=2, xlab='', ylab='', 
+      main=expression(tau[22]))
+lines( density(Rwishart[2,2,]), col="blue", lwd=2)
 
-par(mfrow=c(1,1))
-ttNorm = mvrnorm(n=10000, mu=mu1_mean, Sigma=solve(mu1_prec))
-plot( seq(-1,4,length.out=1000), seq(-1,4,length.out=1000), xlab='', ylab='',
-      lwd=2, type='l', col='red', xlim=c(0,4), ylim=c(0,4))
-contour(kde2d(ttNorm[,1], ttNorm[,2], n=100), nlevels=5, add=TRUE)
 
-par(mfrow=c(1,2))
-plot(XY_ctrl[,1], XY_ctrl[,2], pch=20, col=myDarkGrey,
-     xlab="log(VDAC1)", ylab="log([protein])")
-densOne = percentiles( prior[,"compOne[1]"], prior[,"compOne[2]"])
-contour( densOne$dens, levels=densOne$levels, labels=densOne$probs,
-         col="blue", add=TRUE)
-plot(XY_ctrl[,1], XY_ctrl[,2], pch=20, col=myDarkGrey,
-     xlab="log(VDAC1)", ylab="log([protein])")
-densTwo = percentiles(prior[,"compTwo[1]"],prior[,"compTwo[2]"] )
-contour( densTwo$dens, levels=densTwo$levels, labels=densTwo$probs, 
-         col="red", add=TRUE)
+
 
 
 

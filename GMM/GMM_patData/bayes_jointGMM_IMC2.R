@@ -335,18 +335,18 @@ time = system.time({
         mu1_mean = 2*c(mean(Xctrl), mean(Yctrl))
         mu2_mean = c(3,2)
         mu1_prec = solve( matrix(c(0.7,0.7,0.7,0.8), ncol=2, nrow=2, byrow=TRUE) )
-        mu2_prec = 100*diag(2) 
+        mu2_prec = 500*diag(2) 
         
         n_1 = 20
         U_1 = matrix( c(0.4,0.4,0.4,0.5), ncol=2, nrow=2, byrow=TRUE)/n_1
-        n_2 = 2
-        U_2 = 10*diag(2)/4
+        n_2 = 200
+        U_2 = diag(2)
         
         alpha = 1
         beta = 1
         
         data = list(Yctrl=XY_ctrl, Nctrl=Nctrl, Ypat=XY_pat, Npat=Npat,
-                    mu1_mean=2*mu1_mean, mu1_prec=mu1_prec,
+                    mu1_mean=mu1_mean, mu1_prec=mu1_prec,
                     mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
                     U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
   
