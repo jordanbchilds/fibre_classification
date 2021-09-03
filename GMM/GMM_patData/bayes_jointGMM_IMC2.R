@@ -18,7 +18,7 @@ cramp = colorRamp(c(rgb(1,0,0,0.2),rgb(0,0,1,0.20)), alpha=TRUE)
 # cramp is a function which generates colours on a scale between two specifies colours
 
 myDarkGrey = rgb(169,169,159, max=255, alpha=50)
-myGreen = rgb(25,90,0,max=255,alpha=50)
+myGreen = rgb(25,90,0,max=255)
 myYellow = rgb(225,200,50,max=255, alpha=50)
 myBlue = cramp(1)
 myRed = cramp(0)
@@ -93,80 +93,51 @@ priorpost_marginals = function(prior, posterior, data=NULL, title){
   par(mfrow=c(2,2))
   ## mu_1
   # prior
-  contour( kde2d(prior[,'mu[1,1]'], prior[,'mu[1,2]'], n=100), cex.lab=2, cex.axis=1.5,
+  contour( kde2d(prior[,'mu[1,1]'], prior[,'mu[2,1]'], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(mu[11]), ylab=expression(mu[12]), nlevels=5,
            main=expression(mu[1]~'Prior Density') )
   # posterior
-  contour( kde2d(posterior[,'mu[1,1]'], posterior[,'mu[1,2]'], n=100), cex.lab=2, cex.axis=1.5,
+  contour( kde2d(posterior[,'mu[1,1]'], posterior[,'mu[2,1]'], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(mu[11]), ylab=expression(mu[12]), nlevels=5,
            main=expression(mu[1]~'Posterior Density') )
   ## mu_2
   # prior
-  contour( kde2d(prior[,'mu[2,1]'], prior[,'mu[2,2]'], n=100), cex.lab=2, cex.axis=1.5,
+  contour( kde2d(prior[,'mu[1,2]'], prior[,'mu[2,2]'], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
            main=expression(mu[2]~'Prior Density') )
   # posterior
-  contour( kde2d(posterior[,'mu[2,1]'], posterior[,'mu[2,2]'], n=100), cex.lab=2, cex.axis=1.5,
+  contour( kde2d(posterior[,'mu[1,2]'], posterior[,'mu[2,2]'], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
            main=expression(mu[2]~'Posterior Density') )
   title(main=title, line = -1, outer = TRUE)
   
   
-  par(mfrow=c(2,3))
+  par(mfrow=c(1,3))
   ## tau_1
   # prior
-  contour( kde2d( prior[,'tau[1,1,1]'], prior[,'tau[2,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[111]), ylab=expression(tau[221]), nlevels=5,
-           main=expression(tau[1]~'Prior Density') )
+  plot( density(prior[,"tau[1,1,1]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
+        xlab=expression(tau[11]), ylab="", main=expression(T[1]~"Prior Density"))
+  lines( density(posterior[,"tau[1,1,1]"]), col=myGreen, lwd=2)
   
-  contour( kde2d( prior[,'tau[1,1,1]'], prior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[111]), ylab=expression(tau[121]), nlevels=5,
-           main=expression(tau[1]~'Prior Density') )
+  plot( density(prior[,"tau[1,2,1]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
+        xlab=expression(tau[12]), ylab="", main=expression(T[1]~"Prior Density"))
+  lines( density(posterior[,"tau[1,1,1]"]), lwd=2, col=myGreen)
   
-  contour( kde2d( prior[,'tau[2,2,1]'], prior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[221]), ylab=expression(tau[121]), nlevels=5,
-           main=expression(tau[1]~'Prior Density') )
+  plot( density(prior[,"tau[2,2,1]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
+        xlab=expression(tau[22]), ylab="", main=expression(T[1]~"Prior Density"))
+  lines( density(posterior[,"tau[2,2,1]"]), lwd=2, col=myGreen)
+  
   ## tau_1
   # posterior
-  contour( kde2d( posterior[,'tau[1,1,1]'], posterior[,'tau[2,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[111]), ylab=expression(tau[221]), nlevels=5,
-           main=expression(tau[1]~'Posterior Density') )
-  
-  contour( kde2d( posterior[,'tau[1,1,1]'], posterior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[111]), ylab=expression(tau[121]), nlevels=5,
-           main=expression(tau[1]~'Posterior Density') )
-  
-  contour( kde2d( posterior[,'tau[2,2,1]'], posterior[,'tau[1,2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[221]), ylab=expression(tau[121]), nlevels=5,
-           main=expression(tau[1]~'Posterior Density') )
-  title(main=title, line = -1, outer = TRUE)
-  
-  ## tau_2
-  # prior
-  contour( kde2d( prior[,'tau[1,1,2]'], prior[,'tau[2,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[112]), ylab=expression(tau[222]), nlevels=5,
-           main=expression(tau[2]~'Prior Density') )
-  
-  contour( kde2d( prior[,'tau[1,1,2]'], prior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[112]), ylab=expression(tau[122]), nlevels=5,
-           main=expression(tau[2]~'Prior Density') )
-  
-  contour( kde2d( prior[,'tau[2,2,2]'], prior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[222]), ylab=expression(tau[122]), nlevels=5,
-           main=expression(tau[2]~'Prior Density') )
-  ## tau_2
-  # posterior
-  contour( kde2d( posterior[,'tau[1,1,2]'], posterior[,'tau[2,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[112]), ylab=expression(tau[222]), nlevels=5,
-           main=expression(tau[2]~'Posterior Density') )
-  
-  contour( kde2d( posterior[,'tau[1,1,2]'], posterior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[112]), ylab=expression(tau[122]), nlevels=5,
-           main=expression(tau[2]~'Posterior Density') )
-  
-  contour( kde2d( posterior[,'tau[2,2,2]'], posterior[,'tau[1,2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(tau[222]), ylab=expression(tau[122]), nlevels=5,
-           main=expression(tau[2]~'Posterior Density') )
+  plot( density(prior[,"tau[1,1,2]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
+        xlab=expression(tau[11]), ylab="", main=expression(T[2]~"Prior Density"))
+  lines( density(posterior[,"tau[1,1,2]"]), col=myGreen, lwd=2)
+  plot( density(prior[,"tau[1,2,2]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
+        xlab=expression(tau[12]), ylab="", main=expression(T[2]~"Prior Density"))
+  lines( density(posterior[,"tau[1,2,2]"]), col=myGreen, lwd=2)
+  plot( density(prior[,"tau[2,2,2]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
+        xlab=expression(tau[22]), ylab="", main=expression(T[2]~"Prior Density"))
+  lines( density(posterior[,"tau[2,2,2]"]), col=myGreen, lwd=2)
   title(main=title, line = -1, outer = TRUE)
   
   if( !is.null(data) ){
@@ -210,7 +181,7 @@ component_densities = function( ctrl_data, pat_data, posterior, prior,
   
   plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
        xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-       main="Component Two", xlim=c(-1,4), ylim=)
+       main="Component Two", xlim=c(-1,4), ylim=c(-1,4))
   points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
   post_two = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[2]"])
   contour(post_two$dens, levels=post_two$levels, labels=post_two$probs, 
@@ -321,6 +292,8 @@ pts = grep("P", sbj, value = TRUE)
 DIC_df = data.frame(row.names=pts)
 WAIC_lst = list()
 
+imc_chan=c("MTCO1")
+
 time = system.time({
   for( chan in imc_chan ){
     DIC_df[,chan] = NA
@@ -348,7 +321,7 @@ time = system.time({
         ## PRIORS
         mu1_mean = 2*c(mean(Xctrl), mean(Yctrl))
         mu2_mean = c(3,2)
-        mu1_prec = solve( matrix(c(0.7,0.7,0.7,0.8), ncol=2, nrow=2, byrow=TRUE) )
+        mu1_prec = solve( matrix(c(0.79,0.79,0.79,0.8), ncol=2, nrow=2, byrow=TRUE) )
         mu2_prec = 500*diag(2) 
         
         n_1 = 20
