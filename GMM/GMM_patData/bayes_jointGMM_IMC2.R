@@ -284,8 +284,6 @@ sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
 
-imc_chan=c("MTCO1")
-
 inference = function(chan_pat){
   chan = chan_pat$chan
   pat = chan_pat$pat
