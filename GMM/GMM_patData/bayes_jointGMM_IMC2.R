@@ -259,7 +259,7 @@ dir.create(file.path("PDF/IMC_joint2"), showWarnings = FALSE)
 
 dir.create(file.path("Information_Criteria"), showWarnings=FALSE)
 dir.create(file.path("Information_Criteria/IMC_joint2"), showWarnings = FALSE)
-dir.create(file.path("Information_Criteria/IMC_joint2/WAIC"), showWarnings = FALSE)
+dir.create(file.path("Information_Criteria/IMC_joint2"), showWarnings = FALSE)
 
 # burn-in, chain length, thinning lag
 MCMCBurnin = 2000
@@ -418,7 +418,7 @@ for(i in seq_along(pts)){
 }
 write.table(DIC, file=DICpath, row.names=FALSE, quote=FALSE, col.names=FALSE)
 
-WAICpath = "Information_Criteria/IMC_joint2/WAIC"
+WAICpath = "Information_Criteria/IMC_joint2/WAIC.txt"
 WAIC = double(length(pts))
 for(i in seq_along(pts)){
   WAIC[i] = chan_inference[[pts[i]]][["WAIC"]][[1]]["waic","Estimate"]
