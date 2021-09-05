@@ -308,8 +308,9 @@ inference = function(chan_pat){
   Npat = nrow(XY_pat)
   
   mu1_mean = 2*c(mean(Xctrl), mean(Yctrl))
-  mu2_mean = c(5,0)
   mu1_prec = solve( matrix(c(0.5,0.5,0.5,1.5), ncol=2, nrow=2, byrow=TRUE) )
+  
+  mu2_mean = c(5,0)
   mu2_prec = 500*diag(2) 
   
   n_1 = 20
