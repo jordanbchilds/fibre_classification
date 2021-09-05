@@ -404,7 +404,7 @@ for(chan in imc_chan){
   }
   dev.off()
   
-  pdf(paste0("PDF/IMC_joint2/marginals/", chan, "__MARG.pdf"), width=10, height=8.5)
+  pdf(paste0("PDF/IMC_joint2/marginal/", chan, "__MARG.pdf"), width=10, height=8.5)
   for(pat in pts){
     chan_inference[[pat]][["plot_marg"]]()
   }
