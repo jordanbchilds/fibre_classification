@@ -253,12 +253,13 @@ model {
 dir.create(file.path("Output"), showWarnings = FALSE)
 dir.create(file.path("PDF"), showWarnings = FALSE)
 dir.create(file.path("Time"), showWarnings = FALSE)
+dir.create(file.path("Information_Criteria"), showWarnings=FALSE)
+
 
 dir.create(file.path("Output/IMC_joint2"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint2"), showWarnings = FALSE)
-
-dir.create(file.path("Information_Criteria"), showWarnings=FALSE)
-dir.create(file.path("Information_Criteria/IMC_joint2"), showWarnings = FALSE)
+dir.create(file.path("PDF/IMC_joint2"), showWarnings = FALSE)
+dir.create(file.path("Time/IMC_joint2"), showWarnings = FALSE)
 dir.create(file.path("Information_Criteria/IMC_joint2"), showWarnings = FALSE)
 
 # burn-in, chain length, thinning lag
@@ -381,49 +382,55 @@ inference = function(chan_pat){
     )
 }
 
-pat_list = list()
-for(pat in pts){
-  pat_list[[pat]] = list(chan=imc_chan, pat=pat)
+for(chan in imc_chan){
+  
+  pat_list = list()
+  for(pat in pts){
+    pat_list[[pat]] = list(chan=chan, pat=pat)
+  }
+  
+  time = system.time({
+    chan_inference = lapply(pat_list, inference)
+  })
+  
+  
+  pdf(paste0("PDF/IMC_joint2/PRED__" ,chan, ".pdf"), width=10, height=8.5)
+  for(pat in pts){
+    chan_inference[[pat]][["plot_comp"]]()
+  }
+  dev.off()
+  
+  pdf(paste0("PDF/IMC_joint2/MARG__", chan, ".pdf"), width=10, height=8.5)
+  for(pat in pts){
+    chan_inference[[pat]][["plot_marg"]]()
+  }
+  dev.off()
+  
+  pdf(paste0("PDF/IMC_joint2/MCMC__", chan, ".pdf"), width=10, height=8.5)
+  for(pat in pts){
+    chan_inference[[pat]][["plot_mcmc"]]()
+  }
+  dev.off()
+  
+  time_df = data.frame(time=time[3])
+  write.table(time_df, file=file.path("Time/IMC_joint2", chan) )
+  
+  DICpath = paste0("Information_Criteria/IMC_joint2/DIC__", chan, ".txt")
+  DIC = double(length(pts))
+  for(i in seq_along(pts)){
+    DIC[i] = chan_inference[[pts[i]]][["DIC"]]
+  }
+  write.table(DIC, file=DICpath, row.names=FALSE, quote=FALSE, col.names=FALSE)
+  
+  WAICpath = paste0("Information_Criteria/IMC_joint2/WAIC__", chan, ".txt")
+  WAIC = double(length(pts))
+  for(i in seq_along(pts)){
+    WAIC[i] = chan_inference[[pts[i]]][["WAIC"]][[1]]["waic","Estimate"]
+  }
+  write.table(WAIC, file=WAICpath, row.names=FALSE, quote=FALSE, col.names=FALSE)
+  
 }
 
-time = system.time({
-  chan_inference = lapply(pat_list, inference)
-})
-
-pdf(file.path("PDF/IMC_joint2/components.pdf"), width=10, height=8.5)
-for(pat in pts){
-  chan_inference[[pat]][["plot_comp"]]()
-}
-dev.off()
-
-pdf(file.path("PDF/IMC_joint2/marginals.pdf"), width=10, height=8.5)
-for(pat in pts){
-  chan_inference[[pat]][["plot_marg"]]()
-}
-dev.off()
-
-pdf(file.path("PDF/IMC_joint2/mcmc.pdf"), width=10, height=8.5)
-for(pat in pts){
-  chan_inference[[pat]][["plot_mcmc"]]()
-}
-dev.off()
-
-time_df = data.frame(time=time[3])
-write.table(time_df, file=paste("Time/IMC_joint2", imc_chan, sep="__") )
-
-DICpath = file.path("Information_Criteria/IMC_joint2/DIC.txt")
-DIC = double(length(pts))
-for(i in seq_along(pts)){
-  DIC[i] = chan_inference[[pts[i]]][["DIC"]]
-}
-write.table(DIC, file=DICpath, row.names=FALSE, quote=FALSE, col.names=FALSE)
-
-WAICpath = "Information_Criteria/IMC_joint2/WAIC.txt"
-WAIC = double(length(pts))
-for(i in seq_along(pts)){
-  WAIC[i] = chan_inference[[pts[i]]][["WAIC"]][[1]]["waic","Estimate"]
-}
-write.table(WAIC, file=WAICpath, row.names=FALSE, quote=FALSE, col.names=FALSE)
 
 
 
