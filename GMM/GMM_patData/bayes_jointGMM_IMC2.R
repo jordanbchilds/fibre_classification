@@ -258,9 +258,12 @@ dir.create(file.path("Information_Criteria"), showWarnings=FALSE)
 
 dir.create(file.path("Output/IMC_joint2"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint2"), showWarnings = FALSE)
-dir.create(file.path("PDF/IMC_joint2"), showWarnings = FALSE)
 dir.create(file.path("Time/IMC_joint2"), showWarnings = FALSE)
 dir.create(file.path("Information_Criteria/IMC_joint2"), showWarnings = FALSE)
+
+dir.create(file.path("PDF/IMC_joint2/predictive"), showWarnings = FALSE)
+dir.create(file.path("PDF/IMC_joint2/mcmc"), showWarnings = FALSE)
+dir.create(file.path("PDF/IMC_joint2/marginal"), showWarnings = FALSE)
 
 # burn-in, chain length, thinning lag
 MCMCBurnin = 2000
@@ -306,7 +309,7 @@ inference = function(chan_pat){
   
   mu1_mean = 2*c(mean(Xctrl), mean(Yctrl))
   mu2_mean = c(5,0)
-  mu1_prec = solve( matrix(c(0.79,0.79,0.79,0.8), ncol=2, nrow=2, byrow=TRUE) )
+  mu1_prec = solve( matrix(c(0.5,0.5,0.5,1.5), ncol=2, nrow=2, byrow=TRUE) )
   mu2_prec = 500*diag(2) 
   
   n_1 = 20
@@ -394,23 +397,30 @@ for(chan in imc_chan){
   })
   
   
-  pdf(paste0("PDF/IMC_joint2/PRED__" ,chan, ".pdf"), width=10, height=8.5)
+  pdf(paste0("PDF/IMC_joint2/predictive/" ,chan, "__PRED.pdf"), width=10, height=8.5)
   for(pat in pts){
     chan_inference[[pat]][["plot_comp"]]()
   }
   dev.off()
   
-  pdf(paste0("PDF/IMC_joint2/MARG__", chan, ".pdf"), width=10, height=8.5)
+  pdf(paste0("PDF/IMC_joint2/marginals/", chan, "__MARG.pdf"), width=10, height=8.5)
   for(pat in pts){
     chan_inference[[pat]][["plot_marg"]]()
   }
   dev.off()
   
-  pdf(paste0("PDF/IMC_joint2/MCMC__", chan, ".pdf"), width=10, height=8.5)
+  pdf(paste0("PDF/IMC_joint2/mcmc/", chan, "__MCMC.pdf"), width=10, height=8.5)
   for(pat in pts){
     chan_inference[[pat]][["plot_mcmc"]]()
   }
   dev.off()
+  
+  for(pat in pts){
+    write.table(chan_inference[[pat]][["output"]],
+                file.path("Output/IMC_joint2", paste(chan, pat, "OUTPUT.txt", sep="__") ),
+                row.names=FALSE, quote=FALSE )
+  
+  }
   
   time_df = data.frame(time=time[3])
   write.table(time_df, file=file.path("Time/IMC_joint2", chan) )
