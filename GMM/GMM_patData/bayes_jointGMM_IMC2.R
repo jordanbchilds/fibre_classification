@@ -6,13 +6,7 @@ library(parallel)
 source("../BootStrapping/parseData.R", local = TRUE)
 
 args = commandArgs(trailingOnly = TRUE)
-
-if (length(args)==0) {
-  imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
-} else {
-  imc_chan = args
-}
-
+  
 cramp = colorRamp(c(rgb(1,0,0,0.2),rgb(0,0,1,0.20)), alpha=TRUE)
 # rgb(...) specifies a colour using standard RGB, where 1 is the maxColorValue
 # 0.25 determines how transparent the colour is, 1 being opaque 
@@ -221,7 +215,7 @@ MCMCplot = function( MCMCoutput, lag=20, title ){
   }
 }
 
-modelstring = "
+inf_data$modelstring = "
 model {
   # fit to ctrl data
   for( i in 1:Nctrl ){ 
@@ -265,183 +259,192 @@ dir.create(file.path("PDF/IMC_joint2/predictive"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint2/mcmc"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint2/marginal"), showWarnings = FALSE)
 
+inf_data = list()
 # burn-in, chain length, thinning lag
-MCMCBurnin = 2000
-MCMCUpdate = 3000 + MCMCBurnin
-MCMCThin = 1
-n.chains = 2
+inf_data$MCMCBurnin = 2000
+inf_data$MCMCUpdate = 3000 + inf_data$MCMCBurnin
+inf_data$MCMCThin = 1
+inf_data$n.chains = 2
 
-fulldat = 'IMC.RAW.txt'
+fulldat = "IMC.RAW.txt"
 
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
-mitochan = "VDAC1"
+imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
+inf_data$mitochan = "VDAC1"
 
 # removing unwanted info 
-imcDat = imc_data[imc_data$channel %in% c(imc_chan, mitochan), ]
+inf_data$imcDat = imc_data[imc_data$channel %in% c(imc_chan, inf_data$mitochan), ]
 
-froot = gsub('.RAW.txt', '', fulldat)
+inf_data$froot = gsub('.RAW.txt', '', fulldat)
 
 # getting the ranges of the axis
 
-sbj = sort(unique(imcDat$patient_id))
+sbj = sort(unique(inf_data$imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
-pts = grep("P", sbj, value = TRUE)
+inf_data$pts = grep("P", sbj, value = TRUE)
 
 inference = function(chan_pat){
-  chan = chan_pat$chan
-  pat = chan_pat$pat
-  
-  outroot = paste( froot, chan, pat, sep='__')
-  ## CONTROL DATA
-  control = imcDat[(imcDat$patient_type=='control')&(imcDat$type=='mean intensity'), ]
-  Xctrl = log(control$value[control$channel==mitochan])
-  Yctrl = log(control$value[control$channel==chan])
-  XY_ctrl = cbind( Xctrl, Yctrl )
-  Nctrl = nrow(XY_ctrl)
-  
-  ## PATIENT DATA
-  patient = imcDat[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"), ] 
-  Xpat = log(patient$value[patient$channel==mitochan])
-  Ypat = log(patient$value[patient$channel==chan]) 
-  XY_pat = cbind(Xpat, Ypat)
-  Npat = nrow(XY_pat)
-  
-  mu1_mean = 2*c(mean(Xctrl), mean(Yctrl))
-  mu1_prec = solve( matrix(c(0.5,0.5,0.5,1.5), ncol=2, nrow=2, byrow=TRUE) )
-  
-  mu2_mean = c(5,0)
-  mu2_prec = 500*diag(2) 
-  
-  n_1 = 20
-  U_1 = matrix( c(0.4,0.4,0.4,0.5), ncol=2, nrow=2, byrow=TRUE)/n_1
-  n_2 = 200
-  U_2 = diag(2)
-  
-  alpha = 1
-  beta = 1
-  
-  data = list(Yctrl=XY_ctrl, Nctrl=Nctrl, Ypat=XY_pat, Npat=Npat,
-              mu1_mean=mu1_mean, mu1_prec=mu1_prec,
-              mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
-              U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
-  
-  data_priorpred = data
-  data_priorpred$Yctrl = NULL
-  data_priorpred$Ypat = NULL
-  data_priorpred$Nctrl = 0
-  data_priorpred$Npat = 0 
-  
-  model_jags = jags(data=data, parameters.to.save=c("mu","tau","z","probdiff","predOne","predTwo","loglik"),
-                    model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
-                    n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=TRUE, progress.bar="text")
-  
-  model_priorpred_jags = jags(data=data_priorpred, parameters.to.save=c("mu","tau", "probdiff", "predOne","predTwo"),
-                              model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
-                              n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=FALSE, progress.bar="text")
-  
-  DIC = model_jags$BUGSoutput$DIC
-  WAIC = waic(model_jags$BUGSoutput$sims.list$loglik)
-  
-  output = as.mcmc(model_jags)
-  output_priorpred = as.mcmc(model_priorpred_jags)
-  
-  MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
-                         "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
-                         "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                         "probdiff", "predOne[1]", "predOne[2]", "predTwo[1]",
-                         "predTwo[2]")]
-  
-  posterior = as.data.frame(output[[1]])
-  prior = as.data.frame(output_priorpred[[1]])
-  
-  tt = colnames(posterior[,grep("z", colnames(posterior))])
-  tt.split = strsplit(tt, split="")
-  tt.vec = double(length(tt.split))
-  for(i in seq_along(tt.split)){
-    rr = tt.split[[i]][ !tt.split[[i]] %in% c("z","[","]") ]
-    tt.vec[i] = as.numeric(paste(rr, collapse=""))
-  }
-  names(tt.vec) = tt 
-  tt.vec = sort(tt.vec)
-  
-  class_posterior = posterior[, names(tt.vec)]  
-  classifs = colMeans(class_posterior)
-  
-  colnames(posterior) = colnames(output[[1]])
-  colnames(prior) = colnames(output_priorpred[[1]])
-  
-   return( list(
-    "plot_comp" = function() { 
-      component_densities(ctrl_data=XY_ctrl, pat_data=XY_pat,
-                          posterior=posterior, prior=prior, classifs=classifs,
-                          chan=chan, title=paste(froot, chan, pat, sep="__") ) },
-    "plot_mcmc" = function() {
-      MCMCplot( MCMCoutput, title=paste(froot, chan, pat, sep="__") ) },
-    "plot_marg" = function() {
-      priorpost_marginals(prior, posterior, title=paste(froot, chan, pat, sep="__")) },
-    "output" = posterior,
-    "DIC" = DIC,
-    "WAIC" = WAIC ) 
+  with(as.list(c(inf_data, chan_pat)), {
+    outroot = paste( froot, chan, pat, sep='__')
+    ## CONTROL DATA
+    control = imcDat[(imcDat$patient_type=='control')&(imcDat$type=='mean intensity'), ]
+    Xctrl = log(control$value[control$channel==mitochan])
+    Yctrl = log(control$value[control$channel==chan])
+    XY_ctrl = cbind( Xctrl, Yctrl )
+    Nctrl = nrow(XY_ctrl)
+    
+    ## PATIENT DATA
+    patient = imcDat[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"), ] 
+    Xpat = log(patient$value[patient$channel==mitochan])
+    Ypat = log(patient$value[patient$channel==chan]) 
+    XY_pat = cbind(Xpat, Ypat)
+    Npat = nrow(XY_pat)
+    
+    mu1_mean = 2*c(mean(Xctrl), mean(Yctrl))
+    mu1_prec = solve( matrix(c(0.5,0.5,0.5,1.5), ncol=2, nrow=2, byrow=TRUE) )
+    
+    mu2_mean = c(5,5)
+    mu2_prec = 500*diag(2) 
+    
+    n_1 = 20
+    U_1 = matrix( c(0.4,0.4,0.4,0.5), ncol=2, nrow=2, byrow=TRUE)/n_1
+    n_2 = 1000
+    U_2 = diag(2)
+    
+    alpha = 1
+    beta = 1
+    
+    data = list(Yctrl=XY_ctrl, Nctrl=Nctrl, Ypat=XY_pat, Npat=Npat,
+                mu1_mean=mu1_mean, mu1_prec=mu1_prec,
+                mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
+                U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
+    
+    data_priorpred = data
+    data_priorpred$Yctrl = NULL
+    data_priorpred$Ypat = NULL
+    data_priorpred$Nctrl = 0
+    data_priorpred$Npat = 0 
+    
+    model_jags = jags(data=data, parameters.to.save=c("mu","tau","z","probdiff","predOne","predTwo","loglik"),
+                      model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
+                      n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=TRUE, progress.bar="text")
+    
+    model_priorpred_jags = jags(data=data_priorpred, parameters.to.save=c("mu","tau", "probdiff", "predOne","predTwo"),
+                                model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
+                                n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=FALSE, progress.bar="text")
+    
+    DIC = model_jags$BUGSoutput$DIC
+    WAIC = waic(model_jags$BUGSoutput$sims.list$loglik)
+    
+    output = as.mcmc(model_jags)
+    output_priorpred = as.mcmc(model_priorpred_jags)
+    
+    MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+                           "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                           "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                           "probdiff", "predOne[1]", "predOne[2]", "predTwo[1]",
+                           "predTwo[2]")]
+    
+    posterior = as.data.frame(output[[1]])
+    prior = as.data.frame(output_priorpred[[1]])
+    
+    tt = colnames(posterior[,grep("z", colnames(posterior))])
+    tt.split = strsplit(tt, split="")
+    tt.vec = double(length(tt.split))
+    for(i in seq_along(tt.split)){
+      rr = tt.split[[i]][ !tt.split[[i]] %in% c("z","[","]") ]
+      tt.vec[i] = as.numeric(paste(rr, collapse=""))
+    }
+    names(tt.vec) = tt 
+    tt.vec = sort(tt.vec)
+    
+    class_posterior = posterior[, names(tt.vec)]  
+    classifs = colMeans(class_posterior)
+    
+    colnames(posterior) = colnames(output[[1]])
+    colnames(prior) = colnames(output_priorpred[[1]])
+    
+    return( list(
+      "plot_comp" = function() { 
+        component_densities(ctrl_data=XY_ctrl, pat_data=XY_pat,
+                            posterior=posterior, prior=prior, classifs=classifs,
+                            chan=chan, title=paste(froot, chan, pat, sep="__") ) },
+      "plot_mcmc" = function() {
+        MCMCplot( MCMCoutput, title=paste(froot, chan, pat, sep="__") ) },
+      "plot_marg" = function() {
+        priorpost_marginals(prior, posterior, title=paste(froot, chan, pat, sep="__")) },
+      "output" = posterior,
+      "DIC" = DIC,
+      "WAIC" = WAIC ) 
     )
-}
-
-for(chan in imc_chan){
-  
-  pat_list = list()
-  for(pat in pts){
-    pat_list[[pat]] = list(chan=chan, pat=pat)
-  }
-  
-  time = system.time({
-    chan_inference = lapply(pat_list, inference)
   })
-  
-  
-  pdf(paste0("PDF/IMC_joint2/predictive/" ,chan, "__PRED.pdf"), width=10, height=8.5)
-  for(pat in pts){
-    chan_inference[[pat]][["plot_comp"]]()
+}
+
+inference(list(chan="MTCO1", pat="P05"))
+
+chanpat_list = list()
+for(chan in imc_chan){
+  for(pat in inf_data$pts){
+    chan_pat = paste(chan, pat, sep="_")
+    chanpat_list[[chan_pat]] = list(chan=chan, pat=pat)
   }
-  dev.off()
-  
-  pdf(paste0("PDF/IMC_joint2/marginal/", chan, "__MARG.pdf"), width=10, height=8.5)
-  for(pat in pts){
-    chan_inference[[pat]][["plot_marg"]]()
-  }
-  dev.off()
-  
-  pdf(paste0("PDF/IMC_joint2/mcmc/", chan, "__MCMC.pdf"), width=10, height=8.5)
-  for(pat in pts){
-    chan_inference[[pat]][["plot_mcmc"]]()
-  }
-  dev.off()
-  
-  for(pat in pts){
-    write.table(chan_inference[[pat]][["output"]],
-                file.path("Output/IMC_joint2", paste(chan, pat, "OUTPUT.txt", sep="__") ),
-                row.names=FALSE, quote=FALSE )
-  
-  }
-  
-  time_df = data.frame(time=time[3])
-  write.table(time_df, file=file.path("Time/IMC_joint2", chan) )
-  
-  DICpath = paste0("Information_Criteria/IMC_joint2/DIC__", chan, ".txt")
-  DIC = double(length(pts))
-  for(i in seq_along(pts)){
-    DIC[i] = chan_inference[[pts[i]]][["DIC"]]
-  }
-  write.table(DIC, file=DICpath, row.names=FALSE, quote=FALSE, col.names=FALSE)
-  
-  WAICpath = paste0("Information_Criteria/IMC_joint2/WAIC__", chan, ".txt")
-  WAIC = double(length(pts))
-  for(i in seq_along(pts)){
-    WAIC[i] = chan_inference[[pts[i]]][["WAIC"]][[1]]["waic","Estimate"]
-  }
-  write.table(WAIC, file=WAICpath, row.names=FALSE, quote=FALSE, col.names=FALSE)
+}
+
+cl  = makeCluster(9) 
+clusterExport(cl, c("inference", "chanpat_list", "inf_data"))
+clusterEvalQ(cl, {
+  library("R2jags")
+  library("loo")
+})
+
+time = system.time({
+  chan_inference = parLapply(cl, chanpat_list, inference)
+})
+
+stopCluster(cl)
+
+pdf(paste0("PDF/IMC_joint2/predictive/" ,chan, "__PRED.pdf"), width=10, height=8.5)
+for(pat in pts){
+  chan_inference[[pat]][["plot_comp"]]()
+}
+dev.off()
+
+pdf(paste0("PDF/IMC_joint2/marginal/", chan, "__MARG.pdf"), width=10, height=8.5)
+for(pat in pts){
+  chan_inference[[pat]][["plot_marg"]]()
+}
+dev.off()
+
+pdf(paste0("PDF/IMC_joint2/mcmc/", chan, "__MCMC.pdf"), width=10, height=8.5)
+for(pat in pts){
+  chan_inference[[pat]][["plot_mcmc"]]()
+}
+dev.off()
+
+for(pat in pts){
+  write.table(chan_inference[[pat]][["output"]],
+              file.path("Output/IMC_joint2", paste(chan, pat, "OUTPUT.txt", sep="__") ),
+              row.names=FALSE, quote=FALSE )
   
 }
 
+time_df = data.frame(time=time[3])
+write.table(time_df, file=file.path("Time/IMC_joint2", chan) )
+
+DICpath = paste0("Information_Criteria/IMC_joint2/DIC__", chan, ".txt")
+DIC = double(length(pts))
+for(i in seq_along(pts)){
+  DIC[i] = chan_inference[[pts[i]]][["DIC"]]
+}
+write.table(DIC, file=DICpath, row.names=FALSE, quote=FALSE, col.names=FALSE)
+
+WAICpath = paste0("Information_Criteria/IMC_joint2/WAIC__", chan, ".txt")
+WAIC = double(length(pts))
+for(i in seq_along(pts)){
+  WAIC[i] = chan_inference[[pts[i]]][["WAIC"]][[1]]["waic","Estimate"]
+}
+write.table(WAIC, file=WAICpath, row.names=FALSE, quote=FALSE, col.names=FALSE)
 
 
 
