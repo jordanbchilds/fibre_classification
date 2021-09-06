@@ -215,6 +215,8 @@ MCMCplot = function( MCMCoutput, lag=20, title ){
   }
 }
 
+inf_data = list()
+
 inf_data$modelstring = "
 model {
   # fit to ctrl data
@@ -259,7 +261,6 @@ dir.create(file.path("PDF/IMC_joint2/predictive"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint2/mcmc"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint2/marginal"), showWarnings = FALSE)
 
-inf_data = list()
 # burn-in, chain length, thinning lag
 inf_data$MCMCBurnin = 2000
 inf_data$MCMCUpdate = 3000 + inf_data$MCMCBurnin
