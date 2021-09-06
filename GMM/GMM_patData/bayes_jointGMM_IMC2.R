@@ -146,42 +146,42 @@ priorpost_marginals = function(prior, posterior, title){
 
 component_densities = function(ctrl_data, pat_data, posterior, prior, 
                                classifs, title, chan ){
-  
-  par(mfrow=c(2,2))
-  plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
-       xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-       main="Component One", xlim=c(-1,6), ylim=c(-1,6))
-  points( pat_data[,1], pat_data[,2], pch=20, col=myYellow)
-  prior_one = percentiles(prior[,"predOne[1]"], prior[,"predOne[2]"])
-  contour(prior_one$dens, levels=prior_one$levels, labels=prior_one$probs,
-          col='blue', lwd=2, add=TRUE)
-  
-  plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
-       xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-       main="Component Two", xlim=c(-1,6), ylim=c(-1,6))
-  points( pat_data[,1], pat_data[,2], pch=20, col=myYellow)
-  prior_two = percentiles(prior[,"predTwo[1]"], prior[,"predTwo[2]"])
-  contour(prior_two$dens, levels=prior_two$levels, labels=prior_two$probs, 
-          col='red', lwd=2, add=TRUE)
-  
-  plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
-       xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-       main="Component One", xlim=c(-1,6), ylim=c(-1,6))
-  points( pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs))
-  post_one = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
-  contour(post_one$dens, levels=post_one$levels, labels=post_one$probs,
-          col="blue", lwd=2, add=TRUE)
-  
-  plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
-       xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-       main="Component Two", xlim=c(-1,6), ylim=c(-1,6))
-  points( pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs))
-  post_two = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[2]"])
-  contour(post_two$dens, levels=post_two$levels, labels=post_two$probs, 
-          col="red", lwd=2, add=TRUE)
-  
-  title(main=title, line = -1, outer = TRUE)
-  
+  with( inf_data, {
+    par(mfrow=c(2,2))
+    plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
+         main="Component One", xlim=c(-1,6), ylim=c(-1,6))
+    points( pat_data[,1], pat_data[,2], pch=20, col=myYellow)
+    prior_one = percentiles(prior[,"predOne[1]"], prior[,"predOne[2]"])
+    contour(prior_one$dens, levels=prior_one$levels, labels=prior_one$probs,
+            col='blue', lwd=2, add=TRUE)
+    
+    plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
+         main="Component Two", xlim=c(-1,6), ylim=c(-1,6))
+    points( pat_data[,1], pat_data[,2], pch=20, col=myYellow)
+    prior_two = percentiles(prior[,"predTwo[1]"], prior[,"predTwo[2]"])
+    contour(prior_two$dens, levels=prior_two$levels, labels=prior_two$probs, 
+            col='red', lwd=2, add=TRUE)
+    
+    plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
+         main="Component One", xlim=c(-1,6), ylim=c(-1,6))
+    points( pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs))
+    post_one = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
+    contour(post_one$dens, levels=post_one$levels, labels=post_one$probs,
+            col="blue", lwd=2, add=TRUE)
+    
+    plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
+         main="Component Two", xlim=c(-1,6), ylim=c(-1,6))
+    points( pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs))
+    post_two = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[2]"])
+    contour(post_two$dens, levels=post_two$levels, labels=post_two$probs, 
+            col="red", lwd=2, add=TRUE)
+    
+    title(main=title, line = -1, outer = TRUE)
+  })
 }
 
 MCMCplot = function( MCMCoutput, lag=20, title ){
@@ -254,12 +254,7 @@ dir.create(file.path("Information_Criteria"), showWarnings=FALSE)
 
 dir.create(file.path("Output/IMC_joint2"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_joint2"), showWarnings = FALSE)
-dir.create(file.path("Time/IMC_joint2"), showWarnings = FALSE)
 dir.create(file.path("Information_Criteria/IMC_joint2"), showWarnings = FALSE)
-
-dir.create(file.path("PDF/IMC_joint2/predictive"), showWarnings = FALSE)
-dir.create(file.path("PDF/IMC_joint2/mcmc"), showWarnings = FALSE)
-dir.create(file.path("PDF/IMC_joint2/marginal"), showWarnings = FALSE)
 
 # burn-in, chain length, thinning lag
 inf_data$MCMCBurnin = 2000
@@ -375,14 +370,15 @@ inference = function(chan_pat){
         MCMCplot( MCMCoutput, title=paste(froot, chan, pat, sep="__") ) },
       "plot_marg" = function() {
         priorpost_marginals(prior, posterior, title=paste(froot, chan, pat, sep="__")) },
-      "output" = posterior,
+      "output" = MCMCoutput[[1]],
+      "classifs" = classifs,
       "DIC" = DIC,
-      "WAIC" = WAIC ) 
+      "WAIC" = WAIC,
+      "channel" = chan,
+      "patient" = pat) 
     )
   })
 }
-
-inference(list(chan="MTCO1", pat="P05"))
 
 chanpat_list = list()
 for(chan in imc_chan){
@@ -392,7 +388,7 @@ for(chan in imc_chan){
   }
 }
 
-cl  = makeCluster(9) 
+cl  = makeCluster(7) 
 clusterExport(cl, c("inference", "chanpat_list", "inf_data"))
 clusterEvalQ(cl, {
   library("R2jags")
@@ -400,52 +396,81 @@ clusterEvalQ(cl, {
 })
 
 time = system.time({
-  chan_inference = parLapply(cl, chanpat_list, inference)
+  inference_out = parLapply(cl, chanpat_list, inference)
 })
 
 stopCluster(cl)
 
-pdf(paste0("PDF/IMC_joint2/predictive/" ,chan, "__PRED.pdf"), width=10, height=8.5)
-for(pat in pts){
-  chan_inference[[pat]][["plot_comp"]]()
+pdf(paste0("PDF/IMC_joint2/predictive.pdf"), width=10, height=8.5)
+for(chan_pat in inference_out){
+  chan_pat[["plot_comp"]]()
 }
 dev.off()
 
-pdf(paste0("PDF/IMC_joint2/marginal/", chan, "__MARG.pdf"), width=10, height=8.5)
-for(pat in pts){
-  chan_inference[[pat]][["plot_marg"]]()
+pdf(paste0("PDF/IMC_joint2/marginal.pdf"), width=10, height=8.5)
+for(chan_pat in inference_out){
+  chan_pat[["plot_marg"]]()
 }
 dev.off()
 
-pdf(paste0("PDF/IMC_joint2/mcmc/", chan, "__MCMC.pdf"), width=10, height=8.5)
-for(pat in pts){
-  chan_inference[[pat]][["plot_mcmc"]]()
+pdf(paste0("PDF/IMC_joint2/mcmc.pdf"), width=10, height=8.5)
+for(chan_pat in inference_out){
+  chan_pat[["plot_mcmc"]]()
 }
 dev.off()
 
-for(pat in pts){
-  write.table(chan_inference[[pat]][["output"]],
-              file.path("Output/IMC_joint2", paste(chan, pat, "OUTPUT.txt", sep="__") ),
+######
+# mcmc posterior draws 
+######
+for(chan_pat in inference_out){
+  write.table(chan_pat[["output"]],
+              file.path("Output/IMC_joint2", paste(chan_pat$channel, chan_pat$patient, "POSTERIOR.txt", sep="__") ),
               row.names=FALSE, quote=FALSE )
   
 }
 
+######
+# classifications
+######
+for(chan_pat in inference_out){
+  write.table(chan_pat[["classifs"]],
+              file.path("Output/IMC_joint2", paste(chan_pat$channel, chan_pat$patient, "CLASS.txt", sep="__") ),
+              row.names=FALSE, quote=FALSE, col.names=FALSE )
+  
+}
+
+######
+# time taken for inference
+######
 time_df = data.frame(time=time[3])
-write.table(time_df, file=file.path("Time/IMC_joint2", chan) )
+write.table(time_df, file=file.path("Time/IMC_joint2.txt") )
 
-DICpath = paste0("Information_Criteria/IMC_joint2/DIC__", chan, ".txt")
-DIC = double(length(pts))
-for(i in seq_along(pts)){
-  DIC[i] = chan_inference[[pts[i]]][["DIC"]]
+######
+# DIC
+######
+DIC_df = matrix(NA, nrow=length(inf_data$pts), ncol=length(imc_chan), 
+                dimnames=list(inf_data$pts, imc_chan))
+for(chan_pat in inference_out){
+  DIC_df[chan_pat$patient, chan_pat$channel]= chan_pat[["DIC"]]
 }
-write.table(DIC, file=DICpath, row.names=FALSE, quote=FALSE, col.names=FALSE)
+DICpath = "Information_Criteria/IMC_joint2/DIC.txt"
+write.table(DIC_df, file=DICpath, row.names=T, quote=FALSE, col.names=T)
 
-WAICpath = paste0("Information_Criteria/IMC_joint2/WAIC__", chan, ".txt")
-WAIC = double(length(pts))
-for(i in seq_along(pts)){
-  WAIC[i] = chan_inference[[pts[i]]][["WAIC"]][[1]]["waic","Estimate"]
+######
+# WAIC estimate and SE
+######
+WAICpath = "Information_Criteria/IMC_joint2/WAIC.txt"
+WAIC_df = matrix(NA, nrow=length(inf_data$pts), ncol=length(imc_chan), 
+                 dimnames=list(inf_data$pts, imc_chan))
+WAICse_df = WAIC_df
+for(chan_pat in inference_out){
+  WAIC_df[chan_pat$patient, chan_pat$channel] = chan_pat[["WAIC"]][[1]]["waic","Estimate"]
+  WAICse_df[chan_pat$patient, chan_pat$channel] = chan_pat[["WAIC"]][[1]]["waic", "SE"]
 }
-write.table(WAIC, file=WAICpath, row.names=FALSE, quote=FALSE, col.names=FALSE)
+WAICpath = "Information_Criteria/IMC_joint2/WAIC.txt"
+WAICse_path = "Information_Criteria/IMC_joint2/WAICse.txt"
+write.table(WAIC_df, file=WAICpath, row.names=TRUE, quote=FALSE, col.names=TRUE)
+write.table(WAICse_df, file=WAICse_path, row.names=TRUE, quote=FALSE, col.names=TRUE)
 
 
 

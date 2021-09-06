@@ -307,12 +307,10 @@ model {
 "
 dir.create(file.path("Output"), showWarnings = FALSE)
 dir.create(file.path("PDF"), showWarnings = FALSE)
-# dir.create(file.path("PNG"), showWarnings = FALSE)
 dir.create(file.path("Time"), showWarnings = FALSE)
 
 dir.create(file.path("Output/IMC_allData2"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData2"), showWarnings = FALSE)
-# dir.create(file.path("PNG/IMC_allData"), showWarnings = FALSE)
 
 dir.create(file.path("PDF/IMC_allData2/MCMC"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC_allData2/classifs"), showWarnings = FALSE)
