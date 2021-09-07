@@ -381,17 +381,16 @@ time = system.time({
       for(i in 1:length(ctrl_pts)) pat_index[i] = min(which(data_chan[,'patient']==ctrl_pts[i]))
       
       ## PRIORS
-      mu1_mean = c(mean(Xctrl), mean(Yctrl))
-      mu2_mean = c(2,2)
-      mu1_prec = solve( matrix(c(0.3,0.2,0.2,0.5), nrow=2, ncol=2, byrow=TRUE))
+      mu1_mean = 1.5*c(mean(Xctrl), mean(Yctrl))
+      mu2_mean = mu1_mean
+      mu1_prec = solve( matrix(c(0.1,0.125,0.125,0.2), nrow=2, ncol=2, byrow=TRUE))
       mu2_prec = solve( 2*diag(2) )
       
-      n_1 = 10
-      U_1 = matrix( c(0.1,0.1,0.1,0.2), ncol=2, nrow=2, byrow=TRUE)/n_1
-      n_2 = 5
-      U_2 = 10*diag(2)/n_2
+      n_1 = 500
+      U_1 = matrix( c(0.3,0.5,0.5,0.9), ncol=2, nrow=2, byrow=TRUE)*n_1
+      n_2 = 50
+      U_2 = matrix(c(5,3,3,5), nrow=2, ncol=2)*n_2
 
-      
       alpha = 1
       beta = 1
       

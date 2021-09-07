@@ -386,7 +386,7 @@ for(chan in imc_chan){
   }
 }
 
-cl  = makeCluster(14) 
+cl  = makeCluster(21) 
 clusterExport(cl, c("inference", "chanpat_list", "inf_data"))
 clusterEvalQ(cl, {
   library("R2jags")
