@@ -304,7 +304,7 @@ inference = function(chan_pat){
     mu2_prec = 0.05*diag(2) 
     
     n_1 = 500
-    U_1 = matrix(c(0.4,0.64,0.64,1.2), nrow=2,ncol=2)*n_1
+    U_1 = matrix(c(0.1,0.16,0.16,0.6), nrow=2,ncol=2)*n_1
     n_2 = 50
     U_2 = 5*diag(2)*n_2
     
