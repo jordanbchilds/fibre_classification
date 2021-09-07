@@ -91,56 +91,10 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
   par(op)
 } 
 
-component_densities = function(ctrl_data, pat_data, pat_posterior, 
-                               classifs, title ){
-  x.lim = range(ctrl_data$Y[,1], pat_data$Y[,1])
-  y.lim = range(ctrl_data$Y[,2], pat_data$Y[,2])
-  par(mfrow=c(1,2))
-  plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
-       xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-       main="Component One", xlim=x.lim, ylim=y.lim)
-  points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
-  contour_one = percentiles(pat_posterior[,"predOne[1]"], pat_posterior[,"predOne[2]"])
-  contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs,
-          col='blue', lwd=2, add=TRUE)
-  
-  plot(ctrl_data$Y[,1], ctrl_data$Y[,2], pch=20, col=myDarkGrey,
-       xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-       main="Component Two", xlim=x.lim, ylim=y.lim)
-  points( pat_data$Y[,1], pat_data$Y[,2], pch=20, col=classcols(classifs))
-  contour_one = percentiles(pat_posterior[,"predTwo[1]"], pat_posterior[,"predTwo[2]"])
-  contour(contour_one$dens, levels=contour_one$levels, labels=contour_one$probs, 
-          col='red', lwd=2, add=TRUE)
-  
-  title(main=title, line = -1, outer = TRUE)
-  
-}
-
-comp_dens_allData = function(data, Nctrl, posterior, classifs, title){
-  
-  x.lim = range(data[,1])
-  y.lim = range(data[,2])
-  
-  ctrl_data = data[1:Nctrl,]
-  pat_data = data[(Nctrl+1):nrow(data),]
-  pat_classifs = classifs[(Nctrl+1):nrow(data)]
-  
-  par(mfrow=c(1,2))
-  plot(ctrl_data[,1], ctrl_data[,2], col=myDarkGrey, pch=20,
-       xlab=paste0('log(',mitochan,')'), ylab=paste0("log(",chan,")"),
-       main="Component One", xlim=x.lim, ylim=y.lim)
-  points(pat_data[,1], pat_data[,2], pch=20, col=classcols(pat_classifs))
-  densOne = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
-  contour( densOne$dens, levels=densOne$levels, labels=densOne$probs, add=TRUE,
-           col="black", lwd=3)
-  
-  plot(ctrl_data[,1], ctrl_data[,2], col=myDarkGrey, pch=20,
-       xlab=paste0('log(',mitochan,')'), ylab=paste0("log(",chan,")"),
-       main="Component Two", xlim=x.lim, ylim=y.lim)
-  points(pat_data[,1], pat_data[,2], pch=20, col=classcols(pat_classifs))
-  densTwo = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[2]"])
-  contour( densTwo$dens, levels=densTwo$levels, labels=densTwo$probs, add=TRUE, 
-           col="black", lwd=3)
+comp_lines = function(mcmc, comp, col="black"){
+  dens = percentiles(mcmc[,paste0(comp,"[1]")], mcmc[,paste0(comp,"[1]")])
+  contour(dens$dens, levels=dens$levels, labels=dens$probs, 
+          lwd=3, col=col)
 }
 
 priorpost_marginals = function(prior, posterior, data, title){
@@ -265,7 +219,6 @@ MCMCplot = function( MCMCoutput, lag=20, title ){
   title(main=title, line = -1, outer = TRUE)
 }
 
-
 inf_data = list()
 inf_data$modelstring = "
 model {
@@ -334,9 +287,9 @@ crl = grep("C._H", sbj, value = TRUE)
 inf_data$pts = grep("P", sbj, value = TRUE)
 
 
-inference = function(chan_pat){
-  with(as.list(c(inf_data, chan_pat)), {
-    outroot = paste( froot, chan, pat, sep='__')
+inference = function(chan){
+  with(as.list(c(inf_data, chan)), {
+    outroot = paste( froot, chan, sep='__')
     ## CONTROL DATA
     control = imcDat[(imcDat$patient_type=='control')&(imcDat$type=='mean intensity'), ]
     Xctrl = log(control$value[control$channel==mitochan])
@@ -370,20 +323,18 @@ inference = function(chan_pat){
     }
     
     data_chan = data.frame(Xchan, Ychan, patient_id)
-    colnames(data_chan) = c(mitochan, chan, 'patient')
+    colnames(data_chan) = c(mitochan, chan, "patient")
     
     Ychan = data_chan[,c(mitochan, chan)]
     
     ctrl_pts = c("ctrl", pts)
     # row index for each change in patient
     pat_index = double(length(ctrl_pts))
-    for(i in 1:length(ctrl_pts)) pat_index[i] = min(which(data_chan[,'patient']==ctrl_pts[i]))
+    for(i in 1:length(ctrl_pts)) pat_index[i] = min(which(data_chan[,"patient"]==ctrl_pts[i]))
     
     ### prior specification
-    
     mu1_mean = 1.5*c(mean(Xctrl), mean(Yctrl))
     mu1_prec = solve( matrix(c(0.1,0.125,0.125,0.2), ncol=2, nrow=2, byrow=TRUE) )
-    
     mu2_mean = mu1_mean
     mu2_prec = 0.5*diag(2) 
     
@@ -446,16 +397,26 @@ inference = function(chan_pat){
     colnames(prior) = colnames(output_priorpred[[1]])
     
     return( list(
-      "plot_comp" = function() { 
-        component_densities(ctrl_data=XY_ctrl, pat_data=XY_pat,
-                            posterior=posterior, prior=prior, classifs=classifs,
-                            chan=chan, title=paste(froot, chan, pat, sep="__") ) },
-      "plot_mcmc" = function() {
+      "plot_mcmc" = function(){
         MCMCplot( MCMCoutput, title=paste(froot, chan, pat, sep="__") ) },
-      "plot_marg" = function() {
+      "plot_marg" = function(){
         priorpost_marginals(prior, posterior, title=paste(froot, chan, pat, sep="__")) },
+      "prior_predOne" = function(){
+        comp_lines(mcmc=prior, comp="predOne")
+      }
+      "prior_predTwo" = function(){
+        comp_lines(mcmc=prior, comp="predTwo")
+      }
+      "post_predOne" = function(){
+        comp_lines(mcmc=posterior, comp="predOne")
+      }
+      "prost_predTwo" = function(){
+        comp_lines(mcmc=posterior, comp="predTwo")
+      }
+      "data" = Ychan,
       "output" = MCMCoutput[[1]],
       "classifs" = classifs,
+      "Npts" = N,
       "DIC" = DIC,
       "WAIC" = WAIC,
       "channel" = chan,
@@ -482,9 +443,11 @@ time = system.time({
 
 stopCluster(cl)
 
-pdf(paste0("PDF/IMC_joint2/predictive.pdf"), width=10, height=8.5)
+pdf(paste0("PDF/IMC_joint2/pred_allData.pdf"), width=10, height=8.5)
+par(mfrow=c(2,2))
 for(chan_pat in inference_out){
-  chan_pat[["plot_comp"]]()
+  plot()
+  inference_out[["prior_predOne"]]()
 }
 dev.off()
 
