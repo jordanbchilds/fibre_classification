@@ -298,13 +298,13 @@ inference = function(chan_pat){
     Npat = nrow(XY_pat)
     
     mu1_mean = 1.5*c(mean(Xctrl), mean(Yctrl))
-    mu1_prec = solve( matrix(c(0.4,0.5,0.5,0.8), ncol=2, nrow=2, byrow=TRUE) )
+    mu1_prec = solve( matrix(c(0.1,0.125,0.125,0.2), ncol=2, nrow=2, byrow=TRUE) )
     
     mu2_mean = mu1_mean
     mu2_prec = 0.05*diag(2) 
     
-    n_1 = 500
-    U_1 = matrix(c(0.1,0.16,0.16,0.6), nrow=2,ncol=2)*n_1
+    n_1 = 100
+    U_1 = matrix(c(0.3,0.48,0.48,0.9), nrow=2,ncol=2)*n_1
     n_2 = 50
     U_2 = 5*diag(2)*n_2
     
