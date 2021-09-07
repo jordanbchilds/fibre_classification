@@ -301,12 +301,12 @@ inference = function(chan_pat){
     mu1_prec = solve( matrix(c(0.4,0.5,0.5,0.8), ncol=2, nrow=2, byrow=TRUE) )
     
     mu2_mean = c(5,5)
-    mu2_prec = 0.01*diag(2) 
+    mu2_prec = 0.05*diag(2) 
     
-    n_1 = 10
-    U_1 = matrix(c(0.4,0.64,0.64,1.2), nrow=2,ncol=2)/n_1
-    n_2 = 3
-    U_2 = 0.5*diag(2)
+    n_1 = 100
+    U_1 = matrix(c(0.4,0.64,0.64,1.2), nrow=2,ncol=2)*n_1
+    n_2 = 50
+    U_2 = 5*diag(2)*n_2
     
     alpha = 1
     beta = 1
