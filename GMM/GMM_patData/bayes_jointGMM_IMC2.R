@@ -301,12 +301,12 @@ inference = function(chan_pat){
     mu1_prec = solve( matrix(c(0.1,0.125,0.125,0.2), ncol=2, nrow=2, byrow=TRUE) )
     
     mu2_mean = mu1_mean
-    mu2_prec = 5*diag(2) 
+    mu2_prec = 0.5*diag(2) 
     
     n_1 = 100
     U_1 = matrix(c(0.3,0.48,0.48,0.9), nrow=2,ncol=2)*n_1
     n_2 = 50
-    U_2 = diag(2)*n_2
+    U_2 = 5*diag(2)*n_2
     
     alpha = 1
     beta = 1
@@ -388,7 +388,7 @@ for(chan in imc_chan){
   }
 }
 
-cl  = makeCluster(7) 
+cl  = makeCluster(14) 
 clusterExport(cl, c("inference", "chanpat_list", "inf_data"))
 clusterEvalQ(cl, {
   library("R2jags")
