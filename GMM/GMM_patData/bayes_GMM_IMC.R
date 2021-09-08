@@ -246,7 +246,6 @@ model {
     z[i] ~ dbern(probdiff)
     class[i] =  2 - z[i]
     Y[i,1:2] ~ dmnorm(mu[,class[i]], tau[,,class[i]] )
-    logLik[i] = logdensity.mnorm(Y[i,], mu[,class[i]], tau[,,class[i]] )
   }
   # component one priors
   tau[1:2,1:2,1] ~ dwish(U_1, n_1)
@@ -264,12 +263,10 @@ model {
 "
 dir.create(file.path("Output"), showWarnings = FALSE)
 dir.create(file.path("PDF"), showWarnings = FALSE)
-dir.create(file.path("PNG"), showWarnings = FALSE)
 dir.create(file.path('Time'), showWarnings = FALSE)
 
 dir.create(file.path("Output/IMC"), showWarnings = FALSE)
 dir.create(file.path("PDF/IMC"), showWarnings = FALSE)
-dir.create(file.path("PNG/IMC"), showWarnings = FALSE)
 
 dir.create(file.path("PDF/IMC/MCMC"), showWarnings=FALSE)
 dir.create(file.path("PDF/IMC/classifs"), showWarnings=FALSE)
@@ -296,8 +293,6 @@ froot = gsub('.RAW.txt', '', fulldat)
 sbj = sort(unique(imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 pts = grep("P", sbj, value = TRUE)
-
-imc_chan = c("MTCO1")
 
 MCMCparams = c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
@@ -355,7 +350,7 @@ time = system.time({
       
       update(model_ctrl, n.iter=MCMCUpdates)
       
-      output_ctrl=coda.samples(model=model_ctrl,variable.names=c("mu","tau","z","probdiff", "predOne", "predTwo", "logLik"),
+      output_ctrl=coda.samples(model=model_ctrl,variable.names=c("mu","tau","z","probdiff", "predOne", "predTwo"),
                                n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
 
       posterior_ctrl = as.data.frame(output_ctrl[[1]])
@@ -366,8 +361,8 @@ time = system.time({
   
       classifs_ctrl = colMeans(posterior_ctrl[, grepl('z', colnames(posterior_ctrl))])
       
-      write.table(posterior_ctrl[,MCMCparams],
-                  posterior_ctrl_file,row.names=FALSE,quote=FALSE)
+      write.table(x=posterior_ctrl[,MCMCparams], file=posterior_ctrl_file, 
+                  row.names=FALSE, quote=FALSE)
       
     } else {
       posterior_ctrl = read.delim(posterior_ctrl_file, sep=" ",stringsAsFactors=FALSE)
@@ -410,7 +405,7 @@ time = system.time({
     U_2 = matrix(c(5,3,3,5), nrow=2,ncol=2)*n_2
     
     mu1_mean = colMeans( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])
-    mu1_prec = solve( matrix(0.1,0.125,0.125,0.2),nrow=2,ncol=2)
+    mu1_prec = solve( matrix(c(0.1,0.125,0.125,0.2),nrow=2,ncol=2 ) )
     
     mu2_mean = mu1_mean
     mu2_prec = solve( 2*diag(2))
@@ -440,7 +435,7 @@ time = system.time({
       
       model_pat_priorpred=jags.model(textConnection(modelstring), data=data_pat_priorpred) 
       output_pat_priorpred = coda.samples(model=model_pat_priorpred,
-                                          variable.names=c("mu", "tau", "z", "probdiff", "predOne", "predTwo", "logLik"),
+                                          variable.names=c("mu", "tau", "probdiff", "predOne", "predTwo"),
                                           n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
       
       prior_pat = as.data.frame(output_pat_priorpred[[1]])
@@ -454,9 +449,9 @@ time = system.time({
         
         model_pat=jags.model(textConnection(modelstring), data=data_pat, n.chains=n.chains) 
         
-        converge_pat = coda.samples(model=model_pat, variable.names=c("mu", "tau", "z", "probdiff", "predOne", "predTwo", "logLik"),
+        converge_pat = coda.samples(model=model_pat, variable.names=c("mu", "tau", "z", "probdiff", "predOne", "predTwo"),
                                     n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
-        output_pat = coda.samples(model=model_pat, variable.names=c("mu", "tau", "z", "probdiff", "predOne", "predTwo", "logLik"),
+        output_pat = coda.samples(model=model_pat, variable.names=c("mu", "tau", "z", "probdiff", "predOne", "predTwo"),
                                   n.iter=MCMCUpdates_Report,thin=MCMCUpdates_Thin)
         update(model_pat,n.iter=MCMCUpdates)
 
@@ -474,8 +469,8 @@ time = system.time({
                     )
         
         Zpat_labels = paste0("z[",1:Npat,"]")
-        write.table( posterior_pat[,MCMCparams],posterior_file,quote=FALSE, 
-                     stringAsFactors=FALSE)
+        write.table( posterior_pat[,MCMCparams], posterior_file,
+                     quote=FALSE)
         
         
       }else{ # if file exists load previous data
