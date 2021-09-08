@@ -406,14 +406,14 @@ time = system.time({
     
     n_1 = 560 # degrees of freedom
     U_1 = solve(prec_pred)*n_1
-    n_2 = 10
-    U_2 = solve( 2*diag(2) )*n_2
+    n_2 = 50
+    U_2 = matrix(c(5,3,3,5), nrow=2,ncol=2)*n_2
     
     mu1_mean = colMeans( posterior_ctrl[,c('mu[1,1]','mu[2,1]')])
-    mu1_prec = solve( 2*diag(2) )
+    mu1_prec = solve( matrix(0.1,0.125,0.125,0.2),nrow=2,ncol=2)
     
     mu2_mean = mu1_mean
-    mu2_prec = solve( 2*diag(2) )
+    mu2_prec = solve( 2*diag(2))
     
     alpha = 1
     beta = 1

@@ -270,11 +270,18 @@ dir.create(file.path("Information_Criteria"), showWarnings=FALSE)
 dir.create(file.path("Information_Criteria/IMC_allData2"), showWarnings = FALSE)
 dir.create(file.path("Information_Criteria/IMC_allData2/WAIC"), showWarnings = FALSE)
 
+# burn-in, chain length, thinning lag
+inf_data$MCMCBurnin = 2000
+inf_data$MCMCUpdate = 3000 + inf_data$MCMCBurnin
+inf_data$MCMCThin = 1
+inf_data$n.chains = 2
+
 ## tests for RJAGS
 fulldat = 'IMC.RAW.txt'
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
 imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
+imc_chan = c("SDHA", "OSCP")
 inf_data$mitochan = "VDAC1"
 
 # removing unwanted info 
@@ -284,56 +291,71 @@ inf_data$froot = gsub('.RAW.txt', '', fulldat)
 
 sbj = sort(unique(inf_data$imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
-inf_data$pts = grep("P", sbj, value = TRUE)
+inf_data$pts = grep("P", sbj, value = TRUE)[1:2]
 
+# sorts the dataset into the correct for inference
+chan_data = function(chan, mitochan, pts, imcDat){
+  control = imcDat[(imcDat$patient_type=='control')&(imcDat$type=='mean intensity'), ]
+  Xctrl = log(control$value[control$channel==mitochan])
+  Yctrl = log(control$value[control$channel==chan])
+  Nctrl = length(Yctrl)
+  data_ctrl_lst = list(Y=cbind(Xctrl, Yctrl))
+  
+  Xchan = Xctrl
+  Ychan = Yctrl
+  patient_id = rep('ctrl', Nctrl)
+  
+  data_ctrl = data.frame(Xctrl, Yctrl,  rep('ctrl', Nctrl))
+  colnames(data_ctrl) = c(mitochan, chan, 'patient')
+  
+  N = double(10) # store the number of observations per patient 
+  N[1] = Nctrl
+  
+  for( j in 1:length(pts) ){
+    # all the patient data for chan
+    patient = imcDat[(imcDat$patient_id==pts[j])&(imcDat$type=="mean intensity"), ] 
+    # patient data
+    Xpat = log(patient$value[patient$channel==mitochan])
+    Ypat = log(patient$value[patient$channel==chan]) 
+    Npat = length(Xpat)
+    # add patient data to data matrix
+    Xchan = c(Xchan, Xpat)
+    Ychan = c(Ychan, Ypat)
+    patient_id = c(patient_id, rep(pts[j], Npat) )
+    
+    N[j+1] = Npat
+  }
+  
+  data_chan = data.frame(Xchan, Ychan, patient_id)
+  colnames(data_chan) = c(mitochan, chan, "patient")
+  
+  Ychan = data_chan[,c(mitochan, chan)]
+  
+  ctrl_pts = c("ctrl", pts)
+  # row index for each change in patient
+  pat_index = double(length(ctrl_pts))
+  for(i in 1:length(ctrl_pts)) pat_index[i] = min(which(data_chan[,"patient"]==ctrl_pts[i]))
+  
+  return(list(
+    "data" = Ychan, 
+    "pat_index" = pat_index,
+    "N" = N,
+    "ctrlMean" = c(mean(Xctrl), mean(Yctrl))
+  ))
+}
 
 inference = function(chan){
   with(as.list(c(inf_data, chan)), {
     outroot = paste( froot, chan, sep='__')
-    ## CONTROL DATA
-    control = imcDat[(imcDat$patient_type=='control')&(imcDat$type=='mean intensity'), ]
-    Xctrl = log(control$value[control$channel==mitochan])
-    Yctrl = log(control$value[control$channel==chan])
-    Nctrl = length(Yctrl)
-    data_ctrl_lst = list(Y=cbind(Xctrl, Yctrl))
     
-    Xchan = Xctrl
-    Ychan = Yctrl
-    patient_id = rep('ctrl', Nctrl)
+    chan_data = chan_data(chan, mitochan, pts, imcDat)
     
-    data_ctrl = data.frame(Xctrl, Yctrl,  rep('ctrl', Nctrl))
-    colnames(data_ctrl) = c(mitochan, chan, 'patient')
-    
-    N = double(10) # store the number of observations per patient 
-    N[1] = Nctrl
-    
-    for( j in 1:length(pts) ){
-      # all the patient data for chan
-      patient = imcDat[(imcDat$patient_id==pts[j])&(imcDat$type=="mean intensity"), ] 
-      # patient data
-      Xpat = log(patient$value[patient$channel==mitochan])
-      Ypat = log(patient$value[patient$channel==chan]) 
-      Npat = length(Xpat)
-      # add patient data to data matrix
-      Xchan = c(Xchan, Xpat)
-      Ychan = c(Ychan, Ypat)
-      patient_id = c(patient_id, rep(paste(pts[j]), Npat) )
-      
-      N[j+1] = Npat
-    }
-    
-    data_chan = data.frame(Xchan, Ychan, patient_id)
-    colnames(data_chan) = c(mitochan, chan, "patient")
-    
-    Ychan = data_chan[,c(mitochan, chan)]
-    
-    ctrl_pts = c("ctrl", pts)
-    # row index for each change in patient
-    pat_index = double(length(ctrl_pts))
-    for(i in 1:length(ctrl_pts)) pat_index[i] = min(which(data_chan[,"patient"]==ctrl_pts[i]))
+    N = chan_data$N
+    data = chan_data$data
+    pat_index = chan_data$pat_index
     
     ### prior specification
-    mu1_mean = 1.5*c(mean(Xctrl), mean(Yctrl))
+    mu1_mean = 1.5*chan_data$ctrlMean
     mu1_prec = solve( matrix(c(0.1,0.125,0.125,0.2), ncol=2, nrow=2, byrow=TRUE) )
     mu2_mean = mu1_mean
     mu2_prec = 0.5*diag(2) 
@@ -346,22 +368,20 @@ inference = function(chan){
     alpha = 1
     beta = 1
 
-    data = list(Y=Ychan, N=N, pat_index=pat_index,
+    data = list(Y=data, N=N, pat_index=pat_index,
                 mu1_mean=mu1_mean, mu1_prec=mu1_prec,
                 mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
                 U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
     
     data_priorpred = data
-    data_priorpred$Yctrl = NULL
-    data_priorpred$Ypat = NULL
-    data_priorpred$Nctrl = 0
-    data_priorpred$Npat = 0 
+    data_priorpred$Y = NULL
+    data_priorpred$N = 0
     
-    model_jags = jags(data=data, parameters.to.save=c("mu","tau","z","probdiff","predOne","predTwo","loglik"),
+    model_jags = jags(data=data, parameters.to.save=c("mu","tau","z","pi","predOne","predTwo","loglik"),
                       model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
                       n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=TRUE, progress.bar="text")
     
-    model_priorpred_jags = jags(data=data_priorpred, parameters.to.save=c("mu","tau", "probdiff", "predOne","predTwo"),
+    model_priorpred_jags = jags(data=data_priorpred, parameters.to.save=c("mu","tau", "predOne","predTwo"),
                                 model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
                                 n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=FALSE, progress.bar="text")
     
@@ -374,7 +394,8 @@ inference = function(chan){
     MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                            "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                            "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                           "probdiff", "predOne[1]", "predOne[2]", "predTwo[1]",
+                           "pi[2]","pi[3]","pi[4]","pi[5]","pi[6]","pi[7]","pi[8]",
+                           "pi[9]","pi[10]", "predOne[1]", "predOne[2]", "predTwo[1]",
                            "predTwo[2]")]
     
     posterior = as.data.frame(output[[1]])
@@ -398,29 +419,27 @@ inference = function(chan){
     
     return( list(
       "plot_mcmc" = function(){
-        MCMCplot( MCMCoutput, title=paste(froot, chan, pat, sep="__") ) },
+        MCMCplot( MCMCoutput, title=paste(froot, chan, sep="__") ) },
       "plot_marg" = function(){
-        priorpost_marginals(prior, posterior, title=paste(froot, chan, pat, sep="__")) },
+        priorpost_marginals(prior, posterior, title=paste(froot, chan, sep="__")) },
       "prior_predOne" = function(){
-        comp_lines(mcmc=prior, comp="predOne")
-      }
+        comp_lines(prior, comp="predOne")
+      },
       "prior_predTwo" = function(){
-        comp_lines(mcmc=prior, comp="predTwo")
-      }
+        comp_lines(prior, comp="predTwo")
+      },
       "post_predOne" = function(){
-        comp_lines(mcmc=posterior, comp="predOne")
-      }
-      "prost_predTwo" = function(){
-        comp_lines(mcmc=posterior, comp="predTwo")
-      }
-      "data" = Ychan,
+        comp_lines(posterior, comp="predOne")
+      },
+      "post_predTwo" = function(){
+        comp_lines(posterior, comp="predTwo")
+      },
       "output" = MCMCoutput[[1]],
       "classifs" = classifs,
-      "Npts" = N,
       "DIC" = DIC,
       "WAIC" = WAIC,
-      "channel" = chan,
-      "patient" = pat) 
+      "channel" = chan
+      ) 
     )
   })
 }
@@ -429,9 +448,8 @@ for(i in 1:1){
 chan_list = as.list(imc_chan)
 names(chan_list) = imc_chan
 
-
-cl  = makeCluster(14) 
-clusterExport(cl, c("inference", "chan_list", "inf_data"))
+cl  = makeCluster(4) 
+clusterExport(cl, c("inference", "chan_list", "inf_data", "chan_data"))
 clusterEvalQ(cl, {
   library("R2jags")
   library("loo")
@@ -443,11 +461,41 @@ time = system.time({
 
 stopCluster(cl)
 
+tt_out = lapply(chan_list, inference)
+
+data = lapply(chan_list, chan_data, imc_data$mitochan, inf_data$pts, inf_data$imcDat )
+
 pdf(paste0("PDF/IMC_joint2/pred_allData.pdf"), width=10, height=8.5)
 par(mfrow=c(2,2))
-for(chan_pat in inference_out){
-  plot()
-  inference_out[["prior_predOne"]]()
+for(chan in chan_list){
+  chan_data = data[[chan]]
+  ctrl_data = chan_data[1:data[[chan]][["N"]], ]
+  pat_data = chan_data[(data[[chan]][["N"]]+1):nrow(chan_data), ]
+  classifs_pat = inference_out[[chan]][["classifs"]][(data[[chan]][["N"]]+1):nrow(chan_data)]
+  
+  plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey, 
+       main="", xlab=paste0("log(",mitochan,")"), ylab=psate0("log(",chan,")"),
+       xlim=c(-1,6), ylim=c(-1,6))
+  points(pat_data[,1], pat_data[,2], pch=20, col=myYellow)
+  inference_out[[chan]][["prior_predOne"]]()
+  
+  plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey, 
+       main="", xlab=paste0("log(",mitochan,")"), ylab=psate0("log(",chan,")"),
+       xlim=c(-1,6), ylim=c(-1,6))
+  points(pat_data[,1], pat_data[,2], pch=20, col=myYellow)
+  inference_out[[chan]][["prior_predTwo"]]()
+  
+  plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey, 
+       main="", xlab=paste0("log(",mitochan,")"), ylab=psate0("log(",chan,")"),
+       xlim=c(-1,6), ylim=c(-1,6))
+  points(pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs_pat))
+  inference_out[[chan]][["post_predOne"]]()
+  
+  plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey, 
+       main="", xlab=paste0("log(",mitochan,")"), ylab=psate0("log(",chan,")"),
+       xlim=c(-1,6), ylim=c(-1,6))
+  points(pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs_pat))
+  inference_out[[chan]][["post_predTwo"]]()
 }
 dev.off()
 
