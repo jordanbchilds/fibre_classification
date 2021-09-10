@@ -304,7 +304,7 @@ inference = function(chan_pat){
     n_1 = 500
     U_1 = matrix(c(0.3,0.48,0.48,0.9), nrow=2,ncol=2)*n_1
     n_2 = 50
-    U_2 = matrix(c(2.5,1.5,1.5,2.5),nrow=2,ncol=2)*n_2
+    U_2 = matrix(c(5,3,3,5),nrow=2,ncol=2)*n_2
     
     alpha = 1
     beta = 1
