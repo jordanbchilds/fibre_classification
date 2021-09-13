@@ -222,25 +222,26 @@ model {
     loglik[i] = logdensity.mnorm(Yctrl[i,], mu[,1], tau[,,1])
   }
   # fit to patient data
-  for( j in 1:Npat ){ # fit to patient data
-    ldens_compOne[j] = logdensity.mnorm(Ypat[j,], mu[,1], tau[,,1])
-    ldens_compTwo[j] = logdensity.mnorm(Ypat[j,], mu[,2], tau[,,2])
+  for( j in 1:Npat ){ 
+  
+    ldens_compOne[j] = logdensity.mnorm(YY[j,], mu[1:2,1], tau[1:2,1:2,1])
+    ldens_compTwo[j] = logdensity.mnorm(YY[j,], mu[1:2,2], tau[1:2,1:2,2])
     
     z[j] = ifelse(ldens_compOne[j]>ldens_compTwo[j], 1, 2)
+    
     Ypat[j,] ~ dmnorm(mu[,z[j]], tau[,,z[j]] )
     loglik[Nctrl+j] = logdensity.mnorm(Ypat[j,], mu[,z[j]], tau[,,z[j]])
   }
-  
-  # component one prior
+  # priors
   tau[1:2,1:2,1] ~ dwish(U_1, n_1)
   mu[1:2,1] ~ dmnorm(mu1_mean, mu1_prec)
-  # component two prior
+  
   tau[1:2,1:2,2] ~ dwish(U_2, n_2)
   mu[1:2,2] ~ dmnorm(mu2_mean, mu2_prec)
   
-  # predictive distribution
-  predOne ~ dmnorm(mu[,1], tau[,,1])
-  predTwo ~ dmnorm(mu[,2], tau[,,2])
+  # predict
+  predOne[1:2] ~ dmnorm(mu[,1], tau[,,1])
+  predTwo[1:2] ~ dmnorm(mu[,2], tau[,,2])
 }
 "
 
@@ -264,7 +265,7 @@ fulldat = "IMC.RAW.txt"
 
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
-imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
+imc_chan = c("SDHA", "OSCP", "GRIM19", "MTCO1", "NDUFB8", "COX4+4L2", "UQCRC2")
 inf_data$mitochan = "VDAC1"
 
 # removing unwanted info 
@@ -298,21 +299,19 @@ inference = function(chan_pat){
     mu1_mean = 1.5*c(mean(Xctrl), mean(Yctrl))
     mu1_prec = solve( matrix(c(0.1,0.125,0.125,0.2), ncol=2, nrow=2, byrow=TRUE) )
     
-    mu2_mean = mu1_mean + c(1,0)
+    mu2_mean = mu1_mean 
     mu2_prec = 0.5*diag(2) 
     
     n_1 = 500
     U_1 = matrix(c(0.3,0.48,0.48,0.9), nrow=2,ncol=2)*n_1
     n_2 = 50
-    U_2 = matrix(c(5,3,3,5),nrow=2,ncol=2)*n_2
+    U_2 = matrix(c(5,3,3,5), nrow=2,ncol=2)*n_2
     
-    alpha = 1
-    beta = 1
-    
-    data = list(Yctrl=XY_ctrl, Nctrl=Nctrl, Ypat=XY_pat, Npat=Npat,
+    data = list(Yctrl=XY_ctrl, YY=XY_ctrl, 
+                Nctrl=Nctrl, Ypat=XY_pat, Npat=Npat,
                 mu1_mean=mu1_mean, mu1_prec=mu1_prec,
-                mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
-                U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
+                mu2_mean=mu2_mean, mu2_prec=mu2_prec, 
+                n_1=n_1, n_2=n_2, U_1=U_1, U_2=U_2 )
     
     data_priorpred = data
     data_priorpred$Yctrl = NULL
@@ -320,7 +319,7 @@ inference = function(chan_pat){
     data_priorpred$Nctrl = 0
     data_priorpred$Npat = 0 
     
-    model_jags = jags(data=data, parameters.to.save=c("mu","tau","class","predOne","predTwo","loglik"),
+    model_jags = jags(data=data, parameters.to.save=c("mu","tau","z","predOne","predTwo","loglik"),
                       model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
                       n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=TRUE, progress.bar="text")
     
@@ -378,6 +377,8 @@ inference = function(chan_pat){
   })
 }
 
+imc_chan = "MTCO1"
+
 chanpat_list = list()
 for(chan in imc_chan){
   for(pat in inf_data$pts){
@@ -386,18 +387,20 @@ for(chan in imc_chan){
   }
 }
 
-cl  = makeCluster(21) 
-clusterExport(cl, c("inference", "chanpat_list", "inf_data"))
-clusterEvalQ(cl, {
-  library("R2jags")
-  library("loo")
-})
+inference_out = lapply(chanpat_list, inference)
 
-time = system.time({
-  inference_out = parLapply(cl, chanpat_list, inference)
-})
-
-stopCluster(cl)
+# cl  = makeCluster(4) 
+# clusterExport(cl, c("inference", "chanpat_list", "inf_data"))
+# clusterEvalQ(cl, {
+#   library("R2jags")
+#   library("loo")
+# })
+# 
+# time = system.time({
+#   inference_out = parLapply(cl, chanpat_list, inference)
+# })
+# 
+# stopCluster(cl)
 
 pdf(paste0("PDF/IMC_likGMM/predictive.pdf"), width=10, height=8.5)
 for(chan_pat in inference_out){
