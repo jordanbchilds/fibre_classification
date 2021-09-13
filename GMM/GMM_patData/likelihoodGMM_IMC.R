@@ -250,9 +250,9 @@ dir.create(file.path("Time"), showWarnings = FALSE)
 dir.create(file.path("Information_Criteria"), showWarnings=FALSE)
 
 
-dir.create(file.path("Output/IMC_joint2"), showWarnings = FALSE)
-dir.create(file.path("PDF/IMC_joint2"), showWarnings = FALSE)
-dir.create(file.path("Information_Criteria/IMC_joint2"), showWarnings = FALSE)
+dir.create(file.path("Output/IMC_likGMM"), showWarnings = FALSE)
+dir.create(file.path("PDF/IMC_likGMM"), showWarnings = FALSE)
+dir.create(file.path("Information_Criteria/IMC_likGMM"), showWarnings = FALSE)
 
 # burn-in, chain length, thinning lag
 inf_data$MCMCBurnin = 2000
@@ -399,19 +399,19 @@ time = system.time({
 
 stopCluster(cl)
 
-pdf(paste0("PDF/IMC_joint2/predictive.pdf"), width=10, height=8.5)
+pdf(paste0("PDF/IMC_likGMM/predictive.pdf"), width=10, height=8.5)
 for(chan_pat in inference_out){
   chan_pat[["plot_comp"]]()
 }
 dev.off()
 
-pdf(paste0("PDF/IMC_joint2/marginal.pdf"), width=10, height=8.5)
+pdf(paste0("PDF/IMC_likGMM/marginal.pdf"), width=10, height=8.5)
 for(chan_pat in inference_out){
   chan_pat[["plot_marg"]]()
 }
 dev.off()
 
-pdf(paste0("PDF/IMC_joint2/mcmc.pdf"), width=10, height=8.5)
+pdf(paste0("PDF/IMC_likGMM/mcmc.pdf"), width=10, height=8.5)
 for(chan_pat in inference_out){
   chan_pat[["plot_mcmc"]]()
 }
@@ -422,7 +422,7 @@ dev.off()
 ######
 for(chan_pat in inference_out){
   write.table(chan_pat[["output"]],
-              file.path("Output/IMC_joint2", paste(chan_pat$channel, chan_pat$patient, "POSTERIOR.txt", sep="__") ),
+              file.path("Output/IMC_likGMM", paste(chan_pat$channel, chan_pat$patient, "POSTERIOR.txt", sep="__") ),
               row.names=FALSE, quote=FALSE )
   
 }
@@ -432,7 +432,7 @@ for(chan_pat in inference_out){
 ######
 for(chan_pat in inference_out){
   write.table(chan_pat[["classifs"]],
-              file.path("Output/IMC_joint2", paste(chan_pat$channel, chan_pat$patient, "CLASS.txt", sep="__") ),
+              file.path("Output/IMC_likGMM", paste(chan_pat$channel, chan_pat$patient, "CLASS.txt", sep="__") ),
               row.names=FALSE, quote=FALSE, col.names=FALSE )
   
 }
@@ -441,7 +441,7 @@ for(chan_pat in inference_out){
 # time taken for inference
 ######
 time_df = data.frame(time=time[3])
-write.table(time_df, file=file.path("Time/IMC_joint2.txt") )
+write.table(time_df, file=file.path("Time/IMC_likGMM.txt") )
 
 ######
 # DIC
@@ -451,13 +451,13 @@ DIC_df = matrix(NA, nrow=length(inf_data$pts), ncol=length(imc_chan),
 for(chan_pat in inference_out){
   DIC_df[chan_pat$patient, chan_pat$channel]= chan_pat[["DIC"]]
 }
-DICpath = "Information_Criteria/IMC_joint2/DIC.txt"
+DICpath = "Information_Criteria/IMC_likGMM/DIC.txt"
 write.table(DIC_df, file=DICpath, row.names=T, quote=FALSE, col.names=T)
 
 ######
 # WAIC estimate and SE
 ######
-WAICpath = "Information_Criteria/IMC_joint2/WAIC.txt"
+WAICpath = "Information_Criteria/IMC_likGMM/WAIC.txt"
 WAIC_df = matrix(NA, nrow=length(inf_data$pts), ncol=length(imc_chan), 
                  dimnames=list(inf_data$pts, imc_chan))
 WAICse_df = WAIC_df
@@ -465,8 +465,8 @@ for(chan_pat in inference_out){
   WAIC_df[chan_pat$patient, chan_pat$channel] = chan_pat[["WAIC"]][[1]]["waic","Estimate"]
   WAICse_df[chan_pat$patient, chan_pat$channel] = chan_pat[["WAIC"]][[1]]["waic", "SE"]
 }
-WAICpath = "Information_Criteria/IMC_joint2/WAIC.txt"
-WAICse_path = "Information_Criteria/IMC_joint2/WAICse.txt"
+WAICpath = "Information_Criteria/IMC_likGMM/WAIC.txt"
+WAICse_path = "Information_Criteria/IMC_likGMM/WAICse.txt"
 write.table(WAIC_df, file=WAICpath, row.names=TRUE, quote=FALSE, col.names=TRUE)
 write.table(WAICse_df, file=WAICse_path, row.names=TRUE, quote=FALSE, col.names=TRUE)
 
