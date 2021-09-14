@@ -128,7 +128,7 @@ MCMCplot = function( MCMCoutput, lag=20, title ){
   }
 }
 
-ctrl_plot = function(ctrl_data, prior, posterior, chan, title){
+ctrl_plot = function(ctrl_data, prior, posterior, mitochan, chan, title){
   par(mfrow=c(1,2))
   plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey, 
        xlab=paste0("log(",mitochan,")"), ylab=paste0("log(",chan,")"), 
@@ -147,7 +147,7 @@ ctrl_plot = function(ctrl_data, prior, posterior, chan, title){
   title(main=title, outer=TRUE, line=-1)
 }
 
-pat_plot = function(ctrl_data, pat_data, prior, posterior, classifs, chan, pat, title){
+pat_plot = function(ctrl_data, pat_data, prior, posterior, classifs, mitochan, chan, pat, title){
   x.lim = range(ctrl_data[,1], pat_data[,1])+c(0,1)
   y.lim = range(ctrl_data[,2], pat_data[,2])+c(0,1)
   
@@ -317,7 +317,7 @@ inference = function( chan ){
     
     output_list[["ctrl_plotter"]] = function(){
       ctrl_plot(ctrl_data=XY_ctrl, prior=prior_ctrl, posterior=posterior_ctrl,
-                chan=chan, title=paste("IMC", chan, sep=" "))
+                mitochan=mitochan, chan=chan, title=paste("IMC", chan, sep=" "))
     }
     output_list[["ctrl_mcmc"]] = function(){
       MCMCplot(MCMC_ctrl, title=paste("IMC", chan, sep=" "))
@@ -420,12 +420,12 @@ inference = function( chan ){
       output_list[[paste0(pat, "_plot")]] = function(){
         pat_plot(pat_data=XY_pat, ctrl_data=XY_ctrl, 
                  prior=prior_pat, posterior=posterior_pat, classifs=classifs, 
-                 chan=chan, pat=pat, title=paste("IMC", chan, pat, sep="  "))
+                 mitochan=mitochan, chan=chan, pat=pat, title=paste("IMC", chan, pat, sep="  "))
       }
       output_list[[paste0(pat,"_logPlot")]] = function(){
         pat_plot(pat_data=logXY_pat, ctrl_data=logXY_ctrl, prior=log(prior_pat),
                  posterior=log(posterior_pat), classifs=classifs, 
-                 chan=chan, pat=pat, title=paste("IMC", chan, pat, sep="  "))
+                 mitochan=mitochan, chan=chan, pat=pat, title=paste("IMC", chan, pat, sep="  "))
       }
       output_list[[paste0(pat, "_mcmc")]] = function(){
         MCMCplot(MCMC_pat, title=paste("IMC", chan, pat, sep="  "))
@@ -500,40 +500,41 @@ for(chan in names(inference_out)){
 }
 dev.off()
 
+# time taken for inference
+time_df = data.frame(time=time[3])
+write.table(time_df, file=file.path("Time/IMC_joint2.txt") )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# ######
-# # time taken for inference
-# ######
-# time_df = data.frame(time=time[3])
-# write.table(time_df, file=file.path("Time/IMC_joint2.txt") )
 # 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # ######
 # # DIC
 # ######
