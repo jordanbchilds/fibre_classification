@@ -463,7 +463,7 @@ for(chan in inf_data$imc_chan){
 }
 
 cl  = makeCluster(7)
-clusterExport(cl, c("inference", "chan_list", "chanpat_list", "inf_data"))
+clusterExport(cl, c("inference_pat", "inference_ctrl", "chan_list", "chanpat_list", "inf_data"))
 clusterEvalQ(cl, {
   library("R2jags")
   library("loo")
