@@ -313,7 +313,7 @@ inference_ctrl = function( chan ){
     
     posterior_ctrl_filepath = file.path("Output/IMC_logNorm", paste0("IMC__", chan,".txt"))
     
-    write.table(posterior_ctrl, file=posterior_ctrl_filepath, sep=" ")
+    write.table(MCMC_ctrl[[1]], file=posterior_ctrl_filepath, sep=" ")
     
     output_list[["pred_plot"]] = function(){
       ctrl_plot(ctrl_data=XY_ctrl, prior=prior_ctrl, posterior=posterior_ctrl,
@@ -345,6 +345,11 @@ inference_pat  = function( chanpat ){
     
     ctrl_filepath = file.path("Output/IMC_logNorm", paste0("IMC__", chan, ".txt"))
     posterior_ctrl = read.delim(ctrl_filepath, header=TRUE, sep=" ", stringsAsFactors=FALSE)
+    colnames(posterior_ctrl) = c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+                                 "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                                 "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                                 "exp_predOne[1]", "exp_predOne[2]", 
+                                 "exp_predTwo[1]", "exp_predTwo[2]")
     
     prec_pred = matrix( colMeans(posterior_ctrl[,c("tau[1,1,1]", "tau[1,2,1]", "tau[2,1,1]","tau[2,2,1]")]),
                         nrow=2, ncol=2, byrow=TRUE )
@@ -356,7 +361,7 @@ inference_pat  = function( chanpat ){
     # 
     # output_list[["df_est"]] = c(n1,n2,n3)
     
-    mu1_pred = colMeans(posterior_ctrl[,c("mu[1,1]", "mu[2,1]")])
+    mu1_mean = colMeans(posterior_ctrl[,c("mu[1,1]", "mu[2,1]")])
     mu1_var = 10*var(posterior_ctrl[,c("mu[1,1]","mu[2,1]")])
     mu1_prec = solve(mu1_var)
     
@@ -462,21 +467,22 @@ for(chan in inf_data$imc_chan){
   }
 }
 
-cl  = makeCluster(7)
+cl  = makeCluster(4)
 clusterExport(cl, c("inference_pat", "inference_ctrl", "chan_list", "chanpat_list", "inf_data"))
 clusterEvalQ(cl, {
   library("R2jags")
   library("loo")
 })
 
-time_ctrl = system.time({
+time = system.time({
   ctrl_post = parLapply(cl, chan_list, inference_ctrl)
-})
-time_pat = system.time({
   pat_post = parLapply(cl, chanpat_list, inference_pat)
 })
 
 stopCluster(cl)
+
+tt = read.delim("Output/IMC_logNorm/IMC__MTCO1.txt", header=TRUE, stringsAsFactors=FALSE, sep=" ")
+colnames(tt)
 
 # CTRL prior and posterior
 pdf("PDF/IMC_logNorm/ctrl_PRED.pdf", width=10, height=8.5)
