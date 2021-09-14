@@ -303,7 +303,7 @@ inference = function(chan_pat){
     
     n_1 = 500
     U_1 = matrix(c(0.3,0.468,0.468,0.9), nrow=2,ncol=2)*n_1 # correlation of ~90% 
-    n_2 = 1000
+    n_2 = 500
     U_2 = matrix(c(5,1,1,5),nrow=2,ncol=2)*n_2
     
     alpha = 1
