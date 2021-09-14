@@ -36,72 +36,27 @@ percentiles = function(xdat, ydat, probs=c(0.95, 0.5, 0.1)){
   return( list(dens=dens, levels=levs, probs=probs))
 }
 
-priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
-                     title){
-  # output: plots the prior and posterior regression lines and data
-  op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
-  if( is.null(ctrl) ){
-    x.lim = range(data[,1]) + c(-1,1)
-    y.lim = range(data[,2]) + c(-1,1)
-    
-    plot(data[,1], data[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
-         xlim=x.lim, ylim=y.lim)
-    contours = percentiles(prior[,"exp_predOne[1]"], prior[,"exp_predOne[2]"])
-    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2 )
-    
-    plot(data[,1], data[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
-         xlim=x.lim, ylim=y.lim)
-    contours = percentiles(posterior[,"exp_predOne[1]"], posterior[,"exp_predOne[2]"])
-    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2 )
-    
-    title(main=title, line = -1, outer = TRUE)
-  } else {
-    x.lim = range( data[,1], ctrl[,1] ) + c(-1,1)
-    y.lim = range( data[,2], ctrl[,2] ) + c(-1,1)
-    
-    plot(ctrl[,1], ctrl[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
-         xlim=x.lim, ylim=y.lim)
-    points( data[,1], data[,2], col=myYellow, pch=20)
-    contours = percentiles(prior[,"exp_predOne[1]"], prior[,"exp_predOne[2]"])
-    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2 )
-    
-    plot(ctrl[,1], ctrl[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
-         xlim=x.lim, ylim=y.lim)
-    
-    points( data[,1], data[,2], col=classcols(classifs), pch=20)
-    contours = percentiles(posterior[,"exp_predOne[1]"], posterior[,"exp_predOne[2]"])
-    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2 )
-    title(main=title, line = -1, outer = TRUE)
-  }
-  
-  par(op)
-} 
-
 priorpost_marginals = function(prior, posterior, title){
   op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
   par(mfrow=c(2,2))
   ## mu_1
   # prior
-  contour( kde2d(prior[,'mu[1,1]'], prior[,'mu[2,1]'], n=100), cex.lab=2, cex.axis=1.5,
+  contour( kde2d(prior[,"mu[1,1]"], prior[,"mu[2,1]"], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(mu[11]), ylab=expression(mu[12]), nlevels=5,
-           main=expression(mu[1]~'Prior Density') )
+           main=expression(mu[1]~"Prior Density") )
   # posterior
-  contour( kde2d(posterior[,'mu[1,1]'], posterior[,'mu[2,1]'], n=100), cex.lab=2, cex.axis=1.5,
+  contour( kde2d(posterior[,"mu[1,1]"], posterior[,"mu[2,1]"], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(mu[11]), ylab=expression(mu[12]), nlevels=5,
-           main=expression(mu[1]~'Posterior Density') )
+           main=expression(mu[1]~"Posterior Density") )
   ## mu_2
   # prior
-  contour( kde2d(prior[,'mu[1,2]'], prior[,'mu[2,2]'], n=100), cex.lab=2, cex.axis=1.5,
+  contour( kde2d(prior[,"mu[1,2]"], prior[,"mu[2,2]"], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
-           main=expression(mu[2]~'Prior Density') )
+           main=expression(mu[2]~"Prior Density") )
   # posterior
-  contour( kde2d(posterior[,'mu[1,2]'], posterior[,'mu[2,2]'], n=100), cex.lab=2, cex.axis=1.5,
+  contour( kde2d(posterior[,"mu[1,2]"], posterior[,"mu[2,2]"], n=100), cex.lab=2, cex.axis=1.5,
            xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
-           main=expression(mu[2]~'Posterior Density') )
+           main=expression(mu[2]~"Posterior Density") )
   title(main=title, line = -1, outer = TRUE)
   
   
@@ -142,46 +97,6 @@ priorpost_marginals = function(prior, posterior, title){
   par(op)
 }
 
-component_densities = function(ctrl_data, pat_data, posterior, prior, 
-                               classifs, title, chan ){
-  with( inf_data, {
-    par(mfrow=c(2,2))
-    plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-         main="Component One", xlim=c(-1,6), ylim=c(-1,6))
-    points( pat_data[,1], pat_data[,2], pch=20, col=myYellow)
-    prior_one = percentiles(prior[,"exp_predOne[1]"], prior[,"exp_predOne[2]"])
-    contour(prior_one$dens, levels=prior_one$levels, labels=prior_one$probs,
-            col='blue', lwd=2, add=TRUE)
-    
-    plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-         main="Component Two", xlim=c(-1,6), ylim=c(-1,6))
-    points( pat_data[,1], pat_data[,2], pch=20, col=myYellow)
-    prior_two = percentiles(prior[,"exp_predTwo[1]"], prior[,"exp_predTwo[2]"])
-    contour(prior_two$dens, levels=prior_two$levels, labels=prior_two$probs, 
-            col='red', lwd=2, add=TRUE)
-    
-    plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-         main="Component One", xlim=c(-1,6), ylim=c(-1,6))
-    points( pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs))
-    post_one = percentiles(posterior[,"exp_predOne[1]"], posterior[,"exp_predOne[2]"])
-    contour(post_one$dens, levels=post_one$levels, labels=post_one$probs,
-            col="blue", lwd=2, add=TRUE)
-    
-    plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-         main="Component Two", xlim=c(-1,6), ylim=c(-1,6))
-    points( pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs))
-    post_two = percentiles(posterior[,"exp_predTwo[1]"], posterior[,"exp_predTwo[2]"])
-    contour(post_two$dens, levels=post_two$levels, labels=post_two$probs, 
-            col="red", lwd=2, add=TRUE)
-    
-    title(main=title, line = -1, outer = TRUE)
-  })
-}
-
 MCMCplot = function( MCMCoutput, lag=20, title ){
   col.names = colnames(MCMCoutput[[1]])
   n.chains = length(MCMCoutput)
@@ -190,20 +105,20 @@ MCMCplot = function( MCMCoutput, lag=20, title ){
   if( n.chains==1 ){
     for(param in col.names){
       plot( 0:lag, autocorr(MCMCoutput[[1]][,param], lags=0:lag), 
-            type='h', ylim=c(-1,1), xlab='Index', ylab='')
-      plot( 1:nrow(MCMCoutput[[1]]), MCMCoutput[[1]][,param], main=param, type='l',
-            ylab='', xlab='Iteration')
-      plot(density(MCMCoutput[[1]][,param] ), main='', xlab='')
+            type="h", ylim=c(-1,1), xlab="Index", ylab="")
+      plot( 1:nrow(MCMCoutput[[1]]), MCMCoutput[[1]][,param], main=param, type="l",
+            ylab="", xlab="Iteration")
+      plot(density(MCMCoutput[[1]][,param] ), main="", xlab="")
     }
   } else {
     for( param in col.names){
       plot( autocorr(MCMCoutput[[1]][,param], lags=0:lag), 
-            type='h', ylim=c(-1,1), xlab='Index', ylab='' )
-      for(j in 2:n.chains) lines( autocorr(MCMCoutput[[j]][,param], lags=0:20), type='h', col=j)
+            type="h", ylim=c(-1,1), xlab="Index", ylab="" )
+      for(j in 2:n.chains) lines( autocorr(MCMCoutput[[j]][,param], lags=0:20), type="h", col=j)
       
-      plot(1:nrow(MCMCoutput[[1]]), MCMCoutput[[1]][,param], main=param, type='l',
-           ylab='', xlab='Iteration')
-      for(j in 2:n.chains) lines(MCMCoutput[[j]][,param], type='l', col=j)
+      plot(1:nrow(MCMCoutput[[1]]), MCMCoutput[[1]][,param], main=param, type="l",
+           ylab="", xlab="Iteration")
+      for(j in 2:n.chains) lines(MCMCoutput[[j]][,param], type="l", col=j)
       
       plot(density(MCMCoutput[[1]][,param]), main="", xlab="" )
       for(j in 2:n.chains) lines(density(MCMCoutput[[j]][,param]), col=j )
@@ -322,12 +237,12 @@ fulldat = "IMC.RAW.txt"
 
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
-inf_data$imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
+inf_data$imc_chan = c("SDHA","OSCP", "GRIM19", "MTCO1", "NDUFB8", "COX4+4L2", "UqCRC2")
 inf_data$mitochan = "VDAC1"
 
 # removing unwanted info 
 inf_data$imcDat = imc_data[imc_data$channel %in% c(inf_data$imc_chan, inf_data$mitochan), ]
-inf_data$froot = gsub('.RAW.txt', '', fulldat)
+inf_data$froot = gsub(".RAW.txt", "", fulldat)
 
 # getting the ranges of the axis
 
@@ -338,9 +253,9 @@ inf_data$pts = grep("P", sbj, value = TRUE)
 inference = function( chan ){
   with(as.list(c(inf_data, chan)), {
     output_list = list()
-    outroot = paste( froot, chan, sep='__')
+    outroot = paste( froot, chan, sep="__")
     ## CONTROL DATA
-    control = imcDat[(imcDat$patient_type=='control')&(imcDat$type=='mean intensity'), ]
+    control = imcDat[(imcDat$patient_type=="control")&(imcDat$type=="mean intensity"), ]
     Xctrl = log(control$value[control$channel==mitochan])
     Yctrl = log(control$value[control$channel==chan])
     XY_ctrl = cbind( Xctrl, Yctrl )
@@ -384,7 +299,7 @@ inference = function( chan ){
     output_ctrl = as.mcmc(model_ctrl)
     output_ctrl_priorpred = as.mcmc(model_ctrl_priorpred)
     
-    MCMCoutput_ctrl = output_ctrl[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+    MCMC_ctrl = output_ctrl[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                      "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                                      "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
                                      "exp_predOne[1]", "exp_predOne[2]", 
@@ -396,7 +311,7 @@ inference = function( chan ){
     colnames(posterior_ctrl) = colnames(output_ctrl[[1]])
     colnames(prior_ctrl) = colnames(output_ctrl_priorpred[[1]])
     
-    posterior_ctrl_filepath = file.path("Output/IMC_logNorm", paste0("IMC__", chan,".txt."))
+    posterior_ctrl_filepath = file.path("Output/IMC_logNorm", paste0("IMC__", chan,".txt"))
     
     write.table(posterior_ctrl, file=posterior_ctrl_filepath, sep=" ")
     
@@ -404,12 +319,19 @@ inference = function( chan ){
       ctrl_plot(ctrl_data=XY_ctrl, prior=prior_ctrl, posterior=posterior_ctrl,
                 chan=chan, title=paste("IMC", chan, sep=" "))
     }
+    output_list[["ctrl_mcmc"]] = function(){
+      MCMCplot(MCMC_ctrl, title=paste("IMC", chan, sep=" "))
+    }
+    output_list[["ctrl_marg"]] = function(){
+      priorpost_marginals(prior=prior_ctrl, posterior=posterior_ctrl, 
+                          title=paste("IMC", chan, sep=" "))
+    }
     
     ####
     ## inference for patient data
     ####
     
-    prec_pred = matrix( colMeans(posterior_ctrl[,c('tau[1,1,1]', 'tau[1,2,1]', 'tau[2,1,1]','tau[2,2,1]')]),
+    prec_pred = matrix( colMeans(posterior_ctrl[,c("tau[1,1,1]", "tau[1,2,1]", "tau[2,1,1]","tau[2,2,1]")]),
                         nrow=2, ncol=2, byrow=TRUE )
     
     var_pred = solve(prec_pred)
@@ -470,6 +392,12 @@ inference = function( chan ){
       posterior_pat = as.data.frame(output_pat[[1]])
       prior_pat = as.data.frame(output_pat_priorpred[[1]])
       
+      MCMC_pat = output_pat[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+                               "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                               "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                               "exp_predOne[1]", "exp_predOne[2]", 
+                               "exp_predTwo[1]", "exp_predTwo[2]")]
+      
       tt = colnames(posterior_pat[,grep("z", colnames(posterior_pat))])
       tt.split = strsplit(tt, split="")
       tt.vec = double(length(tt.split))
@@ -483,6 +411,12 @@ inference = function( chan ){
       class_posterior = posterior_pat[, names(tt.vec)]  
       classifs = colMeans(class_posterior)
       
+      posterior_pat_filepath = file.path("Output/IMC_logNorm", paste0("IMC__", chan, "__", pat, ".txt"))
+      write.table(posterior_pat, file=posterior_pat_filepath, sep=" ")
+      
+      classifs_filepath = file.path("Output/IMC_logNorm", paste0("IMC__", chan, "__", pat, ".txt"))
+      write.table(posterior_pat, file=classifs_filepath, sep=" ")
+      
       output_list[[paste0(pat, "_plot")]] = function(){
         pat_plot(pat_data=XY_pat, ctrl_data=XY_ctrl, 
                  prior=prior_pat, posterior=posterior_pat, classifs=classifs, 
@@ -493,12 +427,20 @@ inference = function( chan ){
                  posterior=log(posterior_pat), classifs=classifs, 
                  chan=chan, pat=pat, title=paste("IMC", chan, pat, sep="  "))
       }
+      output_list[[paste0(pat, "_mcmc")]] = function(){
+        MCMCplot(MCMC_pat, title=paste("IMC", chan, pat, sep="  "))
+      }
+      output_list[[paste0(pat, "_marg")]] = function(){
+        priorpost_marginals(prior=prior_pat, posterior=posterior_pat, 
+                            title=paste("IMC", chan, pat, sep="  "))
+      }
     }
     return(output_list)
   })
 }
 
 chan_list = as.list(inf_data$imc_chan)
+names(chan_list) = inf_data$imc_chan
 
 cl  = makeCluster(7)
 clusterExport(cl, c("inference", "chan_list", "inf_data"))
@@ -513,19 +455,48 @@ time = system.time({
 
 stopCluster(cl)
 
-pdf("PDF/logNorm_CTRL.pdf", width=10, height=8.5)
-tt[["ctrl_plotter"]]()
-dev.off()
-
-pdf("PDF/logNorm_PRED.pdf", width=14, height=8.5)
-for(pat in inf_data$pts){
-  tt[[paste0(pat, "_plot")]]()
+# CTRL prior and posterior
+pdf("PDF/IMC_logNorm/ctrl_PRED.pdf", width=10, height=8.5)
+for(chan in names(inference_out)){
+  inference_out[[chan]][["ctrl_plotter"]]()
 }
 dev.off()
 
-pdf("PDF/logNorm_logPRED.pdf", width=14, height=8.5)
-for(pat in inf_data$pts){
-  tt[[paste0(pat, "_logPlot")]]()
+# PAT log Normal model
+pdf("PDF/IMC_logNorm/pat_PRED.pdf", width=14, height=8.5)
+for(chan in names(inference_out)){
+  for(pat in inf_data$pts){
+    inference_out[[chan]][[paste0(pat, "_plot")]]()
+  }
+}
+dev.off()
+
+# PAT Normal on logged (twice) data
+pdf("PDF/IMC_logNorm/logpat_PRED.pdf", width=14, height=8.5)
+for(chan in names(inference_out)){
+  for(pat in inf_data$pts){
+    inference_out[[chan]][[paste0(pat, "_logPlot")]]()
+  }
+}
+dev.off()
+
+# MCMC output
+pdf("PDF/IMC_logNorm/MCMC.pdf", width=14, height=8.5)
+for(chan in names(inference_out)){
+  inference_out[[chan]][["ctrl_mcmc"]]()
+  for(pat in inf_data$pts){
+    inference_out[[chan]][[paste0(pat, "_mcmc")]]()
+  }
+}
+dev.off()
+
+# marginal distributions
+pdf("PDF/IMC_logNorm/marginals.pdf", width=14, height=8.5)
+for(chan in names(inference_out)){
+  inference_out[[chan]][["ctrl_marg"]]()
+  for(pat in inf_data$pts){
+    inference_out[[chan]][[paste0(pat, "_marg")]]()
+  }
 }
 dev.off()
 
@@ -557,47 +528,6 @@ dev.off()
 
 
 
-
-
-# 
-# pdf(paste0("PDF/IMC_joint2/predictive.pdf"), width=10, height=8.5)
-# for(chan_pat in inference_out){
-#   chan_pat[["plot_comp"]]()
-# }
-# dev.off()
-# 
-# pdf(paste0("PDF/IMC_joint2/marginal.pdf"), width=10, height=8.5)
-# for(chan_pat in inference_out){
-#   chan_pat[["plot_marg"]]()
-# }
-# dev.off()
-# 
-# pdf(paste0("PDF/IMC_joint2/mcmc.pdf"), width=10, height=8.5)
-# for(chan_pat in inference_out){
-#   chan_pat[["plot_mcmc"]]()
-# }
-# dev.off()
-# 
-# ######
-# # mcmc posterior draws 
-# ######
-# for(chan_pat in inference_out){
-#   write.table(chan_pat[["output"]],
-#               file.path("Output/IMC_joint2", paste(chan_pat$channel, chan_pat$patient, "POSTERIOR.txt", sep="__") ),
-#               row.names=FALSE, quote=FALSE )
-#   
-# }
-# 
-# ######
-# # classifications
-# ######
-# for(chan_pat in inference_out){
-#   write.table(chan_pat[["classifs"]],
-#               file.path("Output/IMC_joint2", paste(chan_pat$channel, chan_pat$patient, "CLASS.txt", sep="__") ),
-#               row.names=FALSE, quote=FALSE, col.names=FALSE )
-#   
-# }
-# 
 # ######
 # # time taken for inference
 # ######
