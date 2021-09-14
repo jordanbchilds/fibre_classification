@@ -498,7 +498,7 @@ inference = function( chan ){
   })
 }
 
-chan_list = as.list(imc_chan)
+chan_list = as.list(inf_data$imc_chan)
 
 cl  = makeCluster(7)
 clusterExport(cl, c("inference", "chan_list", "inf_data"))
