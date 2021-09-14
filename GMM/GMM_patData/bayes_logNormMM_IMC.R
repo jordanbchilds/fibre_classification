@@ -250,11 +250,11 @@ sbj = sort(unique(inf_data$imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
 inf_data$pts = grep("P", sbj, value = TRUE)
 
-inference = function( chan ){
+inference_ctrl = function( chan ){
   with(as.list(c(inf_data, chan)), {
     output_list = list()
     outroot = paste( froot, chan, sep="__")
-    ## CONTROL DATA
+    
     control = imcDat[(imcDat$patient_type=="control")&(imcDat$type=="mean intensity"), ]
     Xctrl = log(control$value[control$channel==mitochan])
     Yctrl = log(control$value[control$channel==chan])
@@ -300,10 +300,10 @@ inference = function( chan ){
     output_ctrl_priorpred = as.mcmc(model_ctrl_priorpred)
     
     MCMC_ctrl = output_ctrl[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
-                                     "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
-                                     "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                                     "exp_predOne[1]", "exp_predOne[2]", 
-                                     "exp_predTwo[1]", "exp_predTwo[2]")]
+                               "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                               "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                               "exp_predOne[1]", "exp_predOne[2]", 
+                               "exp_predTwo[1]", "exp_predTwo[2]")]
     
     posterior_ctrl = as.data.frame(output_ctrl[[1]])
     prior_ctrl = as.data.frame(output_ctrl_priorpred[[1]])
@@ -315,21 +315,36 @@ inference = function( chan ){
     
     write.table(posterior_ctrl, file=posterior_ctrl_filepath, sep=" ")
     
-    output_list[["ctrl_plotter"]] = function(){
+    output_list[["pred_plot"]] = function(){
       ctrl_plot(ctrl_data=XY_ctrl, prior=prior_ctrl, posterior=posterior_ctrl,
                 mitochan=mitochan, chan=chan, title=paste("IMC", chan, sep=" "))
     }
-    output_list[["ctrl_mcmc"]] = function(){
+    output_list[["mcmc_plot"]] = function(){
       MCMCplot(MCMC_ctrl, title=paste("IMC", chan, sep=" "))
     }
-    output_list[["ctrl_marg"]] = function(){
+    output_list[["marg_plot"]] = function(){
       priorpost_marginals(prior=prior_ctrl, posterior=posterior_ctrl, 
                           title=paste("IMC", chan, sep=" "))
     }
     
-    ####
-    ## inference for patient data
-    ####
+    return(output_list)
+  })
+}
+
+inference_pat  = function( chanpat ){
+  with(as.list(c(inf_data, chanpat)), {
+    output_list = list()
+    outroot = paste( froot, chan, sep="__")
+    ## CONTROL DATA
+    control = imcDat[(imcDat$patient_type=="control")&(imcDat$type=="mean intensity"), ]
+    Xctrl = log(control$value[control$channel==mitochan])
+    Yctrl = log(control$value[control$channel==chan])
+    XY_ctrl = cbind( Xctrl, Yctrl )
+    logXY_ctrl = log(XY_ctrl)
+    Nctrl = nrow(XY_ctrl)
+    
+    ctrl_filepath = file.path("Output/IMC_logNorm", paste0("IMC__", chan, ".txt"))
+    posterior_ctrl = read.delim(ctrl_filepath, header=TRUE, sep=" ", stringsAsFactors=FALSE)
     
     prec_pred = matrix( colMeans(posterior_ctrl[,c("tau[1,1,1]", "tau[1,2,1]", "tau[2,1,1]","tau[2,2,1]")]),
                         nrow=2, ncol=2, byrow=TRUE )
@@ -349,7 +364,7 @@ inference = function( chan ){
     mu2_mean = mu1_mean 
     
     
-    n_1 = 100
+    n_1 = 500
     U_1 = var_pred*n_1    
     n_2 = 50
     U_2 = matrix(c(1,0,0,1),nrow=2,ncol=2)*n_2
@@ -358,82 +373,80 @@ inference = function( chan ){
     beta = 1
     p=0
     
-    for( pat in pts ){
-      ## PATIENT DATA
-      patient = imcDat[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"), ] 
-      Xpat = log(patient$value[patient$channel==mitochan])
-      Ypat = log(patient$value[patient$channel==chan]) 
-      XY_pat = cbind(Xpat, Ypat)
-      logXY_pat = log(XY_pat)
-      Npat = nrow(XY_pat)
-      
-      data_pat = list(Y=logXY_pat, N=Npat,
-                      mu1_mean=mu1_mean, mu1_prec=mu1_prec,
-                      mu2_mean=mu2_mean, mu2_prec=mu2_prec, 
-                      n_1=n_1, U_1=U_1,
-                      n_2=n_2, U_2=U_2, 
-                      alpha=alpha, beta=beta, p=p)
-      
-      data_pat_priorpred = data_pat
-      data_pat_priorpred$Y = NULL
-      data_pat_priorpred$N = 0
-      
-      model_pat = jags(data=data_pat, parameters.to.save=c("mu","tau", "z","probdiff","exp_predOne","exp_predTwo","loglik"),
-                       model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
-                       n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=TRUE, progress.bar="text")
-      
-      model_pat_priorpred = jags(data=data_pat_priorpred, parameters.to.save=c("mu","tau","probdiff","exp_predOne","exp_predTwo"),
-                                 model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
-                                 n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=FALSE, progress.bar="text")
-      
-      output_pat = as.mcmc(model_pat)
-      output_pat_priorpred = as.mcmc(model_pat_priorpred)
-      
-      posterior_pat = as.data.frame(output_pat[[1]])
-      prior_pat = as.data.frame(output_pat_priorpred[[1]])
-      
-      MCMC_pat = output_pat[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
-                               "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
-                               "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                               "exp_predOne[1]", "exp_predOne[2]", 
-                               "exp_predTwo[1]", "exp_predTwo[2]")]
-      
-      tt = colnames(posterior_pat[,grep("z", colnames(posterior_pat))])
-      tt.split = strsplit(tt, split="")
-      tt.vec = double(length(tt.split))
-      for(i in seq_along(tt.split)){
-        rr = tt.split[[i]][ !tt.split[[i]] %in% c("z","[","]") ]
-        tt.vec[i] = as.numeric(paste(rr, collapse=""))
-      }
-      names(tt.vec) = tt 
-      tt.vec = sort(tt.vec)
-      
-      class_posterior = posterior_pat[, names(tt.vec)]  
-      classifs = colMeans(class_posterior)
-      
-      posterior_pat_filepath = file.path("Output/IMC_logNorm", paste0("IMC__", chan, "__", pat, ".txt"))
-      write.table(posterior_pat, file=posterior_pat_filepath, sep=" ")
-      
-      classifs_filepath = file.path("Output/IMC_logNorm", paste0("IMC__", chan, "__", pat, ".txt"))
-      write.table(posterior_pat, file=classifs_filepath, sep=" ")
-      
-      output_list[[paste0(pat, "_plot")]] = function(){
-        pat_plot(pat_data=XY_pat, ctrl_data=XY_ctrl, 
-                 prior=prior_pat, posterior=posterior_pat, classifs=classifs, 
-                 mitochan=mitochan, chan=chan, pat=pat, title=paste("IMC", chan, pat, sep="  "))
-      }
-      output_list[[paste0(pat,"_logPlot")]] = function(){
-        pat_plot(pat_data=logXY_pat, ctrl_data=logXY_ctrl, prior=log(prior_pat),
-                 posterior=log(posterior_pat), classifs=classifs, 
-                 mitochan=mitochan, chan=chan, pat=pat, title=paste("IMC", chan, pat, sep="  "))
-      }
-      output_list[[paste0(pat, "_mcmc")]] = function(){
-        MCMCplot(MCMC_pat, title=paste("IMC", chan, pat, sep="  "))
-      }
-      output_list[[paste0(pat, "_marg")]] = function(){
-        priorpost_marginals(prior=prior_pat, posterior=posterior_pat, 
-                            title=paste("IMC", chan, pat, sep="  "))
-      }
+    ## PATIENT DATA
+    patient = imcDat[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"), ] 
+    Xpat = log(patient$value[patient$channel==mitochan])
+    Ypat = log(patient$value[patient$channel==chan]) 
+    XY_pat = cbind(Xpat, Ypat)
+    logXY_pat = log(XY_pat)
+    Npat = nrow(XY_pat)
+    
+    data_pat = list(Y=logXY_pat, N=Npat,
+                    mu1_mean=mu1_mean, mu1_prec=mu1_prec,
+                    mu2_mean=mu2_mean, mu2_prec=mu2_prec, 
+                    n_1=n_1, U_1=U_1,
+                    n_2=n_2, U_2=U_2, 
+                    alpha=alpha, beta=beta, p=p)
+    
+    data_pat_priorpred = data_pat
+    data_pat_priorpred$Y = NULL
+    data_pat_priorpred$N = 0
+    
+    model_pat = jags(data=data_pat, parameters.to.save=c("mu","tau", "z","probdiff","exp_predOne","exp_predTwo","loglik"),
+                     model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
+                     n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=TRUE, progress.bar="text")
+    
+    model_pat_priorpred = jags(data=data_pat_priorpred, parameters.to.save=c("mu","tau","probdiff","exp_predOne","exp_predTwo"),
+                               model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
+                               n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=FALSE, progress.bar="text")
+    
+    output_pat = as.mcmc(model_pat)
+    output_pat_priorpred = as.mcmc(model_pat_priorpred)
+    
+    posterior_pat = as.data.frame(output_pat[[1]])
+    prior_pat = as.data.frame(output_pat_priorpred[[1]])
+    
+    MCMC_pat = output_pat[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
+                             "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
+                             "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
+                             "exp_predOne[1]", "exp_predOne[2]", 
+                             "exp_predTwo[1]", "exp_predTwo[2]")]
+    
+    tt = colnames(posterior_pat[,grep("z", colnames(posterior_pat))])
+    tt.split = strsplit(tt, split="")
+    tt.vec = double(length(tt.split))
+    for(i in seq_along(tt.split)){
+      rr = tt.split[[i]][ !tt.split[[i]] %in% c("z","[","]") ]
+      tt.vec[i] = as.numeric(paste(rr, collapse=""))
+    }
+    names(tt.vec) = tt 
+    tt.vec = sort(tt.vec)
+    
+    class_posterior = posterior_pat[, names(tt.vec)]  
+    classifs = colMeans(class_posterior)
+    
+    posterior_pat_filepath = file.path("Output/IMC_logNorm", paste0("IMC__", chan, "__", pat, ".txt"))
+    write.table(posterior_pat, file=posterior_pat_filepath, sep=" ")
+    
+    classifs_filepath = file.path("Output/IMC_logNorm", paste0("IMC__", chan, "__", pat, ".txt"))
+    write.table(posterior_pat, file=classifs_filepath, sep=" ")
+    
+    output_list[["pred_plot"]] = function(){
+      pat_plot(pat_data=XY_pat, ctrl_data=XY_ctrl, 
+               prior=prior_pat, posterior=posterior_pat, classifs=classifs, 
+               mitochan=mitochan, chan=chan, pat=pat, title=paste("IMC", chan, pat, sep="  "))
+    }
+    output_list[["pred_logPlot"]] = function(){
+      pat_plot(pat_data=logXY_pat, ctrl_data=logXY_ctrl, prior=log(prior_pat),
+               posterior=log(posterior_pat), classifs=classifs, 
+               mitochan=mitochan, chan=chan, pat=pat, title=paste("IMC", chan, pat, sep="  "))
+    }
+    output_list[["mcmc_plot"]] = function(){
+      MCMCplot(MCMC_pat, title=paste("IMC", chan, pat, sep="  "))
+    }
+    output_list[["marg_plot"]] = function(){
+      priorpost_marginals(prior=prior_pat, posterior=posterior_pat, 
+                          title=paste("IMC", chan, pat, sep="  "))
     }
     return(output_list)
   })
@@ -442,50 +455,54 @@ inference = function( chan ){
 chan_list = as.list(inf_data$imc_chan)
 names(chan_list) = inf_data$imc_chan
 
+chanpat_list = list()
+for(chan in inf_data$imc_chan){
+  for(pat in inf_data$pts){
+    chanpat_list[[paste(chan,pat,sep="_")]] = list(chan=chan, pat=pat)
+  }
+}
+
 cl  = makeCluster(7)
-clusterExport(cl, c("inference", "chan_list", "inf_data"))
+clusterExport(cl, c("inference", "chan_list", "chanpat_list", "inf_data"))
 clusterEvalQ(cl, {
   library("R2jags")
   library("loo")
 })
 
 time = system.time({
-  inference_out = parLapply(cl, chan_list, inference)
+  ctrl_post = parLapply(cl, chan_list, inference_ctrl)
+  pat_post = parLapply(cl, chanpat_list, inference_pat)
 })
 
 stopCluster(cl)
 
 # CTRL prior and posterior
 pdf("PDF/IMC_logNorm/ctrl_PRED.pdf", width=10, height=8.5)
-for(chan in names(inference_out)){
-  inference_out[[chan]][["ctrl_plotter"]]()
+for(chan in names(ctrl_post)){
+  ctrl_post[[chan]][["pred_plot"]]()
 }
 dev.off()
 
 # PAT log Normal model
 pdf("PDF/IMC_logNorm/pat_PRED.pdf", width=14, height=8.5)
-for(chan in names(inference_out)){
-  for(pat in inf_data$pts){
-    inference_out[[chan]][[paste0(pat, "_plot")]]()
-  }
+for(chanpat in names(chanpat_list)){
+  pat_post[[chanpat]][["pred_plot"]]()
 }
 dev.off()
 
 # PAT Normal on logged (twice) data
 pdf("PDF/IMC_logNorm/logpat_PRED.pdf", width=14, height=8.5)
-for(chan in names(inference_out)){
-  for(pat in inf_data$pts){
-    inference_out[[chan]][[paste0(pat, "_logPlot")]]()
-  }
+for(chanpat in names(chanpat_list)){
+    pat_post[[chanpat]][["pred_logPlot"]]()
 }
 dev.off()
 
 # MCMC output
 pdf("PDF/IMC_logNorm/MCMC.pdf", width=14, height=8.5)
 for(chan in names(inference_out)){
-  inference_out[[chan]][["ctrl_mcmc"]]()
+  ctrl_post[[chan]][["mcmc_plot"]]()
   for(pat in inf_data$pts){
-    inference_out[[chan]][[paste0(pat, "_mcmc")]]()
+    pat_post[[paste(chan, pat, sep="_")]][["mcmc_plot"]]()
   }
 }
 dev.off()
@@ -493,9 +510,9 @@ dev.off()
 # marginal distributions
 pdf("PDF/IMC_logNorm/marginals.pdf", width=14, height=8.5)
 for(chan in names(inference_out)){
-  inference_out[[chan]][["ctrl_marg"]]()
+  inference_out[[chan]][["marg_plot"]]()
   for(pat in inf_data$pts){
-    inference_out[[chan]][[paste0(pat, "_marg")]]()
+    inference_out[[paste(chan, pat, sep="_")]][["marg_plot"]]()
   }
 }
 dev.off()
