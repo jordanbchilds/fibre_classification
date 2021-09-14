@@ -469,8 +469,10 @@ clusterEvalQ(cl, {
   library("loo")
 })
 
-time = system.time({
+time_ctrl = system.time({
   ctrl_post = parLapply(cl, chan_list, inference_ctrl)
+})
+time_pat = system.time({
   pat_post = parLapply(cl, chanpat_list, inference_pat)
 })
 
