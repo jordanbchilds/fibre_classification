@@ -241,7 +241,6 @@ model {
   exp_predOne[2] = exp(predOne[2])
   exp_predTwo[1] = exp(predTwo[1])
   exp_predTwo[2] = exp(predTwo[2])
-
 }"
 
 dir.create(file.path("Output"), showWarnings = FALSE)
@@ -484,7 +483,7 @@ for(chan in inf_data$imc_chan){
   }
 }
 
-cl  = makeCluster(21)
+cl  = makeCluster(7)
 clusterExport(cl, c("inference_pat", "inference_ctrl", "chan_list", "chanpat_list", "inf_data"))
 clusterEvalQ(cl, {
   library("R2jags")
