@@ -490,10 +490,9 @@ clusterEvalQ(cl, {
   library("loo")
 })
 
-time = system.time({
-  ctrl_post = parLapply(cl, chan_list, inference_ctrl)
-  pat_post = parLapply(cl, chanpat_list, inference_pat)
-})
+
+ctrl_post = parLapply(cl, chan_list, inference_ctrl)
+pat_post = parLapply(cl, chanpat_list, inference_pat)
 
 stopCluster(cl)
 
