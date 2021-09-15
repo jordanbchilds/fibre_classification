@@ -363,7 +363,7 @@ inference_pat  = function( chanpat ){
     logXY_ctrl = log(XY_ctrl)
     Nctrl = nrow(XY_ctrl)
     
-    ctrl_filepath = file.path("Output/IMC_logNorm", paste0("IMC__", chan, ".txt"))
+    ctrl_filepath = file.path("Output/IMC_logNorm", paste0("IMC__", chan, "__CTRL.txt"))
     posterior_ctrl = read.delim(ctrl_filepath, header=TRUE, sep=" ", stringsAsFactors=FALSE)
     colnames(posterior_ctrl) = c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                                  "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
@@ -410,8 +410,10 @@ inference_pat  = function( chanpat ){
                     alpha=alpha, beta=beta )
     
     data_pat_priorpred = data_pat
-    data_pat_priorpred$Y = NULL
-    data_pat_priorpred$N = 0
+    data_pat_priorpred$Yctrl = NULL
+    data_pat_priorpred$Nctrl = 0
+    data_pat_priorpred$Ypat = NULL
+    data_pat_priorpred$Npat = 0
     
     model_pat = jags(data=data_pat, parameters.to.save=c("mu","tau", "z","probdiff","exp_predOne","exp_predTwo","loglik"),
                      model.file=textConnection(modelstring_pat), n.chains=n.chains, n.iter=MCMCUpdate, 
@@ -490,14 +492,12 @@ clusterEvalQ(cl, {
   library("loo")
 })
 
-
-ctrl_post = parLapply(cl, chan_list, inference_ctrl)
-pat_post = parLapply(cl, chanpat_list, inference_pat)
+time = system.time({
+  ctrl_post = parLapply(cl, chan_list, inference_ctrl)
+  pat_post = parLapply(cl, chanpat_list, inference_pat)
+})
 
 stopCluster(cl)
-
-tt = read.delim("Output/IMC_logNorm/IMC__MTCO1.txt", header=TRUE, stringsAsFactors=FALSE, sep=" ")
-colnames(tt)
 
 # CTRL prior and posterior
 pdf("PDF/IMC_logNorm/ctrl_PRED.pdf", width=10, height=8.5)
