@@ -355,21 +355,16 @@ inference_pat  = function( chanpat ){
                         nrow=2, ncol=2, byrow=TRUE )
     
     var_pred = solve(prec_pred)
-    # n1 = var(posterior_ctrl[,"tau[1,1,1]"]) / (2*(var_pred[1,1]^2))
-    # n2 = var(posterior_ctrl[,"tau[1,2,1]"]) / (var_pred[1,2]^2 + var_pred[1,1]*var_pred[2,2])
-    # n3 = var(posterior_ctrl[,"tau[2,2,1]"]) / (2*(var_pred[2,2]^2))
-    # 
-    # output_list[["df_est"]] = c(n1,n2,n3)
-    
+
     mu1_mean = colMeans(posterior_ctrl[,c("mu[1,1]", "mu[2,1]")])
-    mu1_var = 10*var(posterior_ctrl[,c("mu[1,1]","mu[2,1]")])
+    mu1_var = var(posterior_ctrl[,c("mu[1,1]","mu[2,1]")])
     mu1_prec = solve(mu1_var)
     
     mu2_prec = 2*diag(2) 
     mu2_mean = mu1_mean 
     
     
-    n_1 = 500
+    n_1 = 560
     U_1 = var_pred*n_1    
     n_2 = 50
     U_2 = matrix(c(1,0,0,1),nrow=2,ncol=2)*n_2
@@ -529,7 +524,9 @@ dev.off()
 time_df = data.frame(time=time[3])
 write.table(time_df, file=file.path("Time/IMC_joint2.txt") )
 
-# 
+
+
+
 
 
 
