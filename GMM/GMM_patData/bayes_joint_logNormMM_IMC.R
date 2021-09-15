@@ -198,10 +198,10 @@ model {
   }
   # fit to patient data
   for( j in 1:Npat ){
-    class[j] ~ dbern(probdiff)
-    z[j] = 2 - class[j]
-    Ypat[j,] ~ dmnorm(mu[,z[j]], tau[,,z[j]] )
-    loglik[Nctrl+j] = logdensity.mnorm(Ypat[j,], mu[,z[j]], tau[,,z[j]])
+    z[j] ~ dbern(probdiff)
+    class[j] = 2 - z[j]
+    Ypat[j,] ~ dmnorm(mu[,class[j]], tau[,,class[j]] )
+    loglik[Nctrl+j] = logdensity.mnorm(Ypat[j,], mu[,class[j]], tau[,,class[j]])
   }
   # priors
   tau[1:2,1:2,1] ~ dwish(U_1, n_1)
