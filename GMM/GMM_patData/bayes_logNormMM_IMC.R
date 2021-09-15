@@ -311,7 +311,7 @@ inference_ctrl = function( chan ){
     colnames(posterior_ctrl) = colnames(output_ctrl[[1]])
     colnames(prior_ctrl) = colnames(output_ctrl_priorpred[[1]])
     
-    posterior_ctrl_filepath = file.path("Output/IMC_logNorm", paste0("IMC__", chan,".txt"))
+    posterior_ctrl_filepath = file.path("Output/IMC_logNorm", paste0("IMC__", chan,"__CTRL.txt"))
     
     write.table(MCMC_ctrl[[1]], file=posterior_ctrl_filepath, sep=" ")
     
@@ -462,7 +462,7 @@ for(chan in inf_data$imc_chan){
   }
 }
 
-cl  = makeCluster(4)
+cl  = makeCluster(21)
 clusterExport(cl, c("inference_pat", "inference_ctrl", "chan_list", "chanpat_list", "inf_data"))
 clusterEvalQ(cl, {
   library("R2jags")
