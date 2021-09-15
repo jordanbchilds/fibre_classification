@@ -189,13 +189,43 @@ pat_plot = function(ctrl_data, pat_data, prior, posterior, classifs, mitochan, c
 
 inf_data = list()
 
-inf_data$modelstring = "
+inf_data$modelstring_pat = "
+model {
+  # fit to ctrl data
+  for( i in 1:Nctrl ){ 
+    Yctrl[i,] ~ dmnorm( mu[,1], tau[,,1] )
+    loglik[i] = logdensity.mnorm(Yctrl[i,], mu[,1], tau[,,1])
+  }
+  # fit to patient data
+  for( j in 1:Npat ){
+    class[j] ~ dbern(probdiff)
+    z[j] = 2 - class[j]
+    Ypat[j,] ~ dmnorm(mu[,z[j]], tau[,,z[j]] )
+    loglik[Nctrl+j] = logdensity.mnorm(Ypat[j,], mu[,z[j]], tau[,,z[j]])
+  }
+  # priors
+  tau[1:2,1:2,1] ~ dwish(U_1, n_1)
+  mu[1:2,1] ~ dmnorm(mu1_mean, mu1_prec)
+  tau[1:2,1:2,2] ~ dwish(U_2, n_2)
+  mu[1:2,2] ~ dmnorm(mu2_mean, mu2_prec)
+  probdiff ~ dbeta(alpha, beta)
+  
+  # predictive distribution
+  predOne ~ dmnorm(mu[,1], tau[,,1])
+  predTwo ~ dmnorm(mu[,2], tau[,,2])
+  
+  exp_predOne[1] = exp(predOne[1])
+  exp_predOne[2] = exp(predOne[2])
+  exp_predTwo[1] = exp(predTwo[1])
+  exp_predTwo[2] = exp(predTwo[2])
+}
+"
+
+inf_data$modelstring_ctrl = "
 model {
   for(i in 1:N){
-    class[i] ~ dbern(probdiff)
-    z[i] = 2 - class[i]
-    Y[i,] ~ dmnorm( mu[,z[i]], tau[,,z[i]])
-    loglik[i] = logdensity.mnorm(Y[i,], mu[,z[i]], tau[,,z[i]])
+    Y[i,] ~ dmnorm( mu[,1], tau[,,1])
+    loglik[i] = logdensity.mnorm(Y[i,], mu[,1], tau[,,1])
   }
   # priors
   tau[1:2,1:2,1] ~ dwish(U_1, n_1)
@@ -203,10 +233,6 @@ model {
   tau[1:2,1:2,2] ~ dwish(U_2, n_2)
   mu[1:2,2] ~ dmnorm(mu2_mean, mu2_prec)
   
-  # classification
-  pi ~ dbeta(alpha, beta)
-  probdiff = ifelse( p==1, pi, 1) 
-
   # predictive distribution
   predOne ~ dmnorm(mu[,1], tau[,,1])
   predTwo ~ dmnorm(mu[,2], tau[,,2])
@@ -272,28 +298,23 @@ inference_ctrl = function( chan ){
     U_1 = matrix(c(1,0,0,1), nrow=2,ncol=2)*n_1 
     n_2 = 50
     U_2 = matrix(c(5,1,1,5),nrow=2,ncol=2)*n_2
-    
-    alpha = 1
-    beta = 1
-    p = 1
-    
+
     data_ctrl = list(Y=logXY_ctrl, N=Nctrl,
                      mu1_mean=mu1_mean, mu1_prec=mu1_prec,
                      mu2_mean=mu2_mean, mu2_prec=mu2_prec, 
                      n_1=n_1, U_1=U_1,
-                     n_2=n_2, U_2=U_2, 
-                     alpha=alpha, beta=beta, p=p)
+                     n_2=n_2, U_2=U_2 )
     
     data_ctrl_priorpred = data_ctrl
     data_ctrl_priorpred$Y = NULL
     data_ctrl_priorpred$N = 0
     
     model_ctrl = jags(data=data_ctrl, parameters.to.save=c("mu","tau","exp_predOne","exp_predTwo","loglik"),
-                      model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
+                      model.file=textConnection(modelstring_ctrl), n.chains=n.chains, n.iter=MCMCUpdate, 
                       n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=TRUE, progress.bar="text")
     
     model_ctrl_priorpred = jags(data=data_ctrl_priorpred, parameters.to.save=c("mu","tau","probdiff","exp_predOne","exp_predTwo"),
-                                model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
+                                model.file=textConnection(modelstring_ctrl), n.chains=n.chains, n.iter=MCMCUpdate, 
                                 n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=FALSE, progress.bar="text")
     
     output_ctrl = as.mcmc(model_ctrl)
@@ -355,7 +376,7 @@ inference_pat  = function( chanpat ){
                         nrow=2, ncol=2, byrow=TRUE )
     
     var_pred = solve(prec_pred)
-
+    
     mu1_mean = colMeans(posterior_ctrl[,c("mu[1,1]", "mu[2,1]")])
     mu1_var = var(posterior_ctrl[,c("mu[1,1]","mu[2,1]")])
     mu1_prec = solve(mu1_var)
@@ -381,23 +402,24 @@ inference_pat  = function( chanpat ){
     logXY_pat = log(XY_pat)
     Npat = nrow(XY_pat)
     
-    data_pat = list(Y=logXY_pat, N=Npat,
+    data_pat = list(Yctrl=logXY_ctrl, Nctrl=Nctrl, 
+                    Ypat=logXY_pat, Npat=Npat,
                     mu1_mean=mu1_mean, mu1_prec=mu1_prec,
                     mu2_mean=mu2_mean, mu2_prec=mu2_prec, 
                     n_1=n_1, U_1=U_1,
                     n_2=n_2, U_2=U_2, 
-                    alpha=alpha, beta=beta, p=p)
+                    alpha=alpha, beta=beta )
     
     data_pat_priorpred = data_pat
     data_pat_priorpred$Y = NULL
     data_pat_priorpred$N = 0
     
     model_pat = jags(data=data_pat, parameters.to.save=c("mu","tau", "z","probdiff","exp_predOne","exp_predTwo","loglik"),
-                     model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
+                     model.file=textConnection(modelstring_pat), n.chains=n.chains, n.iter=MCMCUpdate, 
                      n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=TRUE, progress.bar="text")
     
     model_pat_priorpred = jags(data=data_pat_priorpred, parameters.to.save=c("mu","tau","probdiff","exp_predOne","exp_predTwo"),
-                               model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
+                               model.file=textConnection(modelstring_pat), n.chains=n.chains, n.iter=MCMCUpdate, 
                                n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=FALSE, progress.bar="text")
     
     output_pat = as.mcmc(model_pat)
@@ -496,7 +518,7 @@ dev.off()
 # PAT Normal on logged (twice) data
 pdf("PDF/IMC_logNorm/logpat_PRED.pdf", width=14, height=8.5)
 for(chanpat in names(chanpat_list)){
-    pat_post[[chanpat]][["pred_logPlot"]]()
+  pat_post[[chanpat]][["pred_logPlot"]]()
 }
 dev.off()
 
@@ -524,65 +546,3 @@ dev.off()
 time_df = data.frame(time=time[3])
 write.table(time_df, file=file.path("Time/IMC_joint2.txt") )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# ######
-# # DIC
-# ######
-# DIC_df = matrix(NA, nrow=length(inf_data$pts), ncol=length(imc_chan), 
-#                 dimnames=list(inf_data$pts, imc_chan))
-# for(chan_pat in inference_out){
-#   DIC_df[chan_pat$patient, chan_pat$channel]= chan_pat[["DIC"]]
-# }
-# DICpath = "Information_Criteria/IMC_joint2/DIC.txt"
-# write.table(DIC_df, file=DICpath, row.names=T, quote=FALSE, col.names=T)
-# 
-# ######
-# # WAIC estimate and SE
-# ######
-# WAICpath = "Information_Criteria/IMC_joint2/WAIC.txt"
-# WAIC_df = matrix(NA, nrow=length(inf_data$pts), ncol=length(imc_chan), 
-#                  dimnames=list(inf_data$pts, imc_chan))
-# WAICse_df = WAIC_df
-# for(chan_pat in inference_out){
-#   WAIC_df[chan_pat$patient, chan_pat$channel] = chan_pat[["WAIC"]][[1]]["waic","Estimate"]
-#   WAICse_df[chan_pat$patient, chan_pat$channel] = chan_pat[["WAIC"]][[1]]["waic", "SE"]
-# }
-# WAICpath = "Information_Criteria/IMC_joint2/WAIC.txt"
-# WAICse_path = "Information_Criteria/IMC_joint2/WAICse.txt"
-# write.table(WAIC_df, file=WAICpath, row.names=TRUE, quote=FALSE, col.names=TRUE)
-# write.table(WAICse_df, file=WAICse_path, row.names=TRUE, quote=FALSE, col.names=TRUE)
-# 
-# 
-# 

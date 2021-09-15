@@ -223,7 +223,7 @@ model {
     loglik[i] = logdensity.mnorm(Yctrl[i,], mu[,1], tau[,,1])
   }
   # fit to patient data
-  for( j in 1:Npat ){ # fit to patient data
+  for( j in 1:Npat ){ 
     z[j] ~ dbern(probdiff)
     class[j] = 2 - z[j]
     Ypat[j,] ~ dmnorm(mu[,class[j]], tau[,,class[j]] )
