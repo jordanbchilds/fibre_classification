@@ -380,14 +380,14 @@ inference_pat  = function( chanpat ){
     mu1_var = var(posterior_ctrl[,c("mu[1,1]","mu[2,1]")])
     mu1_prec = solve(mu1_var)
     
-    mu2_prec = 2*diag(2) 
+    mu2_prec = 0.5*diag(2) 
     mu2_mean = mu1_mean 
     
     
     n_1 = 560
     U_1 = var_pred*n_1    
-    n_2 = 50
-    U_2 = matrix(c(1,0,0,1),nrow=2,ncol=2)*n_2
+    n_2 = 200
+    U_2 = matrix(c(2,0,0,2),nrow=2,ncol=2)*n_2
     
     alpha = 1
     beta = 1
@@ -542,5 +542,5 @@ dev.off()
 
 # time taken for inference
 time_df = data.frame(time=time[3])
-write.table(time_df, file=file.path("Time/IMC_joint2.txt") )
+write.table(time_df, file=file.path("Time/IMC_logNorm.txt") )
 
