@@ -296,13 +296,13 @@ inference = function(chan_pat){
     Npat = nrow(XY_pat)
     
     mu1_mean = 1.5*c(mean(Xctrl), mean(Yctrl))
-    mu1_prec = solve( matrix(c(0.1,0.128,0.128,0.2), ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~90%
+    mu1_prec = solve( matrix(c(0.1,0.134,0.134,0.2), ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~90%
     
     mu2_mean = mu1_mean 
     mu2_prec = 0.5*diag(2) 
     
     n_1 = 500
-    U_1 = matrix(c(0.3,0.468,0.468,0.9), nrow=2,ncol=2)*n_1 # correlation of ~90% 
+    U_1 = matrix(c(0.3,0.494,0.494,0.9), nrow=2,ncol=2)*n_1 # correlation of ~90% 
     n_2 = 50
     U_2 = matrix(c(5,3,3,5),nrow=2,ncol=2)*n_2
     
