@@ -133,9 +133,12 @@ priorpost_marginals = function(prior, posterior, title){
   title(main=title, line = -1, outer = TRUE)
   
   par(mfrow=c(1,2))
-  plot( density(posterior[,"probdiff"]), cex.lab=2, cex.axis=1.5, xlim=c(0,1),          
+  probdiff_prior = cbind( prior[,"prob_predOne"], prior[,"prob_predTwo"])
+  probdiff_post = cbind( posterior[,"prob_predOne"], posterior[,"prob_predTwo"])
+  
+  plot( density(probdiff_post), cex.lab=2, cex.axis=1.5, xlim=c(0,1),          
         xlab="probdiff", ylab="", lwd=2, col="red", main="probdiff Density")
-  lines( density(prior[,"probdiff"]), lwd=2, col="green")
+  lines( density(probdiff_prior), lwd=2, col="green")
   title(main=title, line = -1, outer = TRUE)
   
   par(op)
@@ -223,13 +226,9 @@ model {
   }
   # fit to patient data
   for( j in 1:Npat ){
-    # which beta component does the fibre belong to
-    z_tilde[j] ~ dbern(pi_tilde) 
-    z_dash[j] = z_tilde[j] + 1
-
-    probdiff ~ dbeta(alpha[z_dash], beta[z_dash])
+    probdiff[j] ~ dbeta(alpha[z_dash], beta[z_dash])
     # which Normal component does the fibre belong
-    z[j] ~ dbern(probdiff)
+    z[j] ~ dbern(probdiff[j])
     class[j] = 2 - z[j]
     
     Ypat[j,] ~ dmnorm(mu[,class[j]], tau[,,class[j]] )
@@ -240,12 +239,17 @@ model {
   mu[1:2,1] ~ dmnorm(mu1_mean, mu1_prec)
   tau[1:2,1:2,2] ~ dwish(U_2, n_2)
   mu[1:2,2] ~ dmnorm(mu2_mean, mu2_prec)
-  # the hierarchical pis
-  pi_tilde ~ dbeta(a,b)
+  
+  pi ~ dbeta(a,b)
+  z_tilde ~ dbern(pi)
+  z_dash = z_tilde + 1
   
   # predictive distribution
   predOne ~ dmnorm(mu[,1], tau[,,1])
   predTwo ~ dmnorm(mu[,2], tau[,,2])
+  
+  prob_predOne ~ dbeta(alpha[1], beta[1])
+  prob_predTwo ~ dbeta(alpha[2], beta[2])
 }
 "
 
@@ -273,10 +277,7 @@ inf_data$mitochan = "VDAC1"
 
 # removing unwanted info 
 inf_data$imcDat = imc_data[imc_data$channel %in% c(imc_chan, inf_data$mitochan), ]
-
 inf_data$froot = gsub('.RAW.txt', '', fulldat)
-
-# getting the ranges of the axis
 
 sbj = sort(unique(inf_data$imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
@@ -310,15 +311,15 @@ inference = function(chan_pat){
     n_2 = 200
     U_2 = matrix(c(5,1,1,5),nrow=2,ncol=2)*n_2
     
-    a = 2
-    b = 2
+    a = 1
+    b = 1
     alpha = c(2,6)
     beta = c(6,2)
     
     data = list(Yctrl=XY_ctrl, Nctrl=Nctrl, Ypat=XY_pat, Npat=Npat,
                 mu1_mean=mu1_mean, mu1_prec=mu1_prec,
                 mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
-                U_1=U_1, U_2=U_2, alpha=alpha, beta=beta, a=a, b=b)
+                U_1=U_1, U_2=U_2, a=a, b=b, alpha=alpha, beta=beta)
     
     data_priorpred = data
     data_priorpred$Yctrl = NULL
@@ -326,11 +327,11 @@ inference = function(chan_pat){
     data_priorpred$Nctrl = 0
     data_priorpred$Npat = 0 
     
-    model_jags = jags(data=data, parameters.to.save=c("mu","tau","z","probdiff","predOne","predTwo","loglik"),
+    model_jags = jags(data=data, parameters.to.save=c("mu","tau","z","prob_predOne", "prob_predTwo","predOne","predTwo","loglik"),
                       model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
                       n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=TRUE, progress.bar="text")
     
-    model_priorpred_jags = jags(data=data_priorpred, parameters.to.save=c("mu","tau", "probdiff", "predOne","predTwo"),
+    model_priorpred_jags = jags(data=data_priorpred, parameters.to.save=c("mu","tau", "prob_predOne", "prob_predTwo", "predOne","predTwo"),
                                 model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
                                 n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=FALSE, progress.bar="text")
     
@@ -343,7 +344,8 @@ inference = function(chan_pat){
     MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                            "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                            "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                           "probdiff", "predOne[1]", "predOne[2]", "predTwo[1]",
+                           "prob_predOne", "prob_predTwo",
+                           "predOne[1]", "predOne[2]", "predTwo[1]",
                            "predTwo[2]")]
     
     posterior = as.data.frame(output[[1]])
