@@ -224,8 +224,8 @@ model {
   # fit to patient data
   for( j in 1:Npat ){
     # which beta component does the fibre belong to
-    z_tilde[i] ~ dbern(pi_tilde) 
-    z_dash[i] = z_tilde[i] + 1
+    z_tilde[j] ~ dbern(pi_tilde) 
+    z_dash[j] = z_tilde[j] + 1
 
     probdiff ~ dbeta(alpha[z_dash], beta[z_dash])
     # which Normal component does the fibre belong
