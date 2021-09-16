@@ -310,8 +310,8 @@ inference = function(chan_pat){
     n_2 = 200
     U_2 = matrix(c(5,1,1,5),nrow=2,ncol=2)*n_2
     
-    alpha = 2
-    beta = 2
+    a = 2
+    b = 2
     alpha = c(2,6)
     beta = c(6,2)
     
