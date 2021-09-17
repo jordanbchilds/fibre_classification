@@ -133,7 +133,7 @@ priorpost_marginals = function(prior, posterior, title){
   title(main=title, line = -1, outer = TRUE)
   
   par(mfrow=c(1,2))
-  plot( density(posteior[,"probdiff"]), cex.lab=2, cex.axis=1.5, xlim=c(0,1),          
+  plot( density(posterior[,"probdiff"]), cex.lab=2, cex.axis=1.5, xlim=c(0,1),          
         xlab="probdiff", ylab="", lwd=2, col="red", main="probdiff Density")
   lines( density(prior[,"probdiff"]), lwd=2, col="green")
   title(main=title, line=-1, outer = TRUE)
