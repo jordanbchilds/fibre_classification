@@ -83,59 +83,54 @@ priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
 priorpost_marginals = function(prior, posterior, title){
   op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
   par(mfrow=c(2,2))
-  ## mu_1
-  # prior
-  contour( kde2d(prior[,'mu[1,1]'], prior[,'mu[2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(mu[11]), ylab=expression(mu[12]), nlevels=5,
-           main=expression(mu[1]~'Prior Density') )
-  # posterior
-  contour( kde2d(posterior[,'mu[1,1]'], posterior[,'mu[2,1]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(mu[11]), ylab=expression(mu[12]), nlevels=5,
-           main=expression(mu[1]~'Posterior Density') )
-  ## mu_2
-  # prior
-  contour( kde2d(prior[,'mu[1,2]'], prior[,'mu[2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
-           main=expression(mu[2]~'Prior Density') )
-  # posterior
-  contour( kde2d(posterior[,'mu[1,2]'], posterior[,'mu[2,2]'], n=100), cex.lab=2, cex.axis=1.5,
-           xlab=expression(mu[21]), ylab=expression(mu[22]), nlevels=5,
-           main=expression(mu[2]~'Posterior Density') )
-  title(main=title, line = -1, outer = TRUE)
-  
+
+  plot(density(prior[,"mu[1,1]"]), lwd=2, col="black", 
+       xlab="mu[1,1]", ylab="", main=expression(mu[1]~"Marginals"))
+  lines(density(posterior[,"mu[1,1]"]), lwd=2, col="blue")
+  plot(density(prior[,"mu[2,1]"]), lwd=2, 
+       xlab="mu[2,1]", ylab="", main=expression(mu[1]~"Marginals"))
+  lines(density(posterior[,"mu[2,1]"]), lwd=2, col="blue")
+  plot(density(prior[,"mu[1,2]"]), lwd=2, 
+       xlab="mu[1,2]", ylab="", main=expresion(mu[2]~"Marginals"))
+  lines(density(posterior[,"mu[1,2]"]), lwd=2, col="blue")
+  plot(density(prior[,"mu[2,2]"]), lwd=2, 
+       xlab="mu[2,2]", ylab="", main=expresion(mu[2]~"Marginals"))
+  lines(density(posterior[,"mu[2,2]"]), lwd=2, col="blue")
+  title(main=title, line=-1, outer=TRUE)
   
   par(mfrow=c(1,3))
   ## tau_1
   # prior
   plot( density(prior[,"tau[1,1,1]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
-        xlab=expression(tau[11]), ylab="", main=expression(T[1]~"Prior Density"))
-  lines( density(posterior[,"tau[1,1,1]"]), col=myGreen, lwd=2)
+        xlab=expression(tau[11]), ylab="", main=expression(T[1]~"Marginals"))
+  lines( density(posterior[,"tau[1,1,1]"]), col="blue", lwd=2)
   
   plot( density(prior[,"tau[1,2,1]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
-        xlab=expression(tau[12]), ylab="", main=expression(T[1]~"Prior Density"))
-  lines( density(posterior[,"tau[1,1,1]"]), lwd=2, col=myGreen)
+        xlab=expression(tau[12]), ylab="", main=expression(T[1]~"Marginals"))
+  lines( density(posterior[,"tau[1,1,1]"]), lwd=2, col="blue")
   
   plot( density(prior[,"tau[2,2,1]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
-        xlab=expression(tau[22]), ylab="", main=expression(T[1]~"Prior Density"))
-  lines( density(posterior[,"tau[2,2,1]"]), lwd=2, col=myGreen)
+        xlab=expression(tau[22]), ylab="", main=expression(T[1]~"Marginals"))
+  lines( density(posterior[,"tau[2,2,1]"]), lwd=2, col="blue")
+  title(main=title, line=-1, outer=TRUE)
   
   ## tau_1
   # posterior
   plot( density(prior[,"tau[1,1,2]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
-        xlab=expression(tau[11]), ylab="", main=expression(T[2]~"Prior Density"))
-  lines( density(posterior[,"tau[1,1,2]"]), col=myGreen, lwd=2)
+        xlab=expression(tau[11]), ylab="", main=expression(T[2]~"Marginals"))
+  lines( density(posterior[,"tau[1,1,2]"]), col="blue", lwd=2)
   plot( density(prior[,"tau[1,2,2]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
-        xlab=expression(tau[12]), ylab="", main=expression(T[2]~"Prior Density"))
-  lines( density(posterior[,"tau[1,2,2]"]), col=myGreen, lwd=2)
+        xlab=expression(tau[12]), ylab="", main=expression(T[2]~"Marginals"))
+  lines( density(posterior[,"tau[1,2,2]"]), col="blue", lwd=2)
   plot( density(prior[,"tau[2,2,2]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
-        xlab=expression(tau[22]), ylab="", main=expression(T[2]~"Prior Density"))
-  lines( density(posterior[,"tau[2,2,2]"]), col=myGreen, lwd=2)
-  title(main=title, line = -1, outer = TRUE)
+        xlab=expression(tau[22]), ylab="", main=expression(T[2]~"Marginals"))
+  lines( density(posterior[,"tau[2,2,2]"]), col="blue", lwd=2)
+  title(main=title, line=-1, outer=TRUE)
   
   par(mfrow=c(1,2))
   plot( density(posterior[,"probdiff"]), cex.lab=2, cex.axis=1.5, xlim=c(0,1),          
-        xlab="probdiff", ylab="", lwd=2, col="red", main="probdiff Density")
-  lines( density(prior[,"probdiff"]), lwd=2, col="green")
+        xlab="probdiff", ylab="", lwd=2, main="probdiff Density")
+  lines( density(prior[,"probdiff"]), lwd=2, col="blue")
   title(main=title, line=-1, outer = TRUE)
   
   par(op)
@@ -305,8 +300,8 @@ inference = function(chan_pat){
     n_2 = 200
     U_2 = matrix(c(5,1,1,5),nrow=2,ncol=2)*n_2
     
-    a = 1
-    b = 1
+    a = 10
+    b = 10
     alpha = c(2,6)
     beta = c(6,2)
     
