@@ -91,10 +91,10 @@ priorpost_marginals = function(prior, posterior, title){
        xlab="mu[2,1]", ylab="", main=expression(mu[1]~"Marginals"))
   lines(density(posterior[,"mu[2,1]"]), lwd=2, col="blue")
   plot(density(prior[,"mu[1,2]"]), lwd=2, 
-       xlab="mu[1,2]", ylab="", main=expresion(mu[2]~"Marginals"))
+       xlab="mu[1,2]", ylab="", main=expression(mu[2]~"Marginals"))
   lines(density(posterior[,"mu[1,2]"]), lwd=2, col="blue")
   plot(density(prior[,"mu[2,2]"]), lwd=2, 
-       xlab="mu[2,2]", ylab="", main=expresion(mu[2]~"Marginals"))
+       xlab="mu[2,2]", ylab="", main=expression(mu[2]~"Marginals"))
   lines(density(posterior[,"mu[2,2]"]), lwd=2, col="blue")
   title(main=title, line=-1, outer=TRUE)
   
