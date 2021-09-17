@@ -133,13 +133,10 @@ priorpost_marginals = function(prior, posterior, title){
   title(main=title, line = -1, outer = TRUE)
   
   par(mfrow=c(1,2))
-  probdiff_prior = cbind( prior[,"prob_predOne"], prior[,"prob_predTwo"])
-  probdiff_post = cbind( posterior[,"prob_predOne"], posterior[,"prob_predTwo"])
-  
-  plot( density(probdiff_post), cex.lab=2, cex.axis=1.5, xlim=c(0,1),          
+  plot( density(posteior[,"probdiff"]), cex.lab=2, cex.axis=1.5, xlim=c(0,1),          
         xlab="probdiff", ylab="", lwd=2, col="red", main="probdiff Density")
-  lines( density(probdiff_prior), lwd=2, col="green")
-  title(main=title, line = -1, outer = TRUE)
+  lines( density(prior[,"probdiff"]), lwd=2, col="green")
+  title(main=title, line=-1, outer = TRUE)
   
   par(op)
 }
@@ -247,9 +244,6 @@ model {
   # predictive distribution
   predOne ~ dmnorm(mu[,1], tau[,,1])
   predTwo ~ dmnorm(mu[,2], tau[,,2])
-  
-  prob_predOne ~ dbeta(alpha[1], beta[1])
-  prob_predTwo ~ dbeta(alpha[2], beta[2])
 }
 "
 
@@ -341,12 +335,11 @@ inference = function(chan_pat){
     output = as.mcmc(model_jags)
     output_priorpred = as.mcmc(model_priorpred_jags)
     
-    probdiffs = colnames(output[[1]][,grep("probdiff", colnames(output[[1]])) ])
-    
     MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                            "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                            "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                           "predOne[1]", "predOne[2]", "predTwo[1]", "predTwo[2]")]
+                           "predOne[1]", "predOne[2]", "predTwo[1]", "predTwo[2]",
+                           "probdiff" )]
     
     posterior = as.data.frame(output[[1]])
     prior = as.data.frame(output_priorpred[[1]])
