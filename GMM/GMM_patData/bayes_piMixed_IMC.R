@@ -368,7 +368,7 @@ inference = function(chan_pat){
     
     return( list(
       "plot_comp" = function() { 
-        component_densities(ctrl_data=XY_ctrl, pat_data=XY_pat,
+        component_densities(ctrl_data=XY_ctrl, pat_data=XY_pat, Nctrl=Nctrl,
                             posterior=posterior, prior=prior, classifs=classifs,
                             chan=chan, title=paste(froot, chan, pat, sep="__") ) },
       "plot_mcmc" = function() {
