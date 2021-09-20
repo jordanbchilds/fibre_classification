@@ -99,30 +99,35 @@ priorpost_marginals = function(prior, posterior, title){
   title(main=title, line=-1, outer=TRUE)
   
   par(mfrow=c(1,3))
+  xlim111 = quantile( c(prior[,"tau[1,1,1]"], posterior[,"tau[1,1,1]"]), c(0.01,0.99))
+  xlim121 = quantile( c(prior[,"tau[1,2,1]"], posterior[,"tau[1,2,1]"]), c(0.01,0.99))
+  xlim221 = quantile( c(prior[,"tau[2,2,1]"], posterior[,"tau[2,2,1]"]), c(0.01,0.99))
+  xlim112 = quantile( c(prior[,"tau[1,1,2]"], posterior[,"tau[1,1,2]"]), c(0.01,0.99))
+  xlim122 = quantile( c(prior[,"tau[1,2,2]"], posterior[,"tau[1,2,2]"]), c(0.01,0.99))
+  xlim222 = quantile( c(prior[,"tau[2,2,2]"], posterior[,"tau[2,2,2]"]), c(0.01,0.99))
+  
   ## tau_1
-  # prior
-  plot( density(prior[,"tau[1,1,1]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
+  plot( density(prior[,"tau[1,1,1]"]), cex.lab=2, cex.axis=1.5, lwd=2, xlim=xlim111,
         xlab=expression(tau[11]), ylab="", main=expression(T[1]~"Marginals"))
   lines( density(posterior[,"tau[1,1,1]"]), col="blue", lwd=2)
   
-  plot( density(prior[,"tau[1,2,1]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
+  plot( density(prior[,"tau[1,2,1]"]), cex.lab=2, cex.axis=1.5, lwd=2, xlim=xlim121,
         xlab=expression(tau[12]), ylab="", main=expression(T[1]~"Marginals"))
   lines( density(posterior[,"tau[1,1,1]"]), lwd=2, col="blue")
   
-  plot( density(prior[,"tau[2,2,1]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
+  plot( density(prior[,"tau[2,2,1]"]), cex.lab=2, cex.axis=1.5, lwd=2, xlim=xlim221,
         xlab=expression(tau[22]), ylab="", main=expression(T[1]~"Marginals"))
   lines( density(posterior[,"tau[2,2,1]"]), lwd=2, col="blue")
   title(main=title, line=-1, outer=TRUE)
   
-  ## tau_1
-  # posterior
-  plot( density(prior[,"tau[1,1,2]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
+  # tau 2
+  plot( density(prior[,"tau[1,1,2]"]), cex.lab=2, cex.axis=1.5, lwd=2, xlim=xlim112,
         xlab=expression(tau[11]), ylab="", main=expression(T[2]~"Marginals"))
   lines( density(posterior[,"tau[1,1,2]"]), col="blue", lwd=2)
-  plot( density(prior[,"tau[1,2,2]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
+  plot( density(prior[,"tau[1,2,2]"]), cex.lab=2, cex.axis=1.5, lwd=2, xlim=xlim122,
         xlab=expression(tau[12]), ylab="", main=expression(T[2]~"Marginals"))
   lines( density(posterior[,"tau[1,2,2]"]), col="blue", lwd=2)
-  plot( density(prior[,"tau[2,2,2]"]), cex.lab=2, cex.axis=1.5, lwd=2, 
+  plot( density(prior[,"tau[2,2,2]"]), cex.lab=2, cex.axis=1.5, lwd=2, xlim=xlim222,
         xlab=expression(tau[22]), ylab="", main=expression(T[2]~"Marginals"))
   lines( density(posterior[,"tau[2,2,2]"]), col="blue", lwd=2)
   title(main=title, line=-1, outer=TRUE)
@@ -136,8 +141,10 @@ priorpost_marginals = function(prior, posterior, title){
   par(op)
 }
 
-component_densities = function(ctrl_data, pat_data, posterior, prior, 
+component_densities = function(ctrl_data, pat_data, posterior, prior, Nctrl,
                                classifs, title, chan ){
+  classifs_ctrl = classifs[1:Nctrl]
+  classifs_pat = classifs[(Nctrl+1):length(classifs)]
   with( inf_data, {
     par(mfrow=c(2,2))
     plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
@@ -159,7 +166,7 @@ component_densities = function(ctrl_data, pat_data, posterior, prior,
     plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
          main="Component One", xlim=c(-1,6), ylim=c(-1,6))
-    points( pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs))
+    points( pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs_pat))
     post_one = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
     contour(post_one$dens, levels=post_one$levels, labels=post_one$probs,
             col="blue", lwd=2, add=TRUE)
@@ -167,7 +174,7 @@ component_densities = function(ctrl_data, pat_data, posterior, prior,
     plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
          main="Component Two", xlim=c(-1,6), ylim=c(-1,6))
-    points( pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs))
+    points( pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs_pat))
     post_two = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[2]"])
     contour(post_two$dens, levels=post_two$levels, labels=post_two$probs, 
             col="red", lwd=2, add=TRUE)
@@ -213,17 +220,20 @@ inf_data$modelstring = "
 model {
   # fit to ctrl data
   for( i in 1:Nctrl ){ 
-    Yctrl[i,] ~ dmnorm( mu[,1], tau[,,1] )
-    loglik[i] = logdensity.mnorm(Yctrl[i,], mu[,1], tau[,,1])
+    z[i] ~ dbern(probdiff)
+    class[i] = 2 - z[i]
+    
+    Yctrl[i,] ~ dmnorm( mu[,class[i]], tau[,,class[i]] )
+    loglik[i] = logdensity.mnorm(Yctrl[i,], mu[,class[i]], tau[,,class[i]])
   }
   # fit to patient data
   for( j in 1:Npat ){
     # which Normal component does the fibre belong
-    z[j] ~ dbern(probdiff)
-    class[j] = 2 - z[j]
+    z[Nctrl+j] ~ dbern(probdiff)
+    class[Nctrl+j] = 2 - z[Nctrl+j]
     
-    Ypat[j,] ~ dmnorm(mu[,class[j]], tau[,,class[j]] )
-    loglik[Nctrl+j] = logdensity.mnorm(Ypat[j,], mu[,class[j]], tau[,,class[j]])
+    Ypat[j,] ~ dmnorm(mu[,class[Nctrl+j]], tau[,,class[Nctrl+j]] )
+    loglik[Nctrl+j] = logdensity.mnorm(Ypat[j,], mu[,classt[Nctrl+j]], tau[,,class[Nctrl+j]])
   }
   # priors
   tau[1:2,1:2,1] ~ dwish(U_1, n_1)
@@ -373,6 +383,8 @@ inference = function(chan_pat){
     )
   })
 }
+
+tt = inference(list(chan="MTCO1", pat="P05"))
 
 chanpat_list = list()
 for(chan in imc_chan){
