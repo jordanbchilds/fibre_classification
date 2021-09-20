@@ -233,7 +233,7 @@ model {
     class[Nctrl+j] = 2 - z[Nctrl+j]
     
     Ypat[j,] ~ dmnorm(mu[,class[Nctrl+j]], tau[,,class[Nctrl+j]] )
-    loglik[Nctrl+j] = logdensity.mnorm(Ypat[j,], mu[,classt[Nctrl+j]], tau[,,class[Nctrl+j]])
+    loglik[Nctrl+j] = logdensity.mnorm(Ypat[j,], mu[,class[Nctrl+j]], tau[,,class[Nctrl+j]])
   }
   # priors
   tau[1:2,1:2,1] ~ dwish(U_1, n_1)
