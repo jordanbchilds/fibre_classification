@@ -301,7 +301,7 @@ inference = function(chan_pat){
     Npat = nrow(XY_pat)
     
     mu1_mean = 1.5*c(mean(Xctrl), mean(Yctrl))
-    mu1_prec = solve( matrix(c(0.1, 0.134, 0.134, 0.2), ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~95%
+    mu1_prec = solve( matrix(c(0.1, 0.134, 0.134, 0.2)/2, ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~95%
     
     mu2_mean = mu1_mean 
     mu2_prec = 0.5*diag(2) 
@@ -384,8 +384,6 @@ inference = function(chan_pat){
     )
   })
 }
-
-tt = inference(list(chan="MTCO1", pat="P05"))
 
 chanpat_list = list()
 for(chan in imc_chan){
