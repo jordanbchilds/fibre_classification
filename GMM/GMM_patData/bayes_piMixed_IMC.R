@@ -134,9 +134,9 @@ priorpost_marginals = function(prior, posterior, title){
   title(main=title, line=-1, outer=TRUE)
   
   par(mfrow=c(1,2))
-  plot( density(posterior[,"probdiff"]), cex.lab=2, cex.axis=1.5, xlim=c(0,1),          
+  plot( density(posterior[,"probdiff"]), col="blue", cex.lab=2, cex.axis=1.5, xlim=c(0,1),          
         xlab="probdiff", ylab="", lwd=2, main="probdiff Density")
-  lines( density(prior[,"probdiff"]), lwd=2, col="blue")
+  lines( density(prior[,"probdiff"]), lwd=2)
   title(main=title, line=-1, outer = TRUE)
   
   par(op)
@@ -301,13 +301,13 @@ inference = function(chan_pat){
     Npat = nrow(XY_pat)
     
     mu1_mean = 1.5*c(mean(Xctrl), mean(Yctrl))
-    mu1_prec = solve( matrix(c(0.1,0.134,0.134,0.2), ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~95%
+    mu1_prec = solve( matrix(c(0.075, 0.1005, 0.1005, 0.15), ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~95%
     
     mu2_mean = mu1_mean 
     mu2_prec = 0.5*diag(2) 
     
     n_1 = 2000
-    U_1 = matrix(c(0.3,0.494,0.494,0.9), nrow=2,ncol=2)*n_1 # correlation of ~95% 
+    U_1 = matrix(c(0.2,0.312,0.312,0.6), nrow=2,ncol=2)*n_1 # correlation of ~95% 
     n_2 = 200
     U_2 = matrix(c(5,1,1,5),nrow=2,ncol=2)*n_2
     
