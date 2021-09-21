@@ -280,18 +280,17 @@ inf_data$n.chains = 2
 fulldat = 'IMC.RAW.txt'
 imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
-imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
-imc_chan = c("SDHA", "OSCP")
+inf_data$imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
 inf_data$mitochan = "VDAC1"
 
 # removing unwanted info 
-inf_data$imcDat = imc_data[imc_data$channel %in% c(imc_chan, inf_data$mitochan), ]
+inf_data$imcDat = imc_data[imc_data$channel %in% c(inf_data$imc_chan, inf_data$mitochan), ]
 
 inf_data$froot = gsub('.RAW.txt', '', fulldat)
 
 sbj = sort(unique(inf_data$imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
-inf_data$pts = grep("P", sbj, value = TRUE)[1:2]
+inf_data$pts = grep("P", sbj, value = TRUE)
 
 # sorts the dataset into the correct for inference
 chan_data = function(chan, mitochan, pts, imcDat){
@@ -303,9 +302,9 @@ chan_data = function(chan, mitochan, pts, imcDat){
   
   Xchan = Xctrl
   Ychan = Yctrl
-  patient_id = rep('ctrl', Nctrl)
+  patient_id = rep("control", Nctrl)
   
-  data_ctrl = data.frame(Xctrl, Yctrl,  rep('ctrl', Nctrl))
+  data_ctrl = data.frame(Xctrl, Yctrl,  rep("control", Nctrl))
   colnames(data_ctrl) = c(mitochan, chan, 'patient')
   
   N = double(10) # store the number of observations per patient 
@@ -331,7 +330,7 @@ chan_data = function(chan, mitochan, pts, imcDat){
   
   Ychan = data_chan[,c(mitochan, chan)]
   
-  ctrl_pts = c("ctrl", pts)
+  ctrl_pts = c("control", pts)
   # row index for each change in patient
   pat_index = double(length(ctrl_pts))
   for(i in 1:length(ctrl_pts)) pat_index[i] = min(which(data_chan[,"patient"]==ctrl_pts[i]))
@@ -356,16 +355,16 @@ inference = function(chan){
     
     ### prior specification
     mu1_mean = 1.5*chan_data$ctrlMean
-    mu1_prec = solve( matrix(c(0.1,0.125,0.125,0.2), ncol=2, nrow=2, byrow=TRUE) )
+    mu1_prec = solve( matrix(c(0.05,0.05,0.05,0.1), ncol=2, nrow=2, byrow=TRUE) )
     mu2_mean = mu1_mean
     mu2_prec = 0.5*diag(2) 
     
-    n_1 = 100
-    U_1 = matrix(c(0.3,0.48,0.48,0.9), nrow=2,ncol=2)*n_1
-    n_2 = 50
-    U_2 = 2.5*diag(2)*n_2
+    n_1 = 2000
+    U_1 = matrix(c(0.2,0.33,0.33,0.6), nrow=2,ncol=2)*n_1
+    n_2 = 200
+    U_2 = matrix(c(5,1,1,5), nrow=2, ncol=2)*n_2
     
-    alpha = 1
+    alpha = 2
     beta = 1
 
     data = list(Y=data, N=N, pat_index=pat_index,
@@ -443,6 +442,8 @@ inference = function(chan){
     )
   })
 }
+
+chan_data("MTCO1", "VDAC1", inf_data$pts, inf_data$imcDat)
 
 for(i in 1:1){
 chan_list = as.list(imc_chan)
