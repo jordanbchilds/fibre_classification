@@ -347,11 +347,10 @@ chan_data = function(chan, inf_data){
 }
 
 inference = function(chan){
+  chan_data = chan_data(chan, inf_data)
   with(as.list(c(inf_data, chan)), {
     outroot = paste( froot, chan, sep='__')
-    
-    chan_data = chan_data(chan, mitochan, pts, imcDat)
-    
+      
     N = chan_data$N
     data = chan_data$data
     pat_index = chan_data$pat_index
@@ -445,6 +444,8 @@ inference = function(chan){
     )
   })
 }
+
+inference("MTCO1")
 
 chan_list = as.list(inf_data$imc_chan)
 names(chan_list) = inf_data$imc_chan
