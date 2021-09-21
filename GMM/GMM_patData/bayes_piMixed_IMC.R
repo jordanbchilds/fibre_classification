@@ -147,26 +147,41 @@ component_densities = function(ctrl_data, pat_data, posterior, prior, Nctrl,
   classifs_ctrl = classifs[1:Nctrl]
   classifs_pat = classifs[(Nctrl+1):length(classifs)]
   with( inf_data, {
-    par(mfrow=c(2,2))
-    plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
+    # par(mfrow=c(2,2))
+    # plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
+    #      xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
+    #      main="Component One", xlim=c(-1,6), ylim=c(-1,6))
+    # points( pat_data[,1], pat_data[,2], pch=20, col=myYellow)
+    # prior_one = percentiles(prior[,"predOne[1]"], prior[,"predOne[2]"])
+    # contour(prior_one$dens, levels=prior_one$levels, labels=prior_one$probs,
+    #         col='blue', lwd=2, add=TRUE)
+    # 
+    # plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
+    #      xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
+    #      main="Component Two", xlim=c(-1,6), ylim=c(-1,6))
+    # points( pat_data[,1], pat_data[,2], pch=20, col=myYellow)
+    # prior_two = percentiles(prior[,"predTwo[1]"], prior[,"predTwo[2]"])
+    # contour(prior_two$dens, levels=prior_two$levels, labels=prior_two$probs, 
+    #         col='red', lwd=2, add=TRUE)
+    # 
+    
+    plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=classcols(classifs_ctrl),
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-         main="Component One", xlim=c(-1,6), ylim=c(-1,6))
-    points( pat_data[,1], pat_data[,2], pch=20, col=myYellow)
-    prior_one = percentiles(prior[,"predOne[1]"], prior[,"predOne[2]"])
-    contour(prior_one$dens, levels=prior_one$levels, labels=prior_one$probs,
-            col='blue', lwd=2, add=TRUE)
+         main="CTRL Component One", xlim=c(-1,6), ylim=c(-1,6))
+    post_one = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
+    contour(post_one$dens, levels=post_one$levels, labels=post_one$probs,
+            col="blue", lwd=2, add=TRUE)
+    
+    plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=classcols(classifs_ctrl),
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
+         main="CTRL Component One", xlim=c(-1,6), ylim=c(-1,6))
+    post_two = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[2]"])
+    contour(post_two$dens, levels=post_two$levels, labels=post_two$probs, 
+            col="red", lwd=2, add=TRUE)
     
     plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-         main="Component Two", xlim=c(-1,6), ylim=c(-1,6))
-    points( pat_data[,1], pat_data[,2], pch=20, col=myYellow)
-    prior_two = percentiles(prior[,"predTwo[1]"], prior[,"predTwo[2]"])
-    contour(prior_two$dens, levels=prior_two$levels, labels=prior_two$probs, 
-            col='red', lwd=2, add=TRUE)
-    
-    plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-         main="Component One", xlim=c(-1,6), ylim=c(-1,6))
+         main="PAT Component One", xlim=c(-1,6), ylim=c(-1,6))
     points( pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs_pat))
     post_one = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
     contour(post_one$dens, levels=post_one$levels, labels=post_one$probs,
@@ -174,7 +189,7 @@ component_densities = function(ctrl_data, pat_data, posterior, prior, Nctrl,
     
     plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
-         main="Component Two", xlim=c(-1,6), ylim=c(-1,6))
+         main="PAT Component Two", xlim=c(-1,6), ylim=c(-1,6))
     points( pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs_pat))
     post_two = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[2]"])
     contour(post_two$dens, levels=post_two$levels, labels=post_two$probs, 
@@ -301,7 +316,7 @@ inference = function(chan_pat){
     Npat = nrow(XY_pat)
     
     mu1_mean = 1.5*c(mean(Xctrl), mean(Yctrl))
-    mu1_prec = solve( matrix(c(0.1, 0.1, 0.1, 0.2)/2, ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~95%
+    mu1_prec = solve( matrix(c(0.1, 0.1, 0.1, 0.2)/2, ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~70%
     
     mu2_mean = mu1_mean 
     mu2_prec = 0.5*diag(2) 
