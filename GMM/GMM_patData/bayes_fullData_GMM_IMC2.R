@@ -446,8 +446,6 @@ inference = function(chan){
   })
 }
 
-chan_data("MTCO1", "VDAC1", c("P01", "P02"), inf_data$imcDat)
-
 chan_list = as.list(inf_data$imc_chan)
 names(chan_list) = inf_data$imc_chan
 
