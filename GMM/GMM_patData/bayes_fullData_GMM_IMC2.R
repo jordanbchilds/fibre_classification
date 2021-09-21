@@ -294,54 +294,56 @@ crl = grep("C._H", sbj, value = TRUE)
 inf_data$pts = grep("P", sbj, value = TRUE)
 
 # sorts the dataset into the correct for inference
-chan_data = function(chan, mitochan, pts, imcDat){
-  control = imcDat[(imcDat$patient_type=='control')&(imcDat$type=='mean intensity'), ]
-  Xctrl = log(control$value[control$channel==mitochan])
-  Yctrl = log(control$value[control$channel==chan])
-  Nctrl = length(Yctrl)
-  data_ctrl_lst = list(Y=cbind(Xctrl, Yctrl))
-  
-  Xchan = Xctrl
-  Ychan = Yctrl
-  patient_id = rep("control", Nctrl)
-  
-  data_ctrl = data.frame(Xctrl, Yctrl,  rep("control", Nctrl))
-  colnames(data_ctrl) = c(mitochan, chan, 'patient')
-  
-  N = double(10) # store the number of observations per patient 
-  N[1] = Nctrl
-  
-  for( j in 1:length(pts) ){
-    # all the patient data for chan
-    patient = imcDat[(imcDat$patient_id==pts[j])&(imcDat$type=="mean intensity"), ] 
-    # patient data
-    Xpat = log(patient$value[patient$channel==mitochan])
-    Ypat = log(patient$value[patient$channel==chan]) 
-    Npat = length(Xpat)
-    # add patient data to data matrix
-    Xchan = c(Xchan, Xpat)
-    Ychan = c(Ychan, Ypat)
-    patient_id = c(patient_id, rep(pts[j], Npat) )
+chan_data = function(chan, inf_data){
+  with(as.list(c(inf_data, chan)), {
+    control = imcDat[(imcDat$patient_type=="control")&(imcDat$type=='mean intensity'), ]
+    Xctrl = log(control$value[control$channel==mitochan])
+    Yctrl = log(control$value[control$channel==chan])
+    Nctrl = length(Yctrl)
+    data_ctrl_lst = list(Y=cbind(Xctrl, Yctrl))
     
-    N[j+1] = Npat
-  }
-  
-  data_chan = data.frame(Xchan, Ychan, patient_id)
-  colnames(data_chan) = c(mitochan, chan, "patient")
-  
-  Ychan = data_chan[,c(mitochan, chan)]
-  
-  ctrl_pts = c("control", pts)
-  # row index for each change in patient
-  pat_index = double(length(ctrl_pts))
-  for(i in 1:length(ctrl_pts)) pat_index[i] = min(which(data_chan[,"patient"]==ctrl_pts[i]))
-  
-  return(list(
-    "data" = Ychan, 
-    "pat_index" = pat_index,
-    "N" = N,
-    "ctrlMean" = c(mean(Xctrl), mean(Yctrl))
-  ))
+    Xchan = Xctrl
+    Ychan = Yctrl
+    patient_id = rep("control", Nctrl)
+    
+    data_ctrl = data.frame(Xctrl, Yctrl,  rep("control", Nctrl))
+    colnames(data_ctrl) = c(mitochan, chan, "patient")
+    
+    N = double(10) # store the number of observations per patient 
+    N[1] = Nctrl
+    
+    for( j in 1:length(pts) ){
+      # all the patient data for chan
+      patient = imcDat[(imcDat$patient_id==pts[j])&(imcDat$type=="mean intensity"), ] 
+      # patient data
+      Xpat = log(patient$value[patient$channel==mitochan])
+      Ypat = log(patient$value[patient$channel==chan]) 
+      Npat = length(Xpat)
+      # add patient data to data matrix
+      Xchan = c(Xchan, Xpat)
+      Ychan = c(Ychan, Ypat)
+      patient_id = c(patient_id, rep(pts[j], Npat) )
+      
+      N[j+1] = Npat
+    }
+    
+    data_chan = data.frame(Xchan, Ychan, patient_id)
+    colnames(data_chan) = c(mitochan, chan, "patient")
+    
+    Ychan = data_chan[,c(mitochan, chan)]
+    
+    ctrl_pts = c("control", pts)
+    # row index for each change in patient
+    pat_index = double(length(ctrl_pts))
+    for(i in 1:length(ctrl_pts)) pat_index[i] = min(which(data_chan[,"patient"]==ctrl_pts[i]))
+    
+    return(list(
+      "data" = Ychan, 
+      "pat_index" = pat_index,
+      "N" = N,
+      "ctrlMean" = c(mean(Xctrl), mean(Yctrl))
+    ))
+  })
 }
 
 inference = function(chan){
@@ -444,6 +446,8 @@ inference = function(chan){
   })
 }
 
+chan_data("MTCO1", "VDAC1", c("P01", "P02"), inf_data$imcDat)
+
 chan_list = as.list(inf_data$imc_chan)
 names(chan_list) = inf_data$imc_chan
 
@@ -460,7 +464,7 @@ time = system.time({
 
 stopCluster(cl)
 
-data = lapply(chan_list, chan_data, imc_data$mitochan, inf_data$pts, inf_data$imcDat )
+data = lapply(chan_list, chan_data, inf_data=inf_data )
 
 pdf(paste0("PDF/IMC_joint2/pred_allData.pdf"), width=10, height=8.5)
 par(mfrow=c(2,2))
