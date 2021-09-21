@@ -2,6 +2,7 @@ library(loo)
 library(rjags)
 library(R2jags)
 library(MASS)
+library(parallel)
 source("../BootStrapping/parseData.R", local = TRUE)
 
 cramp = colorRamp(c(rgb(0,0,1,0.25),rgb(1,0,0,0.25)),alpha=TRUE)
@@ -446,7 +447,7 @@ inference = function(chan){
 chan_list = as.list(inf_data$imc_chan)
 names(chan_list) = inf_data$imc_chan
 
-cl  = makeCluster(4) 
+cl  = makeCluster(21) 
 clusterExport(cl, c("inference", "chan_list", "inf_data", "chan_data"))
 clusterEvalQ(cl, {
   library("R2jags")
