@@ -36,51 +36,6 @@ percentiles = function(xdat, ydat, probs=c(0.95, 0.5, 0.1)){
   return( list(dens=dens, levels=levs, probs=probs))
 }
 
-priorpost = function(data, prior, posterior, classifs, ctrl=NULL,
-                     title){
-  # output: plots the prior and posterior regression lines and data
-  op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
-  if( is.null(ctrl) ){
-    x.lim = range(data[,1]) + c(-1,1)
-    y.lim = range(data[,2]) + c(-1,1)
-    
-    plot(data[,1], data[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
-         xlim=x.lim, ylim=y.lim)
-    contours = percentiles(prior[,"predOne[1]"], prior[,"predOne[2]"])
-    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2 )
-    
-    plot(data[,1], data[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
-         xlim=x.lim, ylim=y.lim)
-    contours = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
-    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2 )
-    
-    title(main=title, line = -1, outer = TRUE)
-  } else {
-    x.lim = range( data[,1], ctrl[,1] ) + c(-1,1)
-    y.lim = range( data[,2], ctrl[,2] ) + c(-1,1)
-    
-    plot(ctrl[,1], ctrl[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Prior Predictive',
-         xlim=x.lim, ylim=y.lim)
-    points( data[,1], data[,2], col=myYellow, pch=20)
-    contours = percentiles(prior[,"predOne[1]"], prior[,"predOne[2]"])
-    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2 )
-    
-    plot(ctrl[,1], ctrl[,2], col=myDarkGrey, pch=20, cex.axis=1.5,
-         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"), main='Posterior Predictive',
-         xlim=x.lim, ylim=y.lim)
-    
-    points( data[,1], data[,2], col=classcols(classifs), pch=20)
-    contours = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
-    contour( contours$dens, levels=contours$levels, labels=contours$probs, add=TRUE, lwd=2 )
-    title(main=title, line = -1, outer = TRUE)
-  }
-  
-  par(op)
-} 
-
 priorpost_marginals = function(prior, posterior, title){
   op = par(mfrow=c(1,2), mar = c(5.5,5.5,3,3))
   par(mfrow=c(2,2))
@@ -134,6 +89,10 @@ priorpost_marginals = function(prior, posterior, title){
   title(main=title, line=-1, outer=TRUE)
   
   par(mfrow=c(1,2))
+  plot( density(posterior[,"pi"]), lwd=2, col="blue", xlim=c(0,1),
+        xlab="pi", ylab="", main="pi Density", cex.lab=1.2, cex.main=1.4, cex.axis=1.2)
+  lines( density(prior[,"pi"]), col="black", lwd=2)
+  
   plot( density(posterior[,"probdiff"]), col="blue", cex.lab=2, cex.axis=1.5, xlim=c(0,1),          
         xlab="probdiff", ylab="", lwd=2, main="probdiff Density")
   lines( density(prior[,"probdiff"]), lwd=2)
@@ -342,11 +301,11 @@ inference = function(chan_pat){
     data_priorpred$Nctrl = 0
     data_priorpred$Npat = 0 
     
-    model_jags = jags(data=data, parameters.to.save=c("mu","tau","z","probdiff","predOne","predTwo","loglik"),
+    model_jags = jags(data=data, parameters.to.save=c("mu","tau","z","pi","probdiff","predOne","predTwo","loglik"),
                       model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
                       n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=TRUE, progress.bar="text")
     
-    model_priorpred_jags = jags(data=data_priorpred, parameters.to.save=c("mu","tau", "probdiff", "predOne","predTwo"),
+    model_priorpred_jags = jags(data=data_priorpred, parameters.to.save=c("mu","tau", "pi","probdiff","predOne","predTwo"),
                                 model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
                                 n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=FALSE, progress.bar="text")
     
