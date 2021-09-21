@@ -443,10 +443,8 @@ inference = function(chan){
   })
 }
 
-chan_data("MTCO1", "VDAC1", inf_data$pts, inf_data$imcDat)
-
-chan_list = as.list(imc_chan)
-names(chan_list) = imc_chan
+chan_list = as.list(inf_data$imc_chan)
+names(chan_list) = inf_data$imc_chan
 
 cl  = makeCluster(4) 
 clusterExport(cl, c("inference", "chan_list", "inf_data", "chan_data"))
