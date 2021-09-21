@@ -147,7 +147,7 @@ component_densities = function(ctrl_data, pat_data, posterior, prior, Nctrl,
   classifs_ctrl = classifs[1:Nctrl]
   classifs_pat = classifs[(Nctrl+1):length(classifs)]
   with( inf_data, {
-    # par(mfrow=c(2,2))
+    par(mfrow=c(2,2))
     # plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
     #      xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
     #      main="Component One", xlim=c(-1,6), ylim=c(-1,6))
