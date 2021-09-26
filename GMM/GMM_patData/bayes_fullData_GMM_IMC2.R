@@ -277,17 +277,26 @@ inf_data$MCMCUpdate = 3000 + inf_data$MCMCBurnin
 inf_data$MCMCThin = 1
 inf_data$n.chains = 2
 
-## tests for RJAGS
-fulldat = 'IMC.RAW.txt'
-imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
+data_file = "IMC_data.txt"
+
+if( !file.exists(data_file) ){
+  url = "https://raw.githubusercontent.com/CnrLwlss/Warren_2019/master/shiny/dat.txt"
+  data = read.csv(url,sep="\t", stringsAsFactors=FALSE)
+  write.table(data, file=outfile, row.names=FALSE, quote=FALSE, sep="\t")
+}else{
+  data = read.delim(data_file, sep="\t",stringsAsFactors=FALSE)
+}
+
+# fulldat = 'IMC.RAW.txt'
+# imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
 
 inf_data$imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
 inf_data$mitochan = "VDAC1"
 
 # removing unwanted info 
-inf_data$imcDat = imc_data[imc_data$channel %in% c(inf_data$imc_chan, inf_data$mitochan), ]
+inf_data$imcDat = data[data$channel %in% c(inf_data$imc_chan, inf_data$mitochan), ]
 
-inf_data$froot = gsub('.RAW.txt', '', fulldat)
+inf_data$froot = gsub('.RAW.txt', '', data_file)
 
 sbj = sort(unique(inf_data$imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
@@ -444,8 +453,6 @@ inference = function(chan){
     )
   })
 }
-
-inference("MTCO1")
 
 chan_list = as.list(inf_data$imc_chan)
 names(chan_list) = inf_data$imc_chan
