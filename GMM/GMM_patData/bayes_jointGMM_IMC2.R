@@ -486,7 +486,7 @@ for(chan_pat in inference_out){
 }
 dev.off()
 
-pdf(paste0("PDF/IMC_joint2/predictive_ctrl.pdf"), wiodth=10, height=8.5)
+pdf(paste0("PDF/IMC_joint2/predictive_ctrl.pdf"), width=10, height=8.5)
 for(chan_pat in inference_out){
   chan_pat[["plot_compCTRL"]]()
 }
