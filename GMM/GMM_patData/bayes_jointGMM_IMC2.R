@@ -134,10 +134,6 @@ priorpost_marginals = function(prior, posterior, title){
   title(main=title, line = -1, outer = TRUE)
   
   par(mfrow=c(1,2))
-  plot( density(posterior[,"probdiff_ctrl"]), cex.lab=2, cex.axis=1.5, xlim=c(0,1),          
-        xlab="probdiff_ctrl", ylab="", lwd=2, col="red", main="probdiff_pat Density")
-  lines( density(prior[,"probdiff_ctrl"]), lwd=2, col="green")
-  
   plot( density(posterior[,"probdiff_pat"]), cex.lab=2, cex.axis=1.5, xlim=c(0,1),          
         xlab="probdiff_pat", ylab="", lwd=2, col="red", main="probdiff_pat Density")
   lines( density(prior[,"probdiff_pat"]), lwd=2, col="green")
@@ -308,7 +304,7 @@ inference = function(chan_pat){
     mutation_type = imcDat$mutation_type[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"),]
     
     mu1_mean = 1.5*c(mean(Xctrl), mean(Yctrl))
-    mu1_prec = solve(matrix(c(0.05, 0.068, 0.068, 0.1), ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~95%
+    mu1_prec = solve(matrix(c(0.05, 0.068, 0.068, 0.1), ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~98%
     
     mu2_mean = mu1_mean 
     mu2_prec = 0.5*diag(2) 
