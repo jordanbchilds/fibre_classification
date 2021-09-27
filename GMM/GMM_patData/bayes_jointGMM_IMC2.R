@@ -367,10 +367,8 @@ inference = function(chan_pat){
     zpat.vec = sort(zpat.vec)
     
     class_pat = posterior[, names(zpat.vec)]  
-    class_ctrl = posterior[, names(qpat.vec)]
     classifs_pat = colMeans(class_pat)
-    classifs_ctrl = colMeans(class_ctrl)
-    
+
     colnames(posterior) = colnames(output[[1]])
     colnames(prior) = colnames(output_priorpred[[1]])
     
@@ -379,18 +377,12 @@ inference = function(chan_pat){
         component_densities(ctrl_data=XY_ctrl, pat_data=XY_pat, posterior=posterior, 
                             prior=prior, classifs_pat=classifs_pat,
                             chan=chan, title=paste(froot, chan, pat, sep="__") ) },
-      "plot_compCTRL" = function() {
-        compdens_ctrl(ctrl_data=XY_ctrl, posterior=posterior, prior=prior, 
-                      classifs_ctrl=classifs_ctrl, title=paste(froot, chan, pat, sep="__"), 
-                      chan=chan)
-      },
       "plot_mcmc" = function() {
         MCMCplot( MCMCoutput, title=paste(froot, chan, pat, sep="__") ) },
       "plot_marg" = function() {
         priorpost_marginals(prior, posterior, title=paste(froot, chan, pat, sep="__")) },
       "output" = MCMCoutput[[1]],
       "classifs_pat" = classifs_pat,
-      "classifs_ctrl" = classifs_ctrl, 
       "DIC" = DIC,
       "WAIC" = WAIC,
       "channel" = chan,
@@ -398,6 +390,8 @@ inference = function(chan_pat){
     )
   })
 }
+
+inference(list(chan="GRIM19", pat="P01"))
 
 chanpat_list = list()
 for(chan in inf_data$imc_chan){
