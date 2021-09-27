@@ -277,9 +277,7 @@ inf_data$mitochan = "VDAC1"
 # removing unwanted info 
 inf_data$imcDat = data[data$channel %in% c(inf_data$imc_chan, inf_data$mitochan), ]
 
-inf_data$froot = gsub('.RAW.txt', '', data_file)
-
-# getting the ranges of the axis
+inf_data$froot = "IMC"
 
 sbj = sort(unique(inf_data$imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
