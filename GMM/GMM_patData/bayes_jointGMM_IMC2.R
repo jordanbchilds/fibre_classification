@@ -159,7 +159,6 @@ compdens_ctrl = function(ctrl_data, posterior, prior, classifs_ctrl, title, chan
     plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
          main="Component Two", xlim=c(-1,6), ylim=c(-1,6))
-    points( pat_data[,1], pat_data[,2], pch=20, col=myYellow)
     prior_two = percentiles(prior[,"predTwo[1]"], prior[,"predTwo[2]"])
     contour(prior_two$dens, levels=prior_two$levels, labels=prior_two$probs, 
             col='red', lwd=2, add=TRUE)
