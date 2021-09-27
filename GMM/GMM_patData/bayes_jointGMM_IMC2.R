@@ -441,7 +441,7 @@ inference = function(chan_pat){
                             chan=chan, title=paste(froot, chan, pat, sep="__") ) },
       "plot_compCTRL" = function() {
         compdens_ctrl(ctrl_data=ctrl_data, posterior=posterior, prior=prior, 
-                      lassifs_ctrl=classifs_ctrl, title=paste(froot, chan, pat, sep="__"), 
+                      classifs_ctrl=classifs_ctrl, title=paste(froot, chan, pat, sep="__"), 
                       chan=chan)
       },
       "plot_mcmc" = function() {
