@@ -3,7 +3,6 @@ library(rjags)
 library(R2jags)
 library(MASS)
 library(parallel)
-library(plyr)
 source("../BootStrapping/parseData.R", local = TRUE)
 
 cramp = colorRamp(c(rgb(1,0,0,0.2),rgb(0,0,1,0.20)), alpha=TRUE)
