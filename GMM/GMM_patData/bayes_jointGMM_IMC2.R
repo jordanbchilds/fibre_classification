@@ -544,7 +544,7 @@ write.table(DIC_df, file=DICpath, row.names=T, quote=FALSE, col.names=T)
 # WAIC estimate and SE
 ######
 WAICpath = "Information_Criteria/IMC_joint2/WAIC.txt"
-WAIC_df = matrix(NA, nrow=length(inf_data$pts), ncol=length(imc_chan), 
+WAIC_df = matrix(NA, nrow=length(inf_data$pts), ncol=length(inf_data$imc_chan), 
                  dimnames=list(inf_data$pts, inf_data$imc_chan))
 WAICse_df = WAIC_df
 for(chan_pat in inference_out){
