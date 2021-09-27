@@ -437,7 +437,7 @@ inference = function(chan_pat){
     return( list(
       "plot_comp" = function() { 
         component_densities(ctrl_data=XY_ctrl, pat_data=XY_pat, posterior=posterior, 
-                            prior=prior, classifs_pat=classifs_pat, classifs_ctrl=classifs_ctrl,
+                            prior=prior, classifs_pat=classifs_pat,
                             chan=chan, title=paste(froot, chan, pat, sep="__") ) },
       "plot_compCTRL" = function() {
         compdens_ctrl(ctrl_data=ctrl_data, posterior=posterior, prior=prior, 
