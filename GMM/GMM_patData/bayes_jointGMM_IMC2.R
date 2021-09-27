@@ -146,7 +146,7 @@ priorpost_marginals = function(prior, posterior, title){
   par(op)
 }
 
-ctrl_compdens = function(ctrl_data, posterior, prior, classifs_ctrl, title, chan){
+compdens_ctrl = function(ctrl_data, posterior, prior, classifs_ctrl, title, chan){
   with( inf_data, {
     par(mfrow=c(2,2))
     plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
@@ -258,14 +258,14 @@ inf_data$modelstring = "
 model {
   # fit to ctrl data
   for( i in 1:Nctrl ){
-    q[i] ~ dbeta(probdiff_ctrl)
+    q[i] ~ dbern(probdiff_ctrl)
     class_ctrl[i] = 2 - q[i]
     Yctrl[i,] ~ dmnorm( mu[,class_ctrl[i]], tau[,,class_ctrl[i]] )
     loglik[i] = logdensity.mnorm(Yctrl[i,], mu[,class_ctrl[i]], tau[,,class_ctrl[i]])
   }
   # fit to patient data
   for( j in 1:Npat ){ 
-    z[j] ~ dbern(probdiff)
+    z[j] ~ dbern(probdiff_pat)
     class[j] = 2 - z[j]
     Ypat[j,] ~ dmnorm(mu[,class[j]], tau[,,class[j]] )
     loglik[Nctrl+j] = logdensity.mnorm(Ypat[j,], mu[,class[j]], tau[,,class[j]])
@@ -319,13 +319,13 @@ inf_data$mitochan = "VDAC1"
 # removing unwanted info 
 inf_data$imcDat = data[data$channel %in% c(inf_data$imc_chan, inf_data$mitochan), ]
 
-inf_data$froot = gsub('.RAW.txt', '', fulldat)
+inf_data$froot = gsub('.RAW.txt', '', data_file)
 
 # getting the ranges of the axis
 
 sbj = sort(unique(inf_data$imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
-inf_data$pts = grep("P", sbj, value = TRUE)
+inf_data$pts = grep("P", sbj, value = TRUE)[1:2]
 
 inference = function(chan_pat){
   with(as.list(c(inf_data, chan_pat)), {
@@ -383,11 +383,11 @@ inference = function(chan_pat){
     data_priorpred$Nctrl = 0
     data_priorpred$Npat = 0 
     
-    model_jags = jags(data=data, parameters.to.save=c("mu","tau","z","probdiff","predOne","predTwo","loglik"),
+    model_jags = jags(data=data, parameters.to.save=c("mu","tau","z","q","probdiff_pat","probdiff_ctrl","predOne","predTwo","loglik"),
                       model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
                       n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=TRUE, progress.bar="text")
     
-    model_priorpred_jags = jags(data=data_priorpred, parameters.to.save=c("mu","tau", "probdiff", "predOne","predTwo"),
+    model_priorpred_jags = jags(data=data_priorpred, parameters.to.save=c("mu","tau","probdiff_ctrl","probdiff_pat","predOne","predTwo"),
                                 model.file=textConnection(modelstring), n.chains=n.chains, n.iter=MCMCUpdate, 
                                 n.thin=MCMCThin, n.burnin=MCMCBurnin, DIC=FALSE, progress.bar="text")
     
@@ -400,7 +400,7 @@ inference = function(chan_pat){
     MCMCoutput = output[,c("mu[1,1]","mu[1,2]","mu[2,1]","mu[2,2]",
                            "tau[1,1,1]","tau[1,2,1]","tau[2,1,1]","tau[2,2,1]",
                            "tau[1,1,2]","tau[1,2,2]","tau[2,1,2]","tau[2,2,2]",
-                           "probdiff", "predOne[1]", "predOne[2]", "predTwo[1]",
+                           "probdiff_ctrl", "probdiff_pat", "predOne[1]", "predOne[2]", "predTwo[1]",
                            "predTwo[2]")]
     
     posterior = as.data.frame(output[[1]])
@@ -439,6 +439,11 @@ inference = function(chan_pat){
         component_densities(ctrl_data=XY_ctrl, pat_data=XY_pat, posterior=posterior, 
                             prior=prior, classifs_pat=classifs_pat, classifs_ctrl=classifs_ctrl,
                             chan=chan, title=paste(froot, chan, pat, sep="__") ) },
+      "plot_compCTRL" = function() {
+        compdens_ctrl(ctrl_data=ctrl_data, posterior=posterior, prior=prior, 
+                      lassifs_ctrl=classifs_ctrl, title=paste(froot, chan, pat, sep="__"), 
+                      chan=chan)
+      },
       "plot_mcmc" = function() {
         MCMCplot( MCMCoutput, title=paste(froot, chan, pat, sep="__") ) },
       "plot_marg" = function() {
@@ -478,6 +483,12 @@ stopCluster(cl)
 pdf(paste0("PDF/IMC_joint2/predictive.pdf"), width=10, height=8.5)
 for(chan_pat in inference_out){
   chan_pat[["plot_comp"]]()
+}
+dev.off()
+
+pdf(paste0("PDF/IMC_joint2/predictive_ctrl.pdf"), wiodth=10, height=8.5)
+for(chan_pat in inference_out){
+  chan_pat[["plot_compCTRL"]]()
 }
 dev.off()
 
