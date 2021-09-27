@@ -440,7 +440,7 @@ inference = function(chan_pat){
                             prior=prior, classifs_pat=classifs_pat,
                             chan=chan, title=paste(froot, chan, pat, sep="__") ) },
       "plot_compCTRL" = function() {
-        compdens_ctrl(ctrl_data=ctrl_data, posterior=posterior, prior=prior, 
+        compdens_ctrl(ctrl_data=XY_ctrl, posterior=posterior, prior=prior, 
                       classifs_ctrl=classifs_ctrl, title=paste(froot, chan, pat, sep="__"), 
                       chan=chan)
       },
