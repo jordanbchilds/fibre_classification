@@ -324,7 +324,7 @@ inf_data$froot = gsub('.RAW.txt', '', data_file)
 
 sbj = sort(unique(inf_data$imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
-inf_data$pts = grep("P", sbj, value = TRUE)[1:2]
+inf_data$pts = grep("P", sbj, value = TRUE)
 
 inference = function(chan_pat){
   with(as.list(c(inf_data, chan_pat)), {
