@@ -391,8 +391,6 @@ inference = function(chan_pat){
   })
 }
 
-inference(list(chan="GRIM19", pat="P01"))
-
 chanpat_list = list()
 for(chan in inf_data$imc_chan){
   for(pat in inf_data$pts){
