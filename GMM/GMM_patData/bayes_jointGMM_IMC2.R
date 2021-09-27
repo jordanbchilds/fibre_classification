@@ -316,13 +316,8 @@ if( !file.exists(data_file) ){
 inf_data$imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
 inf_data$mitochan = "VDAC1"
 
-pat_id = c("C01","C02","C03","P01","P02","P03","P04","P05","P06","P07","P08","P09","P10")
-mutation_type = c("ctrl","ctrl","ctrl","nDNA_CI", "nDNA_CI", "mDNA_SLSD","nDNA_SLSD",
-                  "tRNA_point","tRNA_point","tRNA_point","tRNA_point","tRNA_point","tRNA_point")
 # removing unwanted info 
 inf_data$imcDat = data[data$channel %in% c(inf_data$imc_chan, inf_data$mitochan), ]
-inf_data$imcDat[["mutation_type"]] = mapvalues(inf_data$imcDat[,"patient_id"], from=pat_id, 
-                                               to=mutation_type)
 
 inf_data$froot = gsub('.RAW.txt', '', fulldat)
 
