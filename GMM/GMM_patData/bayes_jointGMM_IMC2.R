@@ -308,7 +308,7 @@ inference = function(chan_pat){
     mutation_type = imcDat$mutation_type[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"),]
     
     mu1_mean = 1.5*c(mean(Xctrl), mean(Yctrl))
-    mu1_prec = solve(matrix(c(0.05, 0.05, 0.05, 0.1), ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~95%
+    mu1_prec = solve(matrix(c(0.05, 0.068, 0.068, 0.1), ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~95%
     
     mu2_mean = mu1_mean 
     mu2_prec = 0.5*diag(2) 
