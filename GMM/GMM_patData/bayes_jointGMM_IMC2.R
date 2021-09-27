@@ -3,6 +3,7 @@ library(rjags)
 library(R2jags)
 library(MASS)
 library(parallel)
+library(plyr)
 source("../BootStrapping/parseData.R", local = TRUE)
 
 cramp = colorRamp(c(rgb(1,0,0,0.2),rgb(0,0,1,0.20)), alpha=TRUE)
@@ -134,16 +135,55 @@ priorpost_marginals = function(prior, posterior, title){
   title(main=title, line = -1, outer = TRUE)
   
   par(mfrow=c(1,2))
-  plot( density(posterior[,"probdiff"]), cex.lab=2, cex.axis=1.5, xlim=c(0,1),          
-        xlab="probdiff", ylab="", lwd=2, col="red", main="probdiff Density")
-  lines( density(prior[,"probdiff"]), lwd=2, col="green")
+  plot( density(posterior[,"probdiff_ctrl"]), cex.lab=2, cex.axis=1.5, xlim=c(0,1),          
+        xlab="probdiff_ctrl", ylab="", lwd=2, col="red", main="probdiff_pat Density")
+  lines( density(prior[,"probdiff_ctrl"]), lwd=2, col="green")
+  
+  plot( density(posterior[,"probdiff_pat"]), cex.lab=2, cex.axis=1.5, xlim=c(0,1),          
+        xlab="probdiff_pat", ylab="", lwd=2, col="red", main="probdiff_pat Density")
+  lines( density(prior[,"probdiff_pat"]), lwd=2, col="green")
   title(main=title, line = -1, outer = TRUE)
   
   par(op)
 }
 
+ctrl_compdens = function(ctrl_data, posterior, prior, classifs_ctrl, title, chan){
+  with( inf_data, {
+    par(mfrow=c(2,2))
+    plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
+         main="Component One", xlim=c(-1,6), ylim=c(-1,6))
+    prior_one = percentiles(prior[,"predOne[1]"], prior[,"predOne[2]"])
+    contour(prior_one$dens, levels=prior_one$levels, labels=prior_one$probs,
+            col='blue', lwd=2, add=TRUE)
+    
+    plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
+         main="Component Two", xlim=c(-1,6), ylim=c(-1,6))
+    points( pat_data[,1], pat_data[,2], pch=20, col=myYellow)
+    prior_two = percentiles(prior[,"predTwo[1]"], prior[,"predTwo[2]"])
+    contour(prior_two$dens, levels=prior_two$levels, labels=prior_two$probs, 
+            col='red', lwd=2, add=TRUE)
+    
+    plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=classcols(classifs_ctrl),
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
+         main="Component One", xlim=c(-1,6), ylim=c(-1,6))
+    post_one = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
+    contour(post_one$dens, levels=post_one$levels, labels=post_one$probs,
+            col="blue", lwd=2, add=TRUE)
+    
+    plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=classcols(classifs_ctrl),
+         xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
+         main="Component Two", xlim=c(-1,6), ylim=c(-1,6))
+    post_two = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[2]"])
+    contour(post_two$dens, levels=post_two$levels, labels=post_two$probs, 
+            col="red", lwd=2, add=TRUE)
+    title(main=title, line = -1, outer = TRUE)
+  })
+}
+  
 component_densities = function(ctrl_data, pat_data, posterior, prior, 
-                               classifs, title, chan ){
+                               classifs_pat, title, chan ){
   with( inf_data, {
     par(mfrow=c(2,2))
     plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
@@ -165,7 +205,7 @@ component_densities = function(ctrl_data, pat_data, posterior, prior,
     plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
          main="Component One", xlim=c(-1,6), ylim=c(-1,6))
-    points( pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs))
+    points( pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs_pat))
     post_one = percentiles(posterior[,"predOne[1]"], posterior[,"predOne[2]"])
     contour(post_one$dens, levels=post_one$levels, labels=post_one$probs,
             col="blue", lwd=2, add=TRUE)
@@ -173,7 +213,7 @@ component_densities = function(ctrl_data, pat_data, posterior, prior,
     plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
          xlab=paste("log(",mitochan,")"), ylab=paste("log(",chan,")"),
          main="Component Two", xlim=c(-1,6), ylim=c(-1,6))
-    points( pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs))
+    points( pat_data[,1], pat_data[,2], pch=20, col=classcols(classifs_pat))
     post_two = percentiles(posterior[,"predTwo[1]"], posterior[,"predTwo[2]"])
     contour(post_two$dens, levels=post_two$levels, labels=post_two$probs, 
             col="red", lwd=2, add=TRUE)
@@ -218,9 +258,11 @@ inf_data = list()
 inf_data$modelstring = "
 model {
   # fit to ctrl data
-  for( i in 1:Nctrl ){ 
-    Yctrl[i,] ~ dmnorm( mu[,1], tau[,,1] )
-    loglik[i] = logdensity.mnorm(Yctrl[i,], mu[,1], tau[,,1])
+  for( i in 1:Nctrl ){
+    q[i] ~ dbeta(probdiff_ctrl)
+    class_ctrl[i] = 2 - q[i]
+    Yctrl[i,] ~ dmnorm( mu[,class_ctrl[i]], tau[,,class_ctrl[i]] )
+    loglik[i] = logdensity.mnorm(Yctrl[i,], mu[,class_ctrl[i]], tau[,,class_ctrl[i]])
   }
   # fit to patient data
   for( j in 1:Npat ){ 
@@ -235,8 +277,10 @@ model {
   # component two prior
   tau[1:2,1:2,2] ~ dwish(U_2, n_2)
   mu[1:2,2] ~ dmnorm(mu2_mean, mu2_prec)
+  
   # classification
-  probdiff ~ dbeta(alpha, beta)
+  probdiff_ctrl ~ dbeta(alpha_ctrl, beta_ctrl)
+  probdiff_pat ~ dbeta(alpha_pat, beta_pat)
   
   # predictive distribution
   predOne ~ dmnorm(mu[,1], tau[,,1])
@@ -260,15 +304,26 @@ inf_data$MCMCUpdate = 3000 + inf_data$MCMCBurnin
 inf_data$MCMCThin = 1
 inf_data$n.chains = 2
 
-fulldat = "IMC.RAW.txt"
+data_file = "IMC_data.txt"
 
-imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
+if( !file.exists(data_file) ){
+  url = "https://raw.githubusercontent.com/CnrLwlss/Warren_2019/master/shiny/dat.txt"
+  data = read.csv(url,sep="\t", stringsAsFactors=FALSE)
+  write.table(data, file=outfile, row.names=FALSE, quote=FALSE, sep="\t")
+}else{
+  data = read.delim(data_file, sep="\t",stringsAsFactors=FALSE)
+}
 
-imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
+inf_data$imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
 inf_data$mitochan = "VDAC1"
 
+pat_id = c("C01","C02","C03","P01","P02","P03","P04","P05","P06","P07","P08","P09","P10")
+mutation_type = c("ctrl","ctrl","ctrl","nDNA_CI", "nDNA_CI", "mDNA_SLSD","nDNA_SLSD",
+                  "tRNA_point","tRNA_point","tRNA_point","tRNA_point","tRNA_point","tRNA_point")
 # removing unwanted info 
-inf_data$imcDat = imc_data[imc_data$channel %in% c(imc_chan, inf_data$mitochan), ]
+inf_data$imcDat = data[data$channel %in% c(inf_data$imc_chan, inf_data$mitochan), ]
+inf_data$imcDat[["mutation_type"]] = mapvalues(inf_data$imcDat[,"patient_id"], from=pat_id, 
+                                               to=mutation_type)
 
 inf_data$froot = gsub('.RAW.txt', '', fulldat)
 
@@ -294,6 +349,7 @@ inference = function(chan_pat){
     Ypat = log(patient$value[patient$channel==chan]) 
     XY_pat = cbind(Xpat, Ypat)
     Npat = nrow(XY_pat)
+    mutation_type = imcDat$mutation_type[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"),]
     
     mu1_mean = 1.5*c(mean(Xctrl), mean(Yctrl))
     mu1_prec = solve( matrix(c(0.1,0.134,0.134,0.2), ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~95%
@@ -306,13 +362,26 @@ inference = function(chan_pat){
     n_2 = 200
     U_2 = matrix(c(5,1,1,5),nrow=2,ncol=2)*n_2
     
-    alpha = 1
-    beta = 1
+    alpha_ctrl = 1
+    beta_ctrl = 75
+    
+    if(pat %in% c("P01","P02") ){
+      alpha_pat = 40
+      beta_pat = 1
+    } else if (pat %in% c("P03", "P04")){
+      alpha_pat = 6
+      beta_pat = 6
+    } else if (pat %in% c("P05","P06","P07","P08","P09","P10")){
+      alpha_pat = 6
+      beta_pat = 6
+    }
     
     data = list(Yctrl=XY_ctrl, Nctrl=Nctrl, Ypat=XY_pat, Npat=Npat,
                 mu1_mean=mu1_mean, mu1_prec=mu1_prec,
-                mu2_mean=mu2_mean, mu2_prec=mu2_prec, n_1=n_1, n_2=n_2,
-                U_1=U_1, U_2=U_2, alpha=alpha, beta=beta)
+                mu2_mean=mu2_mean, mu2_prec=mu2_prec, 
+                n_1=n_1, n_2=n_2, U_1=U_1, U_2=U_2, 
+                alpha_ctrl=alpha_ctrl, beta_ctrl=beta_ctrl, 
+                alpha_pat=alpha_pat, beta_pat=beta_pat)
     
     data_priorpred = data
     data_priorpred$Yctrl = NULL
@@ -343,33 +412,46 @@ inference = function(chan_pat){
     posterior = as.data.frame(output[[1]])
     prior = as.data.frame(output_priorpred[[1]])
     
-    tt = colnames(posterior[,grep("z", colnames(posterior))])
-    tt.split = strsplit(tt, split="")
-    tt.vec = double(length(tt.split))
-    for(i in seq_along(tt.split)){
-      rr = tt.split[[i]][ !tt.split[[i]] %in% c("z","[","]") ]
-      tt.vec[i] = as.numeric(paste(rr, collapse=""))
+    zpat = colnames(posterior[,grep("z", colnames(posterior))])
+    zpat.split = strsplit(zpat, split="")
+    zpat.vec = double(length(zpat.split))
+    for(i in seq_along(zpat.split)){
+      rr = zpat.split[[i]][ !zpat.split[[i]] %in% c("z","[","]") ]
+      zpat.vec[i] = as.numeric(paste(rr, collapse=""))
     }
-    names(tt.vec) = tt 
-    tt.vec = sort(tt.vec)
+    names(zpat.vec) = zpat
+    zpat.vec = sort(zpat.vec)
     
-    class_posterior = posterior[, names(tt.vec)]  
-    classifs = colMeans(class_posterior)
+    qpat = colnames(posterior[,grep("z", colnames(posterior))])
+    qpat.split = strsplit(qpat, split="")
+    qpat.vec = double(length(qpat.split))
+    for(i in seq_along(qpat.split)){
+      rr = qpat.split[[i]][ !qpat.split[[i]] %in% c("z","[","]") ]
+      qpat.vec[i] = as.numeric(paste(rr, collapse=""))
+    }
+    names(qpat.vec) = qpat
+    qpat.vec = sort(qpat.vec)
+    
+    class_pat = posterior[, names(zpat.vec)]  
+    class_ctrl = posterior[, names(qpat.vec)]
+    classifs_pat = colMeans(class_pat)
+    classifs_ctrl = colMeans(class_ctrl)
     
     colnames(posterior) = colnames(output[[1]])
     colnames(prior) = colnames(output_priorpred[[1]])
     
     return( list(
       "plot_comp" = function() { 
-        component_densities(ctrl_data=XY_ctrl, pat_data=XY_pat,
-                            posterior=posterior, prior=prior, classifs=classifs,
+        component_densities(ctrl_data=XY_ctrl, pat_data=XY_pat, posterior=posterior, 
+                            prior=prior, classifs_pat=classifs_pat, classifs_ctrl=classifs_ctrl,
                             chan=chan, title=paste(froot, chan, pat, sep="__") ) },
       "plot_mcmc" = function() {
         MCMCplot( MCMCoutput, title=paste(froot, chan, pat, sep="__") ) },
       "plot_marg" = function() {
         priorpost_marginals(prior, posterior, title=paste(froot, chan, pat, sep="__")) },
       "output" = MCMCoutput[[1]],
-      "classifs" = classifs,
+      "classifs_pat" = classifs_pat,
+      "classifs_ctrl" = classifs_ctrl, 
       "DIC" = DIC,
       "WAIC" = WAIC,
       "channel" = chan,
@@ -379,7 +461,7 @@ inference = function(chan_pat){
 }
 
 chanpat_list = list()
-for(chan in imc_chan){
+for(chan in inf_data$imc_chan){
   for(pat in inf_data$pts){
     chan_pat = paste(chan, pat, sep="_")
     chanpat_list[[chan_pat]] = list(chan=chan, pat=pat)
@@ -431,7 +513,7 @@ for(chan_pat in inference_out){
 # classifications
 ######
 for(chan_pat in inference_out){
-  write.table(chan_pat[["classifs"]],
+  write.table(chan_pat[["classifs_pat"]],
               file.path("Output/IMC_joint2", paste(chan_pat$channel, chan_pat$patient, "CLASS.txt", sep="__") ),
               row.names=FALSE, quote=FALSE, col.names=FALSE )
   
