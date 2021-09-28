@@ -280,20 +280,20 @@ inference = function(chan_pat){
     Npat = nrow(XY_pat)
     
     mu1_mean = c(mean(Xctrl), mean(Yctrl))
-    mu1_prec = solve( matrix(c(0.05, 0.06, 0.06, 0.1), ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~ 84.853%
+    mu1_prec = solve( matrix(c(0.05, 0.068, 0.068, 0.1), ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~96.167%
     
     mu2_mean = mu1_mean 
-    mu2_prec = 1*diag(2) 
+    mu2_prec = 0.5*diag(2) 
     
     n_1 = 2000
-    U_1 = matrix(c(0.2,0.335,0.335,0.6), nrow=2,ncol=2)*n_1 # correlation of ~96.706% 
+    U_1 = matrix(c(0.2,0.335,0.335,0.6), nrow=2,ncol=2)*n_1 # correlation of ~97% 
     n_2 = 200
     U_2 = matrix(c(5,1,1,5),nrow=2,ncol=2)*n_2
     
     a = 10
     b = 10
     alpha = c(2,6)
-    beta = c(6,2)
+    beta = c(6,2) # helllo
     
     data = list(Yctrl=XY_ctrl, Nctrl=Nctrl, Ypat=XY_pat, Npat=Npat,
                 mu1_mean=mu1_mean, mu1_prec=mu1_prec,
