@@ -242,16 +242,21 @@ inf_data$MCMCUpdate = 3000 + inf_data$MCMCBurnin
 inf_data$MCMCThin = 1
 inf_data$n.chains = 2
 
-fulldat = "IMC.RAW.txt"
+data_file = "IMC_data.txt"
 
-imc_data = read.delim( file.path("../BootStrapping", fulldat), stringsAsFactors=FALSE)
-
-imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
+if( !file.exists(data_file) ){
+  url = "https://raw.githubusercontent.com/CnrLwlss/Warren_2019/master/shiny/dat.txt"
+  data = read.csv(url,sep="\t", stringsAsFactors=FALSE)
+  write.table(data, file=outfile, row.names=FALSE, quote=FALSE, sep="\t")
+}else{
+  data = read.delim(data_file, sep="\t",stringsAsFactors=FALSE)
+}
+inf_data$imc_chan = c('SDHA','OSCP', 'GRIM19', 'MTCO1', 'NDUFB8', 'COX4+4L2', 'UqCRC2')
 inf_data$mitochan = "VDAC1"
 
 # removing unwanted info 
-inf_data$imcDat = imc_data[imc_data$channel %in% c(imc_chan, inf_data$mitochan), ]
-inf_data$froot = gsub('.RAW.txt', '', fulldat)
+inf_data$imcDat = data[data$channel %in% c(inf_data$imc_chan, inf_data$mitochan), ]
+inf_data$froot = gsub('_data.txt', '', data_file)
 
 sbj = sort(unique(inf_data$imcDat$patient_id))
 crl = grep("C._H", sbj, value = TRUE)
@@ -274,8 +279,8 @@ inference = function(chan_pat){
     XY_pat = cbind(Xpat, Ypat)
     Npat = nrow(XY_pat)
     
-    mu1_mean = 1.5*c(mean(Xctrl), mean(Yctrl))
-    mu1_prec = solve( matrix(c(0.05, 0.05, 0.05, 0.1), ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~70%
+    mu1_mean = c(mean(Xctrl), mean(Yctrl))
+    mu1_prec = solve( matrix(c(0.05, 0.068, 0.068, 0.1), ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~70%
     
     mu2_mean = mu1_mean 
     mu2_prec = 0.5*diag(2) 
@@ -360,7 +365,7 @@ inference = function(chan_pat){
 }
 
 chanpat_list = list()
-for(chan in imc_chan){
+for(chan in inf_data$imc_chan){
   for(pat in inf_data$pts){
     chan_pat = paste(chan, pat, sep="_")
     chanpat_list[[chan_pat]] = list(chan=chan, pat=pat)
