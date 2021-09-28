@@ -432,8 +432,8 @@ write.table(time_df, file=file.path("Time/IMC_piMix.txt") )
 ######
 # DIC
 ######
-DIC_df = matrix(NA, nrow=length(inf_data$pts), ncol=length(imc_chan), 
-                dimnames=list(inf_data$pts, imc_chan))
+DIC_df = matrix(NA, nrow=length(inf_data$pts), ncol=length(inf_data$imc_chan), 
+                dimnames=list(inf_data$pts, inf_data$imc_chan))
 for(chan_pat in inference_out){
   DIC_df[chan_pat$patient, chan_pat$channel]= chan_pat[["DIC"]]
 }
@@ -444,8 +444,8 @@ write.table(DIC_df, file=DICpath, row.names=T, quote=FALSE, col.names=T)
 # WAIC estimate and SE
 ######
 WAICpath = "Information_Criteria/IMC_piMix/WAIC.txt"
-WAIC_df = matrix(NA, nrow=length(inf_data$pts), ncol=length(imc_chan), 
-                 dimnames=list(inf_data$pts, imc_chan))
+WAIC_df = matrix(NA, nrow=length(inf_data$pts), ncol=length(inf_data$imc_chan), 
+                 dimnames=list(inf_data$pts, inf_data$imc_chan))
 WAICse_df = WAIC_df
 for(chan_pat in inference_out){
   WAIC_df[chan_pat$patient, chan_pat$channel] = chan_pat[["WAIC"]][[1]]["waic","Estimate"]
