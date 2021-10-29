@@ -308,7 +308,7 @@ inference = function(chan_pat){
     mu2_prec = 0.2*diag(2) 
     
     n_1 = 2000
-    U_1 = matrix(c(0.2,0.339,0.339,0.6), nrow=2,ncol=2)*n_1 # correlation of ~95% 
+    U_1 = matrix(c(0.2,0.330,0.330,0.6), nrow=2,ncol=2)*n_1 # correlation of ~95% 
     n_2 = 2000
     U_2 = matrix(c(6,2,2,6),nrow=2,ncol=2)*n_2
 
