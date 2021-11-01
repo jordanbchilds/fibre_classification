@@ -144,6 +144,7 @@ priorpost_marginals = function(prior, posterior, title){
 
 component_densities = function(ctrl_data, pat_data, posterior, prior, 
                                classifs_pat, title, chan ){
+  
   with( inf_data, {
     par(mfrow=c(2,2))
     plot(ctrl_data[,1], ctrl_data[,2], pch=20, col=myDarkGrey,
@@ -257,7 +258,7 @@ dir.create(file.path("Information_Criteria/IMC_joint2"), showWarnings = FALSE)
 
 # burn-in, chain length, thinning lag
 inf_data$MCMCBurnin = 2000
-inf_data$MCMCUpdate = 3000 + inf_data$MCMCBurnin
+inf_data$MCMCUpdate = 5000 + inf_data$MCMCBurnin
 inf_data$MCMCThin = 1
 inf_data$n.chains = 2
 
@@ -292,6 +293,7 @@ inference = function(chan_pat){
     Yctrl = log(control$value[control$channel==chan])
     XY_ctrl = cbind( Xctrl, Yctrl )
     Nctrl = nrow(XY_ctrl)
+    ctrl_id = control$cell_id
     
     ## PATIENT DATA
     patient = imcDat[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"), ] 
@@ -299,7 +301,8 @@ inference = function(chan_pat){
     Ypat = log(patient$value[patient$channel==chan]) 
     XY_pat = cbind(Xpat, Ypat)
     Npat = nrow(XY_pat)
-    mutation_type = imcDat$mutation_type[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"),]
+    pat_id = patient$cell_id
+    # mutation_type = imcDat$mutation_type[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"),]
     
     mu1_mean = c(mean(Xctrl), mean(Yctrl))
     mu1_prec = solve( matrix(c(0.1, 0.169, 0.169, 0.3), ncol=2, nrow=2, byrow=TRUE) ) # correlation of ~95.0%
@@ -307,9 +310,9 @@ inference = function(chan_pat){
     mu2_mean = mu1_mean 
     mu2_prec = 0.2*diag(2) 
     
-    n_1 = 1500
+    n_1 = 1000
     U_1 = matrix(c(0.2,0.335,0.335,0.6), nrow=2,ncol=2)*n_1 # correlation of ~95% 
-    n_2 = 100
+    n_2 = 50
     U_2 = matrix(c(6,2,2,6),nrow=2,ncol=2)*n_2
 
     alpha_pat = 1
@@ -376,7 +379,7 @@ inference = function(chan_pat){
       "plot_marg" = function() {
         priorpost_marginals(prior, posterior, title=paste(froot, chan, pat, sep="__")) },
       "output" = MCMCoutput[[1]],
-      "classifs_pat" = classifs_pat,
+      "classifs_pat" = cbind(pat_id, classifs_pat),
       "DIC" = DIC,
       "WAIC" = WAIC,
       "channel" = chan,
