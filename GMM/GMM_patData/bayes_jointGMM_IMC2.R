@@ -257,10 +257,10 @@ dir.create(file.path("PDF/IMC_joint2"), showWarnings = FALSE)
 dir.create(file.path("Information_Criteria/IMC_joint2"), showWarnings = FALSE)
 
 # burn-in, chain length, thinning lag
-inf_data$MCMCBurnin = 2000
-inf_data$MCMCUpdate = 5000 + inf_data$MCMCBurnin
+inf_data$MCMCBurnin = 1000
+inf_data$MCMCUpdate = 3000 + inf_data$MCMCBurnin
 inf_data$MCMCThin = 1
-inf_data$n.chains = 2
+inf_data$n.chains = 4
 
 data_file = "IMC_data.txt"
 
