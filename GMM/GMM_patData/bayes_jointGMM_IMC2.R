@@ -293,15 +293,14 @@ inference = function(chan_pat){
     Yctrl = log(control$value[control$channel==chan])
     XY_ctrl = cbind( Xctrl, Yctrl )
     Nctrl = nrow(XY_ctrl)
-    ctrl_id = control$cell_id
-    
+
     ## PATIENT DATA
     patient = imcDat[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"), ] 
     Xpat = log(patient$value[patient$channel==mitochan])
     Ypat = log(patient$value[patient$channel==chan]) 
     XY_pat = cbind(Xpat, Ypat)
     Npat = nrow(XY_pat)
-    pat_id = patient$cell_id
+    pat_id = patient[patient$channel==mitchon, "cell_id"]
     # mutation_type = imcDat$mutation_type[(imcDat$patient_id==pat)&(imcDat$type=="mean intensity"),]
     
     mu1_mean = c(mean(Xctrl), mean(Yctrl))
